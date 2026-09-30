@@ -1,34 +1,29 @@
 /*
- * Design tokens — paleta nr 3 „Clean Teal” (świeża, lekka, terapeutyczna).
- * Wspólne dla wszystkich ekranów aplikacji.
+ * Design tokens — wspólne dla wszystkich ekranów aplikacji.
+ *
+ * Motywy kolorystyczne: użytkownik wybiera kolor roślinki, a razem z nim cała paleta aplikacji.
+ * Domyślny jest „Morski” (paleta nr 3 „Clean Teal”). Motyw ustawia js/theme.js przez <html data-theme="…">.
+ * Te same zmienne działają też na podglądach: element z data-palette="roz" dostaje paletę różowego motywu
+ * (tak rysujemy próbki kolorów w rejestracji).
+ *
+ * Zasady: tylko spokojne, przygaszone kolory (bez czerwieni i neonów); biały tekst na --primary musi być czytelny.
+ * Kolory --plant-* czyta canvas (js/plant-scene.js) — zapisuj je jako #RRGGBB.
  */
 :root {
-  /* Kolory bazowe */
-  --primary: #3A8D9E;
-  --primary-hover: #337F8F;
-  --primary-dark: #2F7F8F;
+  /* Stałe (niezależne od motywu) */
   --text: #1E2A32;
   --text-muted: #5E6F78;
   --text-soft: #8A9BA4;
-  --bg: #F4FAFB;
   --surface: #FFFFFF;
-  --teal-light: #7CC9D4;
-  --blue-mist: #B7DCE5;
-  --soft-mint: #B8E3D3;
-  --peach: #F6B89E;
+  --error: #C4553C;
+  --warning: #B7792F;
 
-  /* Kolory kategorii (wykresy / suwaki) */
+  /* Kolory kategorii (wykresy / suwaki) — znaczą to samo w każdym motywie */
   --mood: #3A8D9E;
   --energy: #F6B86A;
   --stress: #7CC9D4;
   --sleep: #78C9B7;
-
-  /* Linie, stany */
-  --line: #D6E7EB;
-  --line-hover: #BCD8DE;
-  --error: #C4553C;
-  --warning: #B7792F;
-  --ring: rgba(58, 141, 158, .18);
+  --peach: #F6B89E;
 
   /* Typografia */
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -42,4 +37,181 @@
   --ease-out: cubic-bezier(.2, .8, .2, 1);
   --ease-in-out: cubic-bezier(.4, 0, .2, 1);
   --ease-spring: cubic-bezier(.3, 1.5, .5, 1);
+}
+
+/* Pochodne — liczone osobno na każdym elemencie z motywem, żeby podglądy (data-palette) też je miały */
+:root, [data-palette] {
+  --ring: rgba(var(--primary-rgb), .18);
+}
+
+/* ================================================================
+   Motywy
+   ================================================================ */
+
+/* Morski (domyślny) — turkus, miętowe liście, brzoskwiniowe kwiaty */
+:root, [data-palette="morski"] {
+  --primary: #3A8D9E;
+  --primary-hover: #337F8F;
+  --primary-dark: #2F7F8F;
+  --primary-rgb: 58, 141, 158;
+  --accent-light: #7CC9D4;
+  --mist: #B7DCE5;   --mist-rgb: 183, 220, 229;
+  --mint: #B8E3D3;   --mint-rgb: 184, 227, 211;
+  --bg: #F4FAFB;
+  --bg-2: #E9F4F6;
+  --sheet: #FCFEFE;
+  --line: #D6E7EB;
+  --line-hover: #BCD8DE;
+  --line-strong: #C3D8DD;
+  --track: #DCE9EC;
+
+  --plant-stem: #2F7F8F;
+  --plant-leaf-1: #5DB3AE;
+  --plant-leaf-2: #78C9B7;
+  --plant-leaf-3: #7CC9D4;
+  --plant-flower: #F3A487;
+  --plant-flower-tip: #FBD6C6;
+  --plant-core: #F6B86A;
+  --plant-ground: #A4D6C5;
+  --plant-glow: #B8E3D3;
+}
+
+/* Zielony — szałwia, jasnozielone liście, maślane kwiaty */
+:root[data-theme="zielony"], [data-palette="zielony"] {
+  --primary: #4F8A63;
+  --primary-hover: #467B58;
+  --primary-dark: #3F7050;
+  --primary-rgb: 79, 138, 99;
+  --accent-light: #9CCFA8;
+  --mist: #CFE5D3;   --mist-rgb: 207, 229, 211;
+  --mint: #DCEBC9;   --mint-rgb: 220, 235, 201;
+  --bg: #F5FAF5;
+  --bg-2: #EAF3EA;
+  --sheet: #FCFEFC;
+  --line: #D9E8DC;
+  --line-hover: #BFD8C5;
+  --line-strong: #C6DBCB;
+  --track: #DDEADF;
+
+  --plant-stem: #3F7050;
+  --plant-leaf-1: #6FAF7E;
+  --plant-leaf-2: #8CC795;
+  --plant-leaf-3: #A9CF8A;
+  --plant-flower: #F2C66D;
+  --plant-flower-tip: #FBE9BA;
+  --plant-core: #E59F4D;
+  --plant-ground: #B9DCB0;
+  --plant-glow: #D2EACB;
+}
+
+/* Niebieski — spokojny błękit, lila kwiaty */
+:root[data-theme="niebieski"], [data-palette="niebieski"] {
+  --primary: #4A7DB0;
+  --primary-hover: #42709E;
+  --primary-dark: #3A6590;
+  --primary-rgb: 74, 125, 176;
+  --accent-light: #93BCE3;
+  --mist: #C7DCF1;   --mist-rgb: 199, 220, 241;
+  --mint: #CFE3EE;   --mint-rgb: 207, 227, 238;
+  --bg: #F4F8FC;
+  --bg-2: #E8F0F8;
+  --sheet: #FCFDFF;
+  --line: #D5E2EF;
+  --line-hover: #BACEE3;
+  --line-strong: #C2D4E6;
+  --track: #DAE5F0;
+
+  --plant-stem: #3A6590;
+  --plant-leaf-1: #6E9CCB;
+  --plant-leaf-2: #8DB5DD;
+  --plant-leaf-3: #7FB7C9;
+  --plant-flower: #C9B8EA;
+  --plant-flower-tip: #EEE6FB;
+  --plant-core: #F6D38A;
+  --plant-ground: #B5CFE6;
+  --plant-glow: #C9DDF2;
+}
+
+/* Lawenda — fiolet lawendy, różowe kwiaty */
+:root[data-theme="lawenda"], [data-palette="lawenda"] {
+  --primary: #7A6BB0;
+  --primary-hover: #6D5F9F;
+  --primary-dark: #615490;
+  --primary-rgb: 122, 107, 176;
+  --accent-light: #B7A9E0;
+  --mist: #DAD2F1;   --mist-rgb: 218, 210, 241;
+  --mint: #E4DDF3;   --mint-rgb: 228, 221, 243;
+  --bg: #F8F6FC;
+  --bg-2: #EFEBF8;
+  --sheet: #FDFCFF;
+  --line: #E1DBEF;
+  --line-hover: #CBC1E4;
+  --line-strong: #D2C9E8;
+  --track: #E4DFF1;
+
+  --plant-stem: #615490;
+  --plant-leaf-1: #9A8CCB;
+  --plant-leaf-2: #B4A7DC;
+  --plant-leaf-3: #8FA7D6;
+  --plant-flower: #E7A9C9;
+  --plant-flower-tip: #F7DCEA;
+  --plant-core: #F6CF7A;
+  --plant-ground: #CFC5EA;
+  --plant-glow: #DCD3F2;
+}
+
+/* Różowy — przygaszony róż, kremowe kwiaty */
+:root[data-theme="rozowy"], [data-palette="rozowy"] {
+  --primary: #B5677F;
+  --primary-hover: #A55C73;
+  --primary-dark: #945167;
+  --primary-rgb: 181, 103, 127;
+  --accent-light: #E9AFC0;
+  --mist: #F3D4DD;   --mist-rgb: 243, 212, 221;
+  --mint: #F6E0E4;   --mint-rgb: 246, 224, 228;
+  --bg: #FCF6F8;
+  --bg-2: #F7ECEF;
+  --sheet: #FFFCFD;
+  --line: #EFDCE2;
+  --line-hover: #E3C2CC;
+  --line-strong: #E6CBD3;
+  --track: #F1E1E6;
+
+  --plant-stem: #8E5268;
+  --plant-leaf-1: #D98FA6;
+  --plant-leaf-2: #E9AFC0;
+  --plant-leaf-3: #C98AA8;
+  --plant-flower: #FBE3D6;
+  --plant-flower-tip: #FFF6F1;
+  --plant-core: #F2B36C;
+  --plant-ground: #EBC3CE;
+  --plant-glow: #F4D6DE;
+}
+
+/* Morelowy — ciepła, przygaszona morela, piaskowe liście */
+:root[data-theme="morelowy"], [data-palette="morelowy"] {
+  --primary: #AD6B4F;
+  --primary-hover: #9E6048;
+  --primary-dark: #8F5640;
+  --primary-rgb: 173, 107, 79;
+  --accent-light: #F2BFA3;
+  --mist: #F7DCCB;   --mist-rgb: 247, 220, 203;
+  --mint: #F9E6D6;   --mint-rgb: 249, 230, 214;
+  --bg: #FDF8F4;
+  --bg-2: #F8EEE6;
+  --sheet: #FFFDFB;
+  --line: #F0E0D4;
+  --line-hover: #E4C9B6;
+  --line-strong: #E8D2C2;
+  --track: #F2E5DA;
+
+  --plant-stem: #9A5F45;
+  --plant-leaf-1: #E2A07F;
+  --plant-leaf-2: #F0BD9C;
+  --plant-leaf-3: #D9B27F;
+  --plant-flower: #F6D98E;
+  --plant-flower-tip: #FDF1CF;
+  --plant-core: #E7A456;
+  --plant-ground: #EFCDB8;
+  --plant-glow: #F6DCCB;
 }

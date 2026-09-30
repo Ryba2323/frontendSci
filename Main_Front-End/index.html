@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCI++ — ekrany</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <script src="js/theme.js"></script>
+  <!-- Spis ekranów prototypu (dla zespołu) -->
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: var(--font); color: var(--text); background: linear-gradient(180deg, var(--bg), var(--bg-2)); -webkit-font-smoothing: antialiased; }
+    main { max-width: 520px; margin: 0 auto; padding: 48px 20px; }
+    h1 { margin: 0 0 6px; font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+    p { margin: 0 0 24px; color: var(--text-muted); }
+    ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    a {
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      padding: 16px 18px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface);
+      color: var(--text); text-decoration: none; font-weight: 700;
+    }
+    a:hover { border-color: var(--primary); }
+    a small { font-weight: 500; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Prototyp SCI++</h1>
+    <p>Ekrany designu. Najlepiej oglądać w widoku telefonu.</p>
+    <ul>
+      <li><a href="logowanie.html">Logowanie <small>logowanie.html</small></a></li>
+      <li><a href="rejestracja.html">Rejestracja <small>rejestracja.html</small></a></li>
+      <li><a href="strona-glowna.html">Strona główna — gałąź w tle <small>strona-glowna.html</small></a></li>
+      <li><a href="strona-glowna-2.html">Strona główna — roślinka na górze <small>strona-glowna-2.html</small></a></li>
+    </ul>
+  </main>
+</body>
+</html>

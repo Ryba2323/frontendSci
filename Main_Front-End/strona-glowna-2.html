@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Strona główna (wersja 2)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/home2.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/home2-scene.js" defer></script>
+  <script src="js/home2.js" defer></script>
+</head>
+<body>
+
+<!--
+  WERSJA 2: roślinka zawsze na górze (na komputerze: po lewej), treść przewija się POD nią — nic jej nie zasłania.
+  Roślinka jest od razu dorosła: 7 odnóg, liść każdej = jeden dzień tygodnia (większy i żywszy = lepszy dzień), kwiat na czubku.
+  Przewijanie ją ożywia: szybkość = wiatr, „Twój tydzień” → podpisy dni i fala światła przez liście, „Myśl na dziś” → płatki.
+  „Podlej roślinkę” → deszcz kropli, kropelki na liściach, dzisiejszy pąk rozwija się w liść.
+-->
+
+<!-- Scena z roślinką (js/home2-scene.js) -->
+<div class="stage" id="stage">
+  <canvas id="plant" aria-label="Twoja roślinka. Każdy liść na odnogach to jeden dzień tygodnia — im większy, tym lepszy dzień." role="img"></canvas>
+
+  <div class="stage-top">
+    <span class="logo-ph" aria-label="Logo aplikacji (miejsce na logo)">logo</span>
+    <div class="top-actions">
+      <!-- Kolor roślinki (ten sam wybór co w rejestracji); kółko pokazuje aktualny motyw -->
+      <button type="button" class="color-btn" id="color-open" aria-haspopup="dialog" aria-label="Zmień kolor roślinki">
+        <span class="color-dot" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="sos" id="sos-open" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <span>SOS</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="stage-greet">
+    <p class="greet-date" id="greet-date"></p>
+    <h1 id="greet-title">Cześć!</h1>
+  </div>
+
+</div>
+
+<main class="content" id="content">
+  <div class="sheet">
+    <p class="scroll-hint" id="scroll-hint" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      Przewiń, żeby zobaczyć swój tydzień
+    </p>
+
+    <!-- Codzienne podlewanie (wpis o samopoczuciu) — sam przycisk, pytania dojdą później -->
+    <section class="sec sec-water" id="sec-water" aria-labelledby="water-title">
+      <p class="kicker">Codzienne podlewanie</p>
+      <h2 id="water-title">Jak się dziś czujesz?</h2>
+      <p class="lead" id="water-lead">Kilka krótkich pytań o Twój dzień. Każda odpowiedź to kropla dla Twojej roślinki.</p>
+      <button type="button" class="water-btn" id="water-btn">
+        <span class="drop" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg></span>
+        <span class="water-label" id="water-label">Podlej roślinkę</span>
+      </button>
+    </section>
+
+    <!-- Twój tydzień: ogólny bilans + dni połączone z liśćmi na roślince (na razie dane losowe) -->
+    <section class="sec sec-week" id="sec-week" aria-labelledby="week-title">
+      <p class="kicker" id="week-title">Twój tydzień</p>
+      <div class="score">
+        <p class="score-num"><strong id="score-num">0</strong><span>/10</span></p>
+        <p class="score-word" id="score-word"></p>
+      </div>
+      <div class="meter" id="meter" role="img">
+        <span class="meter-fill" id="meter-fill"></span>
+        <span class="meter-prev" id="meter-prev"></span>
+      </div>
+      <p class="trend" id="trend"></p>
+
+      <!-- Zasady roślinki (uzgodnić z zespołem; opis w notes/CLAUDE.md) -->
+      <details class="how">
+        <summary>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg>
+          <span><b>Każdy liść to jeden z ostatnich 7 dni.</b> Stuknij dzień albo liść. <u>Jak to działa?</u></span>
+        </summary>
+        <ul>
+          <li><b>Większy i żywszy liść = lepszy dzień.</b> Wielkość i kolor liścia biorą się z Twojego podlewania tego dnia.</li>
+          <li><b>Dzień bez podlania nic nie psuje.</b> Zostaje po nim mały, uśpiony pąk. Roślinka nie więdnie i nie traci liści — po prostu na Ciebie czeka.</li>
+          <li><b>Nie ma resetu tygodnia.</b> Codziennie o północy najstarszy liść opada, a na górze wyrasta pąk na nowy dzień. „Twój tydzień” to zawsze ostatnie 7 dni.</li>
+          <li><b>Kwiat</b> jest otwarty, gdy w ostatnich 7 dniach podlejesz roślinkę co najmniej 3 razy. Jeśli nie — zamyka się w pąk i otwiera przy następnym podlaniu.</li>
+        </ul>
+      </details>
+      <div class="days" id="days" role="group" aria-label="Dni tygodnia"></div>
+      <p class="day-detail" id="day-detail" aria-live="polite"></p>
+    </section>
+
+    <!-- Myśl na dziś: gdy tu dojdziesz, na czubku roślinki rozkwita kwiat -->
+    <section class="sec sec-quote" id="sec-quote" aria-labelledby="quote-title">
+      <p class="kicker" id="quote-title">Myśl na dziś</p>
+      <blockquote class="quote" id="quote"></blockquote>
+    </section>
+
+    <footer class="plant-foot">
+      <b id="plant-name">Mięta</b>
+      <span id="plant-days"></span>
+    </footer>
+  </div>
+</main>
+
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+
+<!-- Arkusz: kolor roślinki (aktualny motyw zaznaczony; zmiana od razu przebarwia roślinkę i się zapisuje) -->
+<section class="bsheet" id="color-sheet" role="dialog" aria-modal="true" aria-labelledby="color-title" hidden>
+  <span class="grabber" aria-hidden="true"></span>
+  <h2 class="sos-title" id="color-title">Kolor roślinki</h2>
+  <p class="sos-sub">Razem z roślinką zmieni się cała aplikacja.</p>
+  <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="color-title"></div>
+  <button type="button" class="sos-close" data-close>Gotowe</button>
+</section>
+
+<!-- Arkusz SOS -->
+<section class="bsheet" id="sos-sheet" role="dialog" aria-modal="true" aria-labelledby="sos-title" hidden>
+  <span class="grabber" aria-hidden="true"></span>
+  <h2 class="sos-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sos-sub">Rozmowa naprawdę może pomóc. Tu szybko znajdziesz pomoc.</p>
+  <!-- Numery do potwierdzenia przez zespół (notes/CLAUDE.md) -->
+  <ul class="sos-list">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sos-close" data-close>Zamknij</button>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

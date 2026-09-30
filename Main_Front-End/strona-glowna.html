@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Strona główna</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/home.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/home-scene.js" defer></script>
+  <script src="js/home.js" defer></script>
+</head>
+<body>
+
+<!-- Tło: gałąź, liście, świetliki (js/home-scene.js). Rośnie i rozgałęzia się przy przewijaniu. -->
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<!-- SOS: zawsze pod ręką, także po przewinięciu -->
+<button type="button" class="sos" id="sos-open" aria-haspopup="dialog">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+  <span>SOS</span>
+</button>
+
+<main class="page">
+  <header class="top">
+    <span class="logo-ph" aria-label="Logo aplikacji (miejsce na logo)">logo</span>
+  </header>
+
+  <!-- Powitanie -->
+  <section class="greet" id="greet" aria-labelledby="greet-title">
+    <p class="greet-date" id="greet-date"></p>
+    <h1 id="greet-title">Dzień dobry!</h1>
+    <p class="greet-sub" id="greet-sub"></p>
+  </section>
+
+  <!-- Liść 1: codzienne podlewanie (wpis o samopoczuciu). Sam przycisk — pytania dojdą później. -->
+  <article class="leaf-card leaf-card--hero" data-branch-leaf="water" aria-labelledby="water-title">
+    <svg class="leaf-bg" aria-hidden="true"></svg>
+    <div class="leaf-in">
+      <p class="leaf-kicker">Codzienne podlewanie</p>
+      <h2 id="water-title">Jak się dziś czujesz?</h2>
+      <button type="button" class="water-btn" id="water-btn">
+        <span class="drop" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg>
+        </span>
+        <span class="water-label">Podlej roślinkę</span>
+      </button>
+    </div>
+  </article>
+
+  <!-- Liść 2: ogólny bilans tygodnia (na razie dane losowe) -->
+  <article class="leaf-card leaf-card--stat" data-branch-leaf="stat" aria-labelledby="stat-title">
+    <svg class="leaf-bg" aria-hidden="true"></svg>
+    <div class="leaf-in">
+      <p class="leaf-kicker" id="stat-title">Twój tydzień</p>
+      <div class="score">
+        <p class="score-num"><strong id="score-num">0</strong><span>/10</span></p>
+        <p class="score-word" id="score-word"></p>
+      </div>
+      <div class="meter" id="meter" role="img">
+        <span class="meter-fill" id="meter-fill"></span>
+        <span class="meter-prev" id="meter-prev"></span>
+      </div>
+      <p class="trend" id="trend"></p>
+      <div class="cols" id="cols" role="img"></div>
+    </div>
+  </article>
+
+  <!-- Koniec gałęzi: kwiat i myśl na dziś -->
+  <section class="bloom" aria-labelledby="quote-title">
+    <span class="flower-anchor" id="flower-anchor" aria-hidden="true"></span>
+    <p class="bloom-kicker" id="quote-title">Myśl na dziś</p>
+    <blockquote class="bloom-quote" id="quote"></blockquote>
+  </section>
+
+  <footer class="plant-foot">
+    <b id="plant-name">Mięta</b>
+    <span id="plant-days"></span>
+  </footer>
+</main>
+
+<!-- Arkusz SOS -->
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+<section class="sheet" id="sos-sheet" role="dialog" aria-modal="true" aria-labelledby="sos-title" hidden>
+  <span class="sheet-grabber" aria-hidden="true"></span>
+  <h2 class="sheet-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sheet-sub">Rozmowa naprawdę może pomóc. Tu szybko znajdziesz pomoc.</p>
+  <!-- Numery do potwierdzenia przez zespół (notes/CLAUDE.md) -->
+  <ul class="sos-list">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sheet-close" data-close>Zamknij</button>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

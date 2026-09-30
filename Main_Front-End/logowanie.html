@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Logowanie</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+
+  <script src="js/plant-scene.js" defer></script>
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/logowanie.js" defer></script>
+</head>
+<body>
+
+<canvas id="scene" aria-hidden="true"></canvas>
+
+<!--
+  Trzy widoki w jednej karcie: logowanie → (opcjonalnie) reset hasła → powitanie.
+  Roślinka czeka już wyrośnięta z pąkami, podrasta przy wpisywaniu danych i rozkwita po zalogowaniu.
+-->
+<main class="layout">
+  <div class="scene-copy" aria-hidden="true">
+    <span class="eyebrow" id="caption-eyebrow">Twoja roślinka</span>
+    <p id="caption">Czeka na Ciebie.</p>
+  </div>
+
+  <section class="card intro login" aria-labelledby="login-title">
+    <div class="steps" id="steps">
+
+      <!-- ========== LOGOWANIE ========== -->
+      <form class="step" id="login" novalidate>
+        <p class="kicker">Logowanie</p>
+        <h1 class="title" id="login-title" tabindex="-1">Dobrze Cię widzieć!</h1>
+        <p class="lead">Zaloguj się, żeby zajrzeć do swojej roślinki.</p>
+
+        <div class="field">
+          <label class="lbl" for="email">E-mail</label>
+          <div class="input-wrap">
+            <input class="input" id="email" name="email" type="email" autocomplete="username" inputmode="email"
+                   autocapitalize="off" spellcheck="false" enterkeyhint="next"
+                   placeholder="twoj@email.pl" aria-describedby="email-err">
+          </div>
+          <p class="err" id="email-err" aria-live="polite"></p>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="password">Hasło</label>
+          <div class="input-wrap">
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password" enterkeyhint="go"
+                   placeholder="Twoje hasło" aria-describedby="password-err caps-hint">
+            <button type="button" class="input-btn" id="pw-toggle" aria-label="Pokaż hasło" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <g class="eye-open"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g>
+                <g class="eye-closed" style="display:none"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></g>
+              </svg>
+            </button>
+          </div>
+          <p class="caps" id="caps-hint" aria-live="polite" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l7 8h-4v5H9v-5H5z"/><path d="M9 20h6"/></svg>
+            Caps Lock jest włączony
+          </p>
+          <p class="err" id="password-err" aria-live="polite"></p>
+        </div>
+
+        <p class="row-end"><button type="button" class="btn-link sm" id="forgot-open">Nie pamiętasz hasła?</button></p>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Zaloguj się</span>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="foot">Nie masz jeszcze konta? <a href="rejestracja.html">Załóż je</a></p>
+      </form>
+
+      <!-- ========== RESET HASŁA ========== -->
+      <form class="step" id="forgot" novalidate hidden>
+        <p class="kicker">Reset hasła</p>
+        <h2 class="title" tabindex="-1">Nie pamiętasz hasła?</h2>
+        <p class="lead" id="forgot-lead">Spokojnie, zdarza się. Podaj e-mail, a wyślemy Ci link do ustawienia nowego hasła.</p>
+
+        <div class="field" id="forgot-field">
+          <label class="lbl" for="femail">E-mail</label>
+          <div class="input-wrap">
+            <input class="input" id="femail" name="email" type="email" autocomplete="email" inputmode="email"
+                   autocapitalize="off" spellcheck="false" enterkeyhint="send"
+                   placeholder="twoj@email.pl" aria-describedby="femail-err">
+          </div>
+          <p class="err" id="femail-err" aria-live="polite"></p>
+        </div>
+
+        <p class="note sent" id="forgot-sent" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>
+          <span id="forgot-sent-text"></span>
+        </p>
+
+        <div class="actions">
+          <button type="button" class="btn btn-back" data-back aria-label="Wróć do logowania">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Wyślij link</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- ========== POWITANIE ========== -->
+      <div class="step step-done" id="welcome" hidden>
+        <div class="badge" aria-hidden="true">
+          <svg viewBox="0 0 64 64">
+            <g transform="translate(32 32)">
+              <g class="petals">
+                <ellipse cy="-12.5" rx="7.5" ry="11.5"/>
+                <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(72)"/>
+                <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(144)"/>
+                <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(216)"/>
+                <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(288)"/>
+              </g>
+              <circle class="core" r="7.5"/>
+              <circle cx="-2.4" cy="-2.4" r="2.6" fill="#fff" opacity=".6"/>
+            </g>
+          </svg>
+        </div>
+        <h2 id="welcome-title" tabindex="-1">Witaj ponownie!</h2>
+        <p id="welcome-text"></p>
+        <div class="actions">
+          <a href="strona-glowna.html" class="btn btn-primary" id="enter-app">
+            Przejdź do aplikacji
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <button type="button" class="btn-link" id="switch-account">Zaloguj się na inne konto</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

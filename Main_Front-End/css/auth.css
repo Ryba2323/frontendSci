@@ -1,5 +1,5 @@
 /*
- * Rejestracja — style ekranu.
+ * Logowanie i rejestracja — wspólne style ekranów.
  * Mobile-first: bazowe style są pod telefon (roślina u góry, formularz jako arkusz od dołu,
  * jedno pytanie na ekran). Układ na komputer: @media (min-width: 900px) na końcu pliku.
  * Kolory i fonty: css/tokens.css
@@ -14,9 +14,9 @@ body {
   font-family: var(--font);
   color: var(--text);
   background:
-    radial-gradient(1100px 700px at 12% 115%, rgba(184, 227, 211, .6), transparent 60%),
-    radial-gradient(900px 600px at 92% -12%, rgba(183, 220, 229, .65), transparent 60%),
-    linear-gradient(180deg, #F4FAFB 0%, #E9F4F6 100%);
+    radial-gradient(1100px 700px at 12% 115%, rgba(var(--mint-rgb), .6), transparent 60%),
+    radial-gradient(900px 600px at 92% -12%, rgba(var(--mist-rgb), .65), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
   background-attachment: fixed;
   min-height: 100vh;
   min-height: 100dvh;
@@ -47,10 +47,30 @@ button, a, label, input { touch-action: manipulation; }
   display: flex; flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  padding-top: clamp(180px, 36vh, 330px);
-  padding-top: clamp(180px, 36svh, 330px);
+  padding-top: clamp(200px, 38vh, 340px);
+  padding-top: clamp(200px, 38svh, 340px);
 }
-.scene-copy { display: none; }
+
+/* Niskie telefony (np. iPhone SE): mniej miejsca na roślinkę, więcej na formularz */
+@media (max-height: 700px) {
+  .layout { padding-top: clamp(170px, 32vh, 240px); padding-top: clamp(170px, 32svh, 240px); }
+}
+
+/* Podpis nad roślinką (telefon: u góry pasa ze sceną) */
+.scene-copy {
+  position: absolute; top: calc(env(safe-area-inset-top) + 14px); left: 16px; right: 16px;
+  text-align: center; pointer-events: none;
+}
+.scene-copy .eyebrow {
+  display: block; margin-bottom: 3px;
+  font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--primary);
+}
+.scene-copy p {
+  margin: 0; font-size: .86rem; line-height: 1.4; font-weight: 600; color: #56727B;
+  transition: opacity .5s ease, transform .5s ease;
+}
+.scene-copy p.fade { opacity: 0; transform: translateY(4px); }
 
 .card {
   --intro-y: 48px;
@@ -58,10 +78,9 @@ button, a, label, input { touch-action: manipulation; }
   flex: 1;
   display: flex; flex-direction: column;
   width: 100%;
-  padding: 18px 14px calc(16px + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, .86);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
+  padding: 18px 14px 8px;
+  /* Na telefonie bez backdrop-filter — rozmywanie animowanego canvasu w każdej klatce zacina słabsze telefony */
+  background: var(--sheet);
   border: 1px solid rgba(255, 255, 255, .9);
   border-bottom: 0;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
@@ -87,7 +106,7 @@ button, a, label, input { touch-action: manipulation; }
 .stepper .lbl {
   position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
-.stepper .bar { display: block; height: 4px; border-radius: 4px; background: #DCE9EC; overflow: hidden; }
+.stepper .bar { display: block; height: 4px; border-radius: 4px; background: var(--track); overflow: hidden; }
 .stepper .bar i {
   display: block; height: 100%; border-radius: inherit; background: var(--primary);
   width: calc(var(--fill, 0) * 100%);
@@ -169,7 +188,7 @@ legend { padding: 0; }
   background: transparent; color: #7A8D96; cursor: pointer;
   transition: background .2s, color .2s;
 }
-.input-btn:hover { background: rgba(58, 141, 158, .08); color: var(--primary); }
+.input-btn:hover { background: rgba(var(--primary-rgb), .08); color: var(--primary); }
 .input-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 0; }
 .input-btn svg { width: 20px; height: 20px; transition: transform .5s var(--ease-spring); }
 .input-btn.roll svg { transform: rotate(200deg) scale(.9); }
@@ -192,10 +211,10 @@ legend { padding: 0; }
 .suggest button {
   font: inherit; font-weight: 700; color: var(--primary);
   padding: 4px 10px; border: 0; border-radius: 8px;
-  background: rgba(58, 141, 158, .09); cursor: pointer;
+  background: rgba(var(--primary-rgb), .09); cursor: pointer;
   transition: background .2s;
 }
-.suggest button:hover { background: rgba(58, 141, 158, .16); }
+.suggest button:hover { background: rgba(var(--primary-rgb), .16); }
 .suggest button:focus-visible { outline: 3px solid var(--ring); }
 
 .caps {
@@ -211,11 +230,11 @@ legend { padding: 0; }
   transition: height .3s ease, margin .3s ease, opacity .3s ease;
 }
 .meter.show { height: 16px; margin-top: 12px; opacity: 1; }
-.meter i { flex: 1; height: 4px; border-radius: 4px; background: #E1ECEF; transition: background .35s; }
+.meter i { flex: 1; height: 4px; border-radius: 4px; background: var(--track); transition: background .35s; }
 .meter span { flex: 0 0 auto; min-width: 76px; text-align: right; font-size: .78rem; font-weight: 700; color: var(--text-muted); }
 .meter[data-level="1"] i:nth-of-type(-n+1) { background: #E8957A; }
 .meter[data-level="2"] i:nth-of-type(-n+2) { background: var(--energy); }
-.meter[data-level="3"] i:nth-of-type(-n+3) { background: var(--teal-light); }
+.meter[data-level="3"] i:nth-of-type(-n+3) { background: var(--accent-light); }
 .meter[data-level="4"] i:nth-of-type(-n+4) { background: var(--primary); }
 
 /* ---------- Chipsy (radio / checkbox) ---------- */
@@ -236,7 +255,7 @@ legend { padding: 0; }
 .chip input:focus-visible + span { box-shadow: 0 0 0 4px var(--ring); }
 .chip input:checked + span {
   border-color: var(--c, var(--primary));
-  background: rgba(58, 141, 158, .1);
+  background: rgba(var(--primary-rgb), .1);
   background: color-mix(in srgb, var(--c, var(--primary)) 15%, white);
   color: var(--text);
 }
@@ -253,7 +272,7 @@ legend { padding: 0; }
 .choice { position: relative; display: flex; }
 .choice input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .choice span {
-  position: relative; width: 100%; min-height: 68px;
+  position: relative; width: 100%; min-height: 62px;
   display: flex; flex-direction: column; justify-content: center; gap: 3px;
   padding: 14px 54px 13px 18px; border-radius: 16px;
   border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
@@ -263,7 +282,7 @@ legend { padding: 0; }
 .choice span::after {
   content: ""; position: absolute; right: 18px; top: 50%;
   width: 22px; height: 22px; margin-top: -11px; border-radius: 50%;
-  border: 2px solid #C3D8DD; background: #fff;
+  border: 2px solid var(--line-strong); background: #fff;
   transition: border-color .2s, background .2s, box-shadow .2s;
 }
 .choice b { font-size: 1rem; font-weight: 700; }
@@ -271,11 +290,42 @@ legend { padding: 0; }
 .choice input:hover + span { border-color: var(--line-hover); }
 .choice input:active + span { transform: scale(.98); }
 .choice input:focus-visible + span { box-shadow: 0 0 0 4px var(--ring); }
-.choice input:checked + span { border-color: var(--primary); background: rgba(58, 141, 158, .08); }
+.choice input:checked + span { border-color: var(--primary); background: rgba(var(--primary-rgb), .08); }
 .choice input:checked + span::after { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 4px #fff; }
 
 fieldset[aria-invalid="true"] .chip span,
 fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55); }
+
+/* ---------- Kolor roślinki: próbki motywów ----------
+   Każda próbka ma data-palette="…", więc w środku działają zmienne swojego motywu (css/tokens.css) */
+.swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.swatch { position: relative; display: flex; }
+.swatch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.swatch span {
+  width: 100%; display: flex; flex-direction: column; align-items: center; gap: 9px;
+  padding: 14px 4px 12px; border-radius: 16px;
+  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
+  font-size: .86rem; font-weight: 600; color: #3D4E57;
+  transition: background .2s, border-color .2s, box-shadow .2s, transform .2s;
+  user-select: none;
+}
+.swatch i {
+  position: relative; width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(150deg, var(--plant-leaf-2) 8%, var(--plant-leaf-1) 55%, var(--plant-stem));
+  box-shadow: 0 6px 14px -6px rgba(var(--primary-rgb), .75);
+  transition: transform .4s var(--ease-spring);
+}
+/* kwiatek w rogu próbki */
+.swatch i::after {
+  content: ""; position: absolute; right: -3px; top: -3px; width: 17px; height: 17px; border-radius: 50%;
+  background: radial-gradient(circle, var(--plant-core) 0 32%, var(--plant-flower) 36%);
+  border: 2px solid #fff;
+}
+.swatch input:hover + span { border-color: var(--line-hover); }
+.swatch input:active + span { transform: scale(.97); }
+.swatch input:focus-visible + span { box-shadow: 0 0 0 4px var(--ring); }
+.swatch input:checked + span { border-color: var(--primary); background: rgba(var(--primary-rgb), .09); color: var(--text); }
+.swatch input:checked + span i { transform: scale(1.12); }
 
 /* ---------- Zgody ---------- */
 .check {
@@ -285,13 +335,13 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
   font-size: .95rem; line-height: 1.45; color: #3D4E57;
   transition: border-color .2s, background .2s;
 }
-.check:has(input:checked) { border-color: rgba(58, 141, 158, .55); background: rgba(58, 141, 158, .06); }
+.check:has(input:checked) { border-color: rgba(var(--primary-rgb), .55); background: rgba(var(--primary-rgb), .06); }
 .reveal .check { margin-top: 10px; }
 .check input {
   appearance: none; -webkit-appearance: none;
   flex: 0 0 24px; width: 24px; height: 24px; margin: 0;
   display: grid; place-content: center;
-  border-radius: 7px; border: 1.5px solid #BCD3D9; background: var(--surface);
+  border-radius: 7px; border: 1.5px solid var(--line-strong); background: var(--surface);
   cursor: pointer;
   transition: background .2s, border-color .2s, box-shadow .2s;
 }
@@ -315,7 +365,7 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
 .note {
   display: flex; gap: 12px; align-items: flex-start;
   margin: 16px 0 0; padding: 14px 16px; border-radius: 16px;
-  background: rgba(183, 220, 229, .35); border: 1px solid rgba(183, 220, 229, .8);
+  background: rgba(var(--mist-rgb), .35); border: 1px solid rgba(var(--mist-rgb), .8);
   font-size: .84rem; line-height: 1.5; color: #3F5660;
 }
 .note svg { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px; color: var(--primary); }
@@ -323,7 +373,13 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
 /* ================================================================
    Przyciski — na telefonie przyklejone do dołu arkusza (strefa kciuka)
    ================================================================ */
-.actions { display: flex; gap: 10px; margin-top: auto; padding-top: 22px; }
+/* Przyklejone do dołu ekranu — CTA widoczne nawet, gdy treść ekranu jest dłuższa niż telefon */
+.actions {
+  position: sticky; bottom: 0; z-index: 2;
+  display: flex; gap: 10px; margin-top: auto;
+  padding: 22px 0 calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--sheet) 75%, transparent);
+}
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   height: 56px; padding: 0 22px; border: 0; border-radius: 16px;
@@ -331,18 +387,18 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
   transition: background .2s, transform .15s, box-shadow .2s, color .2s;
 }
 .btn svg { width: 20px; height: 20px; }
-.btn:focus-visible { outline: 3px solid rgba(58, 141, 158, .4); outline-offset: 2px; }
+.btn:focus-visible { outline: 3px solid rgba(var(--primary-rgb), .4); outline-offset: 2px; }
 .btn-primary {
   flex: 1; background: var(--primary); color: #fff;
-  box-shadow: 0 12px 26px -12px rgba(58, 141, 158, .85);
+  box-shadow: 0 12px 26px -12px rgba(var(--primary-rgb), .85);
 }
-.btn-primary:hover { background: var(--primary-hover); box-shadow: 0 14px 30px -12px rgba(58, 141, 158, .95); }
+.btn-primary:hover { background: var(--primary-hover); box-shadow: 0 14px 30px -12px rgba(var(--primary-rgb), .95); }
 .btn-primary:active { transform: translateY(1px) scale(.99); }
 .btn-primary svg { transition: transform .25s var(--ease-out); }
 .btn-primary:hover .arrow { transform: translateX(3px); }
 .btn-primary:hover .sprout { transform: rotate(-12deg) scale(1.1); }
-.btn-back { flex: 0 0 56px; padding: 0; background: rgba(58, 141, 158, .09); color: var(--primary); }
-.btn-back:hover { background: rgba(58, 141, 158, .16); }
+.btn-back { flex: 0 0 56px; padding: 0; background: rgba(var(--primary-rgb), .09); color: var(--primary); }
+.btn-back:hover { background: rgba(var(--primary-rgb), .16); }
 
 #step3[data-last="true"] .arrow,
 #step3:not([data-last="true"]) .sprout { display: none; }
@@ -357,6 +413,38 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
 .foot { margin: 16px 0 0; text-align: center; font-size: .9rem; color: var(--text-muted); }
 
 /* ================================================================
+   Logowanie (oba pola na jednym ekranie, także na telefonie)
+   ================================================================ */
+.kicker {
+  margin: 0 0 10px; font-size: .74rem; font-weight: 700; line-height: 1.4;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--primary);
+}
+.title {
+  margin: 0 0 6px; font-size: 1.6rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; color: var(--text);
+}
+.title:focus { outline: none; }
+.lead { margin: 0 0 22px; font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
+.lbl { display: block; margin: 0 0 8px; font-size: .875rem; font-weight: 700; color: var(--text); }
+.login .field + .field { margin-top: 16px; }
+
+.row-end { display: flex; justify-content: flex-end; margin: 6px 0 0; }
+.btn-link.sm { align-self: auto; margin-right: -10px; padding: 8px 10px; font-size: .86rem; color: var(--primary); }
+
+.note.sent { margin-top: 0; }
+
+/* Przycisk w trakcie wysyłania: kręciołek zamiast strzałki */
+.spinner {
+  display: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, .35); border-top-color: #fff;
+  animation: spin .8s linear infinite;
+}
+.btn.is-loading { cursor: progress; }
+.btn.is-loading .spinner { display: block; }
+.btn.is-loading .arrow { display: none; }
+.btn:disabled { opacity: .85; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ================================================================
    Ekran końcowy
    ================================================================ */
 .step-done { text-align: center; padding: 10px 0 0; }
@@ -364,15 +452,17 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
 .badge {
   position: relative; width: 88px; height: 88px; margin: 6px auto 22px; border-radius: 50%;
   display: grid; place-items: center;
-  background: radial-gradient(circle at 35% 30%, #fff, #E4F4EF 70%);
-  box-shadow: 0 0 0 8px rgba(184, 227, 211, .45), 0 18px 34px -14px rgba(58, 141, 158, .6);
+  background: radial-gradient(circle at 35% 30%, #fff, rgba(var(--mint-rgb), .55) 70%);
+  box-shadow: 0 0 0 8px rgba(var(--mint-rgb), .45), 0 18px 34px -14px rgba(var(--primary-rgb), .6);
 }
 .badge::before {
   content: ""; position: absolute; inset: -8px; border-radius: 50%;
-  border: 2px solid rgba(120, 201, 183, .6);
+  border: 2px solid var(--plant-leaf-2);
   animation: pulse 3s ease-out infinite;
 }
 .badge svg { width: 54px; height: 54px; }
+.badge .petals { fill: var(--plant-flower); }
+.badge .core { fill: var(--plant-core); }
 .step-done.is-entering .badge svg { animation: bloom 1.2s var(--ease-spring) .4s both; }
 @keyframes bloom { from { transform: scale(.2) rotate(-90deg); opacity: 0; } }
 @keyframes pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.35); opacity: 0; } }
@@ -426,21 +516,14 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
   }
 
   .scene-copy {
-    display: block;
+    position: static;
     grid-column: 1; grid-row: 1;
     align-self: start; justify-self: center;
     text-align: center; max-width: 380px; margin-top: 1vh;
   }
-  .scene-copy .eyebrow {
-    display: inline-block; margin-bottom: 8px;
-    font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--primary);
-  }
-  .scene-copy p {
-    margin: 0; font-size: 1.05rem; line-height: 1.5; font-weight: 500; color: #56727B;
-    transition: opacity .6s ease, transform .6s ease;
-  }
-  .scene-copy p.fade { opacity: 0; transform: translateY(6px); }
+  .scene-copy .eyebrow { display: inline-block; margin-bottom: 8px; font-size: .72rem; }
+  .scene-copy p { font-size: 1.05rem; line-height: 1.5; font-weight: 500; }
+  .scene-copy p.fade { transform: translateY(6px); }
 
   .card {
     --intro-y: 18px;
@@ -455,7 +538,7 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
     box-shadow:
       0 1px 0 rgba(255, 255, 255, .9) inset,
       0 28px 64px -24px rgba(30, 42, 50, .22),
-      0 10px 28px -14px rgba(58, 141, 158, .22);
+      0 10px 28px -14px rgba(var(--primary-rgb), .22);
   }
   .card > .stepper, .card > .steps { max-width: none; }
 
@@ -470,7 +553,7 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
   .stepper li:last-child { flex: 0 0 auto; }
   .stepper li::after {
     content: ""; flex: 1; height: 2px; min-width: 12px; margin: 0 10px; border-radius: 2px;
-    background: #DCE9EC linear-gradient(var(--primary), var(--primary)) no-repeat;
+    background: var(--track) linear-gradient(var(--primary), var(--primary)) no-repeat;
     background-size: 0% 100%;
     transition: background-size .8s var(--ease-in-out);
   }
@@ -481,7 +564,7 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
     flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
     display: grid; place-items: center;
     font-size: .78rem; font-weight: 700;
-    background: var(--surface); border: 1.5px solid #D3E3E7; color: var(--text-soft);
+    background: var(--surface); border: 1.5px solid var(--line-strong); color: var(--text-soft);
     transition: background .3s, border-color .3s, color .3s, box-shadow .3s;
   }
   .stepper .dot svg { width: 14px; height: 14px; }
@@ -525,6 +608,10 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
   .choice span::after { display: none; }
   .choice b { font-size: .9rem; }
   .choice small { font-size: .76rem; }
+  .swatches { grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .swatch span { gap: 7px; padding: 10px 2px 8px; border-radius: var(--radius-sm); font-size: .72rem; }
+  .swatch i { width: 32px; height: 32px; }
+  .swatch i::after { width: 13px; height: 13px; right: -4px; top: -4px; }
 
   .check { padding: 0; border: 0; border-radius: 0; background: none; font-size: .9rem; }
   .check:has(input:checked) { background: none; }
@@ -532,11 +619,11 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
   .check input { flex-basis: 22px; width: 22px; height: 22px; }
   .note { margin-top: 20px; font-size: .82rem; }
 
-  .actions { margin-top: 24px; padding-top: 0; }
+  .actions { position: static; margin-top: 24px; padding: 0; background: none; }
   .btn { height: 52px; border-radius: var(--radius-md); font-size: 1rem; }
   .btn-back { flex-basis: 52px; }
 
-  .foot { margin-top: 18px; padding-top: 18px; border-top: 1px solid #E3EEF1; font-size: .88rem; }
+  .foot { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); font-size: .88rem; }
   .step-done { padding: 8px 0 4px; }
 }
 

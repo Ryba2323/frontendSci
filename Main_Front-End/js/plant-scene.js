@@ -1,14 +1,19 @@
 /*
- * Scena w tle rejestracji (canvas 2D).
+ * Scena w tle ekranów logowania i rejestracji (canvas 2D).
  *
- * Luźne listki unoszą się w tle → w etapie 2 zlatują się wirem i tworzą roślinę →
- * w etapie 3 roślina się rozrasta i wypuszcza pąki → po rejestracji kwitnie i gubi płatki.
+ * Nasionko → kiełek i pierwsze liście (etap 1) → łodyga z gałązkami, liście zlatują się wirem (etap 2)
+ * → korona i pąki (etap 3) → po rejestracji kwitnie i gubi płatki. Roślina rośnie z każdym
+ * wypełnionym polem, nie tylko przy zmianie etapu.
  * Do tego świetliki krążące wokół rośliny, miękki bokeh, reakcja na kursor i na pisanie.
  *
  * API (window.PlantScene):
- *   setStage(n, progress)  n: 1–3 = etapy formularza, 4 = gotowe; progress 0–1 = wypełnienie etapu
- *   setProgress(progress)  mikro-wzrost podczas wypełniania bieżącego etapu
- *   rustle(amount)         poruszenie liśćmi, np. przy pisaniu
+ *   setStage(n, progress)      n: 1–3 = etapy formularza, 4 = rozkwit; progress 0–1 = wypełnienie etapu
+ *   setProgress(progress)      wzrost podczas wypełniania bieżącego etapu
+ *   setGrowth(g, { instant })  bezpośrednio: 0 = nasionko … 2 = pąki, 3 = rozkwit (np. logowanie)
+ *   rustle(amount)             poruszenie liśćmi, np. przy pisaniu
+ *
+ * Kolory rośliny i tła bierze z motywu (css/tokens.css, zmienne --plant-*); po zdarzeniu 'themechange'
+ * (js/theme.js) płynnie się przebarwia.
  */
 (function () {
   'use strict';
@@ -44,12 +49,74 @@
   const flipScale = phi => { const c = Math.cos(phi); return (c < 0 ? -1 : 1) * Math.max(.14, Math.abs(c)); };
 
   // ================================================================
+  //  Kolory — z motywu (css/tokens.css), z płynnym przejściem przy zmianie
+  // ================================================================
+  const hex = h => {
+    h = (h || '').trim().replace('#', '');
+    if (h.length === 3) h = h.replace(/./g, c => c + c);
+    const n = parseInt(h, 16) || 0x888888;
+    return [n >> 16 & 255, n >> 8 & 255, n & 255];
+  };
+  const mixC = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  const WHITE = [255, 255, 255], INK = [20, 34, 40];
+  const tint = (c, t) => mixC(c, WHITE, t);
+  const shade = (c, t) => mixC(c, INK, t);
+  const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+
+  // Z kilku kolorów motywu wyprowadzamy całą paletę sceny
+  function readPalette() {
+    const cs = getComputedStyle(document.documentElement);
+    const v = name => hex(cs.getPropertyValue(name));
+    const stem = v('--plant-stem'), l1 = v('--plant-leaf-1'), l2 = v('--plant-leaf-2'), l3 = v('--plant-leaf-3');
+    const flower = v('--plant-flower'), tip = v('--plant-flower-tip');
+    const deep = (c, t) => mixC(c, stem, t); // ciemniejsza strona liścia — w stronę łodygi, żeby nie szarzała
+    return {
+      stems: [stem, mixC(stem, l1, .28), mixC(stem, l2, .45)],
+      leaves: [
+        [l1, deep(l1, .35)], [l2, deep(l2, .3)], [l3, deep(l3, .35)],
+        [tint(l2, .22), deep(l2, .12)], [deep(l1, .18), deep(l1, .5)], [tint(l1, .35), tint(l1, .08)],
+      ],
+      sprout: [tint(l2, .15), shade(l2, .12)],
+      calyx: shade(l2, .18),
+      flower, tip, petal: mixC(flower, tip, .35), core: v('--plant-core'),
+      seed: v('--primary'),
+      ground: [tint(v('--plant-ground'), .4), v('--plant-ground')],
+      halo: l2, glow: v('--plant-glow'),
+      bokeh: [v('--mist'), v('--mint'), v('--accent-light'), flower],
+    };
+  }
+  const lerpDeep = (a, b, t) => typeof a[0] === 'number' ? mixC(a, b, t) : a.map((x, i) => lerpDeep(x, b[i], t));
+  function lerpPalette(a, b, t) {
+    const out = {};
+    for (const k in a) out[k] = lerpDeep(a[k], b[k], t);
+    return out;
+  }
+
+  let pal = readPalette();     // bieżące kolory (tablice RGB)
+  let palFrom = pal, palTo = pal, palT = 1;
+  let C = {};                  // te same kolory jako napisy dla canvasu
+  function bakeColors() {
+    C = {
+      stems: pal.stems.map(c => rgba(c)),
+      leaves: pal.leaves.map(([a, b]) => [rgba(a), rgba(b)]),
+      sprout: pal.sprout.map(c => rgba(c)),
+      calyx: rgba(pal.calyx), flower: rgba(pal.flower), tip: rgba(pal.tip), petal: rgba(pal.petal), core: rgba(pal.core),
+      seed: rgba(pal.seed), ground: pal.ground.map(c => rgba(c)),
+    };
+  }
+
+  // ================================================================
   //  Etapy
   // ================================================================
-  // Wzrost g: 0 = nasionko · 1 = etap 2 · 2 = etap 3 (pąki) · 3 = rozkwit
-  const STAGE_BASE = { 1: 0, 2: 1, 3: 2, 4: 3 };
-  // Ile dodatkowego wzrostu dają wypełnione pola w danym etapie
-  const STAGE_MICRO = { 1: .19, 2: .24, 3: .1, 4: 0 };
+  // Wzrost g: 0 = nasionko · 1 = pełna łodyga · ~1.8 = pąki · 2–3 = rozkwit.
+  // Każdy etap ma swój przedział — roślina przechodzi go pole po polu:
+  //   1: kiełek → młoda roślinka z pierwszymi liśćmi i gałązkami
+  //   2: dorasta łodyga, nowe gałązki i dużo liści
+  //   3: korona, pąki, pierwszy kwiat zaczyna się otwierać
+  //   4: pełny rozkwit
+  const STAGES = { 1: [0, .78], 2: [.78, 1.5], 3: [1.5, 2.12], 4: [3, 3] };
+  // Od jakiego wzrostu pojawiają się kolejne grupy świetlików
+  const FIREFLY_AT = { 1: 0, 2: .78, 3: 1.5, 4: 2.5 };
   // Sztywność sprężyny wzrostu (większa = szybciej)
   const SPRING = { forward: 1.55, back: 2.3, micro: 1.9 };
 
@@ -59,14 +126,14 @@
   //  gałęzi, w = grubość [nasada, koniec], g = przedział wzrostu, w którym gałąź się wydłuża.
   // ================================================================
   const BRANCHES = [
-    { id: 'm1',  parent: null, t: 0,   c: [[-5, -17], [6, -35], [0, -52]],     w: [1.75, 1.15], g: [0, 1],       col: '#2F7F8F' },
-    { id: 'l1',  parent: 'm1', t: .45, c: [[-7, -3], [-15, -10], [-25, -21]],  w: [.85, .35],   g: [.5, .98],    col: '#3A8D9E' },
-    { id: 'r1',  parent: 'm1', t: .62, c: [[7, -3], [15, -9], [24, -19]],      w: [.8, .33],    g: [.66, 1],     col: '#3A8D9E' },
-    { id: 'm2',  parent: 'm1', t: 1,   c: [[-5, -15], [7, -30], [2, -46]],     w: [1.15, .45],  g: [1, 1.84],    col: '#2F7F8F', flower: 5.4 },
-    { id: 'l1b', parent: 'l1', t: .62, c: [[-1, -6], [-4, -11], [-2, -17]],    w: [.45, .22],   g: [1.08, 1.6],  col: '#4A9CA5', flower: 3.8 },
-    { id: 'r1b', parent: 'r1', t: .66, c: [[2, -6], [5, -11], [3, -16]],       w: [.42, .22],   g: [1.18, 1.68], col: '#4A9CA5', flower: 3.8 },
-    { id: 'r2',  parent: 'm2', t: .3,  c: [[8, -2], [17, -9], [27, -21]],      w: [.75, .3],    g: [1.28, 1.84], col: '#3A8D9E', flower: 4.8 },
-    { id: 'l2',  parent: 'm2', t: .56, c: [[-8, -2], [-17, -8], [-26, -17]],   w: [.7, .3],     g: [1.5, 1.93],  col: '#3A8D9E', flower: 4.8 },
+    { id: 'm1',  parent: null, t: 0,   c: [[-5, -17], [6, -35], [0, -52]],     w: [1.75, 1.15], g: [0, 1],       ci: 0 },
+    { id: 'l1',  parent: 'm1', t: .45, c: [[-7, -3], [-15, -10], [-25, -21]],  w: [.85, .35],   g: [.5, .98],    ci: 1 },
+    { id: 'r1',  parent: 'm1', t: .62, c: [[7, -3], [15, -9], [24, -19]],      w: [.8, .33],    g: [.66, 1],     ci: 1 },
+    { id: 'm2',  parent: 'm1', t: 1,   c: [[-5, -15], [7, -30], [2, -46]],     w: [1.15, .45],  g: [1, 1.84],    ci: 0, flower: 5.4 },
+    { id: 'l1b', parent: 'l1', t: .62, c: [[-1, -6], [-4, -11], [-2, -17]],    w: [.45, .22],   g: [1.08, 1.6],  ci: 2, flower: 3.8 },
+    { id: 'r1b', parent: 'r1', t: .66, c: [[2, -6], [5, -11], [3, -16]],       w: [.42, .22],   g: [1.18, 1.68], ci: 2, flower: 3.8 },
+    { id: 'r2',  parent: 'm2', t: .3,  c: [[8, -2], [17, -9], [27, -21]],      w: [.75, .3],    g: [1.28, 1.84], ci: 1, flower: 4.8 },
+    { id: 'l2',  parent: 'm2', t: .56, c: [[-8, -2], [-17, -8], [-26, -17]],   w: [.7, .3],     g: [1.5, 1.93],  ci: 1, flower: 4.8 },
   ];
   const byId = {};
 
@@ -124,6 +191,7 @@
   //  Stan
   // ================================================================
   let W = 0, H = 0, baseX = 0, baseY = 0, S = 6;
+  let fieldY = 0, fieldH = 0;    // pas, w którym unoszą się luźne listki (telefon: między podpisem a kartą)
   let floatScale = 1;            // rozmiar luźnych listków (na telefonie mniejsze)
   let clock = 0;                 // zegar sceny (stoi, gdy karta jest w tle)
   let lastMs = performance.now();
@@ -157,15 +225,10 @@
   // ================================================================
   //  Liście
   // ================================================================
-  const LEAF_COLORS = [
-    ['#5DB3AE', '#3F97A0'], ['#78C9B7', '#55AE9C'], ['#7CC9D4', '#55AAB8'],
-    ['#8FD3C0', '#65B8A4'], ['#4FA3A5', '#35818F'], ['#A2DACB', '#78BFAB'],
-  ];
   const leaves = [];
   const COLS = 7, ROWS = 4;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const [col, dark] = pick(LEAF_COLORS);
       leaves.push({
         nx: (c + rand(.15, .85)) / COLS, ny: .03 + (r + rand(.1, .9)) / ROWS * .9,
         ax: rand(10, 26) * motion, ay: rand(8, 18) * motion,
@@ -173,7 +236,7 @@
         rot: rand(0, TAU), fs: rand(13, 24), fal: rand(.45, .72), wr: rand(.3, .37),
         ft: rand(.25, .6) * (Math.random() < .5 ? -1 : 1), fp: rand(0, TAU),
         ox: 0, oy: 0, vx: 0, vy: 0,
-        col, dark,
+        ci: Math.floor(Math.random() * 6), // odcień z palety motywu
         state: 'float', slot: null, fl: null, pending: false, minStart: 0, fdur: 2, attachedAt: -10,
       });
     }
@@ -182,7 +245,7 @@
   function floatPose(L) {
     return {
       x: L.nx * W + Math.sin(clock * L.f1 + L.ph) * L.ax + L.ox,
-      y: L.ny * H + Math.cos(clock * L.f2 + L.ph * 1.3) * L.ay + L.oy,
+      y: fieldY + L.ny * fieldH + Math.cos(clock * L.f2 + L.ph * 1.3) * L.ay + L.oy,
       a: L.rot + Math.sin(clock * L.f3 + L.ph) * .6 * motion,
       s: L.fs * floatScale, al: L.fal,
       phi: clock * L.ft * motion + L.fp,
@@ -355,19 +418,24 @@
     };
   });
 
-  const BOKEH_RGB = ['183,220,229', '184,227,211', '124,201,212', '246,184,158'];
-  const bokehSprites = BOKEH_RGB.map(rgb => {
+  const bokehSprites = [0, 1, 2, 3].map(() => {
     const c = document.createElement('canvas');
     c.width = c.height = 128;
-    const g = c.getContext('2d');
-    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    gr.addColorStop(0, `rgba(${rgb},1)`);
-    gr.addColorStop(.55, `rgba(${rgb},.5)`);
-    gr.addColorStop(1, `rgba(${rgb},0)`);
-    g.fillStyle = gr;
-    g.fillRect(0, 0, 128, 128);
     return c;
   });
+  // Rysowane od nowa przy zmianie motywu
+  function paintBokeh() {
+    bokehSprites.forEach((c, i) => {
+      const g = c.getContext('2d'), col = pal.bokeh[i];
+      const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      gr.addColorStop(0, rgba(col, 1));
+      gr.addColorStop(.55, rgba(col, .5));
+      gr.addColorStop(1, rgba(col, 0));
+      g.clearRect(0, 0, 128, 128);
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 128, 128);
+    });
+  }
   const bokeh = Array.from({ length: 8 }, (_, i) => ({
     nx: rand(0, 1), ny: rand(0, 1), r: rand(60, 160),
     spr: bokehSprites[i % 4], a: i % 4 === 3 ? rand(.12, .2) : rand(.2, .34),
@@ -433,7 +501,7 @@
     const crownY = baseY - plantH(g) * .55 * S;
     const attract = pointer.active && !pointer.overCard && !reduceMotion;
     for (const f of fireflies) {
-      f.vis += ((stage >= f.st ? 1 : 0) - f.vis) * Math.min(1, dt * 1.2);
+      f.vis += ((growth.target >= FIREFLY_AT[f.st] - 1e-6 ? 1 : 0) - f.vis) * Math.min(1, dt * 1.2);
       const th = clock * f.sp + f.ph;
       let cx, cy, rx, ry;
       if (f.orb) {
@@ -443,7 +511,7 @@
       } else {
         // Po rejestracji świetliki z całego ekranu zlatują się wokół kwitnącej rośliny
         cx = lerp(f.nx * W, baseX + f.cxf * 45 * S, gather * .65);
-        cy = lerp(f.ny * H, crownY + (f.cyf - .6) * 60 * S, gather * .65);
+        cy = lerp(fieldY + f.ny * fieldH, crownY + (f.cyf - .6) * 60 * S, gather * .65);
         rx = f.rx; ry = f.ry;
       }
       const x = cx + Math.cos(th) * rx + Math.sin(clock * 1.3 + f.ph) * 5 * motion;
@@ -485,7 +553,7 @@
   // ================================================================
   //  Rysowanie
   // ================================================================
-  function drawLeaf(x, y, a, len, wr, col, dark, alpha, phi) {
+  function drawLeaf(x, y, a, len, wr, [col, dark], alpha, phi) {
     if (len < .5 || alpha <= .01) return;
     const w = len * wr;
     ctx.save();
@@ -542,7 +610,7 @@
       ws.push(Math.max(1, w));
     }
     ctx.lineCap = 'round';
-    ctx.strokeStyle = b.col;
+    ctx.strokeStyle = C.stems[b.ci];
     for (let i = 1; i <= n; i++) {
       ctx.lineWidth = ws[i];
       ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
@@ -563,8 +631,8 @@
     const ang = branchAng(b, Math.max(.02, r));
     const len = 4.4 * S * easeOutBack(clamp(g / .1)) * k;
     const flutter = Math.sin(clock * 2.1) * .06 * motion;
-    drawLeaf(x, y, ang - .95 + flutter, len, .44, '#8FD3C0', '#65B8A4', 1, 0);
-    drawLeaf(x, y, ang + .95 - flutter, len, .44, '#8FD3C0', '#65B8A4', 1, 0);
+    drawLeaf(x, y, ang - .95 + flutter, len, .44, C.sprout, 1, 0);
+    drawLeaf(x, y, ang + .95 - flutter, len, .44, C.sprout, 1, 0);
   }
 
   function drawFlower(b, idx, g) {
@@ -581,7 +649,7 @@
     ctx.rotate(lerp(tang, -Math.PI / 2, .5 * bloom) + Math.sin(clock * .7 + idx) * .05 + Math.PI / 2);
     ctx.scale(sc, sc);
     // działki kielicha
-    ctx.fillStyle = '#55AE9C';
+    ctx.fillStyle = C.calyx;
     for (const sd of [-1, 1]) {
       ctx.beginPath();
       ctx.ellipse(sd * R * .16, -R * .16, R * .13, R * .34, sd * (.45 + .5 * bloom), 0, TAU);
@@ -590,20 +658,21 @@
     // płatki: zamknięty pąk → otwarty kwiat
     const n = 5, spread = lerp(.16, 1, bloom);
     const pl = R * lerp(.62, 1, bloom), pw = R * lerp(.26, .42, bloom);
+    // Gradient w lokalnych współrzędnych — jeden na kwiat, obraca się razem z płatkiem
+    const grd = ctx.createLinearGradient(0, 0, 0, -pl);
+    grd.addColorStop(0, C.flower);
+    grd.addColorStop(1, C.tip);
+    ctx.fillStyle = grd;
     for (let k = 0; k < n; k++) {
       ctx.save();
       ctx.rotate((k - (n - 1) / 2) * (TAU / n) * spread);
-      const grd = ctx.createLinearGradient(0, 0, 0, -pl);
-      grd.addColorStop(0, '#F3A487');
-      grd.addColorStop(1, '#FBD6C6');
-      ctx.fillStyle = grd;
       ctx.beginPath();
       ctx.ellipse(0, -pl * .52, pw, pl * .52, 0, 0, TAU);
       ctx.fill();
       ctx.restore();
     }
     if (bloom > .02) {
-      ctx.beginPath(); ctx.arc(0, 0, R * .27 * bloom, 0, TAU); ctx.fillStyle = '#F6B86A'; ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, R * .27 * bloom, 0, TAU); ctx.fillStyle = C.core; ctx.fill();
       ctx.beginPath(); ctx.arc(-R * .07, -R * .07, R * .09 * bloom, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fill();
     }
     ctx.restore();
@@ -618,7 +687,7 @@
     ctx.translate(baseX, baseY - 3 * S);
     ctx.rotate(-.35);
     ctx.scale(p, p);
-    ctx.fillStyle = '#3A8D9E';
+    ctx.fillStyle = C.seed;
     ctx.beginPath(); ctx.ellipse(0, 0, 2.3 * S, 1.6 * S, 0, 0, TAU); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.45)';
     ctx.beginPath(); ctx.ellipse(-.7 * S, -.5 * S, .7 * S, .4 * S, -.3, 0, TAU); ctx.fill();
@@ -631,16 +700,16 @@
     ctx.scale(1, .24);
     const R = 34 * S;
     const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-    halo.addColorStop(0, 'rgba(120,201,183,.35)');
-    halo.addColorStop(1, 'rgba(120,201,183,0)');
+    halo.addColorStop(0, rgba(pal.halo, .35));
+    halo.addColorStop(1, rgba(pal.halo, 0));
     ctx.fillStyle = halo;
     ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
     ctx.restore();
 
     const rx = 17 * S, ry = 3.8 * S, cy = baseY + 1.2 * S;
     const mg = ctx.createLinearGradient(0, cy - ry, 0, cy + ry);
-    mg.addColorStop(0, '#CBEBDF');
-    mg.addColorStop(1, '#A4D6C5');
+    mg.addColorStop(0, C.ground[0]);
+    mg.addColorStop(1, C.ground[1]);
     ctx.fillStyle = mg;
     ctx.beginPath(); ctx.ellipse(baseX, cy, rx, ry, 0, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.55)';
@@ -667,7 +736,7 @@
       ctx.rotate(p.rot);
       ctx.scale(1, flipScale(p.phi));
       ctx.globalAlpha = a;
-      ctx.fillStyle = '#F6B89E';
+      ctx.fillStyle = C.petal;
       ctx.beginPath(); ctx.ellipse(0, 0, p.s * .5, p.s, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.35)';
       ctx.beginPath(); ctx.ellipse(-p.s * .12, -p.s * .3, p.s * .16, p.s * .4, 0, 0, TAU); ctx.fill();
@@ -681,7 +750,7 @@
       if (e >= 1) { rings.splice(i, 1); continue; }
       ctx.beginPath();
       ctx.arc(r.x, r.y, lerp(3, 20, easeOutCubic(e)), 0, TAU);
-      ctx.strokeStyle = `rgba(120,201,183,${.55 * (1 - e)})`;
+      ctx.strokeStyle = rgba(pal.halo, .55 * (1 - e));
       ctx.lineWidth = 1.6;
       ctx.stroke();
     }
@@ -705,8 +774,8 @@
     const ph = plantH(g);
     const gy = baseY - ph * .45 * S;
     const glow = ctx.createRadialGradient(baseX, gy, 0, baseX, gy, Math.max(ph, 40) * .95 * S);
-    glow.addColorStop(0, `rgba(184,227,211,${.32 + .2 * clamp(g / 3)})`);
-    glow.addColorStop(1, 'rgba(184,227,211,0)');
+    glow.addColorStop(0, rgba(pal.glow, .32 + .2 * clamp(g / 3)));
+    glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, H);
 
@@ -714,7 +783,7 @@
     for (const L of leaves) {
       if (L.state === 'float' || (L.state === 'fly' && !L.fl.toSlot)) {
         const p = poseOf(L, g);
-        drawLeaf(p.x, p.y, p.a, p.s, L.wr, L.col, L.dark, p.al, p.phi);
+        drawLeaf(p.x, p.y, p.a, p.s, L.wr, C.leaves[L.ci], p.al, p.phi);
       }
     }
 
@@ -729,7 +798,7 @@
     for (const L of leaves) {
       if (L.state === 'attached') {
         const p = poseOf(L, g);
-        drawLeaf(p.x, p.y, p.a, p.s, L.wr, L.col, L.dark, 1, 0);
+        drawLeaf(p.x, p.y, p.a, p.s, L.wr, C.leaves[L.ci], 1, 0);
       }
     }
     FLOWERS.forEach((b, i) => drawFlower(b, i, g));
@@ -739,7 +808,7 @@
     for (const L of leaves) {
       if (L.state === 'fly' && L.fl.toSlot) {
         const p = poseOf(L, g);
-        drawLeaf(p.x, p.y, p.a, p.s, L.wr, L.col, L.dark, p.al, p.phi);
+        drawLeaf(p.x, p.y, p.a, p.s, L.wr, C.leaves[L.ci], p.al, p.phi);
       }
     }
     drawRings();
@@ -753,6 +822,12 @@
 
     stepGrowth(dt);
     const g = growth.g;
+    if (palT < 1) {
+      palT = Math.min(1, palT + dt / 1.1);
+      pal = lerpPalette(palFrom, palTo, easeInOut(palT));
+      bakeColors();
+      paintBokeh();
+    }
     wind *= Math.exp(-dt * 1.4);
     gather += (gatherTarget - gather) * Math.min(1, dt * .8);
 
@@ -780,14 +855,19 @@
       baseX = area / 2 + 10;
       baseY = H - Math.max(36, H * .075);
       S = Math.min(H * .7, area * 1.05) / 100;
+      fieldY = 0; fieldH = H;
       floatScale = 1;
     } else {
-      // Telefon: roślina w pasie nad arkuszem z formularzem (wysokość = górny padding layoutu)
+      // Telefon: roślina w pasie nad arkuszem z formularzem (wysokość = górny padding layoutu),
+      // doniczka tuż nad krawędzią karty, korona pod podpisem u góry
       const hero = parseFloat(getComputedStyle(layout).paddingTop) || 220;
+      const copy = document.querySelector('.scene-copy');
+      const top = copy && copy.offsetHeight ? copy.getBoundingClientRect().bottom + window.scrollY + 6 : 16;
       baseX = W / 2;
-      baseY = hero - 10;
-      S = Math.min(hero * .8, W * .9) / 100;
-      floatScale = .85;
+      baseY = hero - 16;
+      S = clamp(Math.min((baseY - top) / 104, W * .9 / 100), .8, 4);
+      fieldY = top; fieldH = Math.max(60, hero - top - 20);
+      floatScale = .8;
     }
   }
 
@@ -818,8 +898,25 @@
   //  API
   // ================================================================
   function retarget(omega) {
-    const eased = 1 - Math.pow(1 - progress, 2); // pierwsze pole daje wyraźny efekt
-    setTarget(STAGE_BASE[stage] + STAGE_MICRO[stage] * eased, omega);
+    const [a, b] = STAGES[stage];
+    const eased = 1 - Math.pow(1 - progress, 1.6); // pierwsze pole daje wyraźny efekt
+    grow(lerp(a, b, eased), omega);
+  }
+  function grow(target, omega) {
+    setTarget(target, omega);
+    gatherTarget = target >= 3 ? 1 : 0;
+  }
+
+  // Natychmiast do danego wzrostu (np. po odświeżeniu logowania) — liście od razu na gałęziach
+  function snap(target) {
+    growth.g = growth.target = target;
+    growth.v = 0;
+    grow(target, growth.omega);
+    gather = gatherTarget;
+    for (const L of leaves) {
+      if (L.pending) { L.pending = false; L.state = 'attached'; L.attachedAt = -10; L.fl = null; }
+      else if (L.state === 'fly') { L.state = L.fl.toSlot ? 'attached' : 'float'; L.fl = null; }
+    }
   }
 
   window.PlantScene = {
@@ -828,7 +925,6 @@
       stage = n;
       progress = clamp(p);
       retarget(back ? SPRING.back : SPRING.forward);
-      gatherTarget = n === 4 ? 1 : 0;
       if (!back) gust();
     },
     setProgress(p) {
@@ -837,11 +933,29 @@
       progress = p;
       retarget(SPRING.micro);
     },
+    setGrowth(g, opts = {}) {
+      g = clamp(g, 0, 3);
+      if (opts.instant) { snap(g); return; }
+      const d = g - growth.target;
+      grow(g, d > .3 ? SPRING.forward : d >= 0 ? SPRING.micro : SPRING.back);
+      if (d > .3) gust();
+    },
     rustle(amount) {
       wind = Math.min(1.5, wind + amount * motion);
     },
   };
 
+  // Zmiana motywu: roślina płynnie się przebarwia i lekko szeleści
+  window.addEventListener('themechange', () => {
+    palFrom = pal;
+    palTo = readPalette();
+    palT = 0;
+    if (reduceMotion) { pal = palTo; palT = 1; bakeColors(); paintBokeh(); }
+    wind = Math.min(1.5, wind + .5 * motion);
+  });
+
+  bakeColors();
+  paintBokeh();
   window.addEventListener('resize', resize);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
   resize();

@@ -1,0 +1,309 @@
+/*
+ * Strona główna — gałąź z liśćmi.
+ * Tło (gałąź, liście, świetliki) rysuje canvas w js/home-scene.js. Tu są karty-liście i reszta interfejsu.
+ * Mobile-first. Tablet od 700 px, komputer od 1024 px (treść w kolumnie, gałęzie rozchodzą się po bokach).
+ * Kolory tylko z tokenów (css/tokens.css) — wszystko zmienia się z motywem.
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background:
+    radial-gradient(1100px 700px at 12% 110%, rgba(var(--mint-rgb), .55), transparent 60%),
+    radial-gradient(900px 600px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+body.sheet-open { overflow: hidden; }
+button, a { touch-action: manipulation; }
+
+#bg {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+  animation: fade-in 1.4s ease both;
+}
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 15; pointer-events: none; }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+/* ================================================================
+   Układ
+   --strip: pas po lewej, którym biegnie gałąź (na komputerze gałąź jest poza kolumną)
+   ================================================================ */
+.page {
+  --strip: 46px;
+  position: relative; z-index: 1;
+  max-width: 640px; margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 8px calc(env(safe-area-inset-bottom) + 40px) 14px;
+}
+
+.top { height: 44px; display: flex; align-items: center; margin-left: var(--strip); }
+.logo-ph {
+  display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px;
+  border: 1.5px dashed rgba(var(--primary-rgb), .5); background: rgba(255, 255, 255, .6);
+  font-size: .58rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primary-dark);
+}
+
+/* SOS — przyklejony w prawym górnym rogu */
+.sos {
+  position: fixed; z-index: 20;
+  top: calc(env(safe-area-inset-top) + 14px); right: 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 40px; padding: 0 15px 0 12px; border-radius: 999px;
+  border: 1.5px solid rgba(var(--primary-rgb), .3); background: var(--surface);
+  box-shadow: 0 8px 22px -12px rgba(30, 42, 50, .45);
+  font: inherit; font-size: .82rem; font-weight: 800; letter-spacing: .05em; color: var(--primary-dark);
+  cursor: pointer; transition: border-color .2s, transform .15s;
+  animation: rise .8s var(--ease-out) .3s both;
+}
+.sos svg { width: 17px; height: 17px; }
+.sos:hover { border-color: var(--primary); }
+.sos:active { transform: scale(.96); }
+.sos:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* ================================================================
+   Powitanie
+   ================================================================ */
+.greet { margin: 22px 0 30px var(--strip); padding-right: 8px; }
+.greet > * { animation: rise .9s var(--ease-out) both; }
+.greet > :nth-child(2) { animation-delay: .08s; }
+.greet > :nth-child(3) { animation-delay: .16s; }
+.greet-date { margin: 0; font-size: .86rem; font-weight: 600; color: var(--text-muted); }
+.greet h1 { margin: 4px 0 8px; font-size: 2rem; line-height: 1.15; font-weight: 800; letter-spacing: -.03em; }
+.greet-sub { margin: 0; font-size: .98rem; line-height: 1.5; color: var(--text-muted); }
+.greet-sub b { color: var(--primary-dark); font-weight: 700; }
+
+/* ================================================================
+   Karty-liście
+   Nasada po lewej (przy gałęzi), czubek po prawej. Kształt (SVG) liczy js/home.js pod rozmiar karty.
+   Rozwijają się, gdy gałąź do nich doroście (klasa .is-open z js/home-scene.js).
+   ================================================================ */
+.leaf-card {
+  position: relative;
+  margin-left: var(--strip);
+  opacity: 0;
+  transform: scale(.3) rotate(-16deg);
+  transform-origin: 0% 55%;
+  transition: opacity .5s ease, transform 1.15s var(--ease-spring);
+}
+.leaf-card.is-open { opacity: 1; transform: none; }
+.leaf-card + .leaf-card { margin-top: 86px; }
+
+.leaf-bg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.leaf-card--hero .leaf-bg { filter: drop-shadow(0 22px 26px rgba(var(--primary-rgb), .38)); }
+.leaf-card--stat .leaf-bg { filter: drop-shadow(0 18px 24px rgba(var(--primary-rgb), .2)); }
+
+/* Treść w bezpiecznym prostokącie kształtu (x 12–76%) */
+.leaf-in { position: relative; padding: 34px 24% 34px 12%; }
+
+.leaf-kicker {
+  margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+}
+
+/* ---------- Liść 1: podlewanie ---------- */
+.leaf-card--hero { color: #fff; }
+.leaf-card--hero .leaf-kicker { color: rgba(255, 255, 255, .78); }
+.leaf-card--hero h2 {
+  margin: 6px 0 16px; font-size: 1.5rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+}
+
+.water-btn {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 10px;
+  height: 54px; padding: 0 20px 0 7px; border: 0; border-radius: 999px;
+  background: #fff; color: var(--primary-dark);
+  font: inherit; font-size: 1rem; font-weight: 800; white-space: nowrap;
+  box-shadow: 0 12px 24px -12px rgba(0, 0, 0, .45);
+  cursor: pointer;
+  transition: transform .2s var(--ease-spring), box-shadow .2s;
+}
+.water-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 28px -12px rgba(0, 0, 0, .5); }
+.water-btn:active { transform: scale(.96); }
+.water-btn:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+
+.drop {
+  position: relative; flex: 0 0 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(160deg, var(--accent-light), var(--primary));
+}
+.drop svg { width: 20px; height: 20px; fill: #fff; animation: drop-bob 2.6s ease-in-out infinite; }
+/* Fale rozchodzące się od kropli — zaproszenie do kliknięcia */
+.drop::before, .drop::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid var(--primary); opacity: 0;
+  animation: ripple 2.6s ease-out infinite;
+}
+.drop::after { animation-delay: 1.3s; }
+@keyframes ripple { 0% { transform: scale(.9); opacity: .55; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes drop-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+
+/* Po kliknięciu: kropla „wylewa się” */
+.water-btn.is-pouring .drop svg { animation: pour .7s var(--ease-spring); }
+@keyframes pour {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(5px) scale(.7, 1.2); }
+  60% { transform: translateY(-3px) scale(1.15, .9); }
+  100% { transform: none; }
+}
+
+/* ---------- Liść 2: bilans ---------- */
+.leaf-card--stat .leaf-kicker { color: var(--primary-dark); }
+.score { display: flex; align-items: flex-end; gap: 12px; margin-top: 8px; }
+.score-num { display: flex; align-items: baseline; gap: 3px; margin: 0; }
+.score-num strong { font-size: 2.7rem; line-height: .95; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.score-num span { font-size: 1rem; font-weight: 700; color: var(--text-muted); }
+.score-word { margin: 0 0 4px; font-size: .88rem; line-height: 1.3; font-weight: 700; color: var(--text); }
+
+/* Główny słupek: ogólny wynik tygodnia (+ znacznik zeszłego tygodnia) */
+.meter {
+  position: relative; height: 14px; margin-top: 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, .75);
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), .15);
+}
+.meter-fill {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-light), var(--primary));
+  transition: width 1.4s var(--ease-out) .25s;
+}
+.meter-fill::after {
+  content: ""; position: absolute; right: -3px; top: 50%; width: 20px; height: 20px; margin-top: -10px;
+  border-radius: 50%; background: var(--surface); border: 3px solid var(--primary);
+  box-shadow: 0 4px 10px -3px rgba(var(--primary-rgb), .6);
+}
+.meter-prev {
+  position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; border-radius: 2px;
+  background: var(--text-soft); opacity: 0; transition: opacity .6s ease 1.2s;
+}
+.is-open .meter-prev { opacity: .7; }
+.trend { margin: 10px 0 0; font-size: .8rem; line-height: 1.4; color: var(--text-muted); }
+.trend b { color: var(--primary-dark); }
+
+/* Mini-słupki: 7 dni */
+.cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; align-items: end; height: 58px; margin-top: 14px; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+.col i {
+  display: block; width: 100%; max-width: 20px; height: calc(var(--v) * 100% - 16px); min-height: 4px;
+  border-radius: 7px 7px 4px 4px;
+  background: rgba(var(--primary-rgb), .35);
+  transform: scaleY(0); transform-origin: 50% 100%;
+  transition: transform .9s var(--ease-spring);
+  transition-delay: calc(.5s + var(--k) * 70ms);
+}
+.col.is-today i { background: var(--primary); }
+.col span { font-size: .64rem; font-weight: 700; color: var(--text-soft); line-height: 1; }
+.col.is-today span { color: var(--primary-dark); }
+.is-open .col i { transform: none; }
+
+/* ================================================================
+   Koniec gałęzi: kwiat i myśl na dziś
+   ================================================================ */
+.bloom { position: relative; margin: 60px 0 0 var(--strip); padding: 150px 12px 0; text-align: center; }
+.flower-anchor { position: absolute; left: 50%; top: 66px; width: 1px; height: 1px; }
+.bloom-kicker { margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary); }
+.bloom-quote {
+  max-width: 300px; margin: 8px auto 0;
+  font-size: 1.12rem; line-height: 1.5; font-weight: 700; letter-spacing: -.01em; color: var(--text);
+}
+.bloom > :not(.flower-anchor) { opacity: 0; transform: translateY(12px); transition: opacity .8s ease .5s, transform .8s var(--ease-out) .5s; }
+.bloom.is-open > :not(.flower-anchor) { opacity: 1; transform: none; }
+
+.plant-foot { margin: 48px 0 0 var(--strip); text-align: center; font-size: .84rem; line-height: 1.5; color: var(--text-muted); }
+.plant-foot b { display: block; font-size: 1rem; color: var(--text); }
+
+/* ================================================================
+   Arkusz SOS
+   ================================================================ */
+.sheet-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(30, 42, 50, .38); opacity: 0; transition: opacity .3s ease; }
+.sheet-backdrop.is-open { opacity: 1; }
+.sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
+  max-width: 520px; margin: 0 auto; max-height: calc(100% - 40px); overflow-y: auto;
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  background: var(--sheet); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -20px 50px -20px rgba(30, 42, 50, .4);
+  transform: translateY(105%); transition: transform .45s var(--ease-out);
+}
+.sheet.is-open { transform: none; }
+.sheet-grabber { display: block; width: 44px; height: 5px; margin: 0 auto 16px; border-radius: 5px; background: var(--track); }
+.sheet-title { margin: 0 0 4px; font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+.sheet-sub { margin: 0 0 18px; font-size: .92rem; line-height: 1.5; color: var(--text-muted); }
+.sos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sos-item {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--text); text-decoration: none;
+}
+.sos-item:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.sos-item b { display: block; font-size: 1rem; }
+.sos-item small { display: block; margin-top: 2px; font-size: .8rem; line-height: 1.4; color: var(--text-muted); }
+.sos-ico { flex: 0 0 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); }
+.sos-ico svg { width: 21px; height: 21px; }
+.sos-item.is-main { border-color: var(--primary); background: rgba(var(--primary-rgb), .07); }
+.sos-item.is-main .sos-ico { background: var(--primary); color: #fff; }
+.sheet-close {
+  width: 100%; height: 52px; margin-top: 14px; border: 0; border-radius: 16px;
+  background: rgba(var(--primary-rgb), .1); color: var(--primary-dark);
+  font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
+}
+.sheet-close:focus-visible { outline: 3px solid var(--ring); }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 40;
+  max-width: calc(100% - 32px); padding: 12px 18px; border-radius: var(--radius-md);
+  background: var(--text); color: #fff; font-size: .88rem; font-weight: 600; text-align: center;
+  box-shadow: 0 16px 30px -12px rgba(30, 42, 50, .5);
+  transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ================================================================
+   Tablet (od 700 px)
+   ================================================================ */
+@media (min-width: 700px) {
+  .page { --strip: 64px; padding-left: 24px; padding-right: 24px; }
+  .greet { margin-top: 40px; }
+  .greet h1 { font-size: 2.5rem; }
+  .greet-sub { font-size: 1.05rem; }
+  .leaf-in { padding: 40px 24% 40px 12%; }
+  .leaf-card--hero h2 { font-size: 1.85rem; }
+  .leaf-card + .leaf-card { margin-top: 100px; }
+  .sos { top: 20px; right: 22px; }
+}
+
+/* ================================================================
+   Komputer (od 1024 px): kolumna na środku, gałąź biegnie tuż obok, a jej odnogi zajmują boki
+   ================================================================ */
+@media (min-width: 1024px) {
+  .page { --strip: 0px; max-width: 580px; padding-top: 28px; }
+  .greet { margin-top: 56px; }
+  .greet h1 { font-size: 2.8rem; }
+  .sheet {
+    bottom: 50%; max-width: 460px; border-radius: var(--radius-lg);
+    transform: translateY(calc(50% + 30px)); opacity: 0; transition: transform .4s var(--ease-out), opacity .3s;
+  }
+  .sheet.is-open { transform: translateY(50%); opacity: 1; }
+  .sos { top: 24px; right: 32px; }
+}
+
+/* Podgląd (?widok=…): bez animacji */
+.is-static *, .is-static *::before, .is-static *::after { animation: none !important; transition: none !important; }
+
+/* Ograniczony ruch: bez animacji, wszystko od razu widoczne */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+  }
+}

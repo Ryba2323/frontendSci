@@ -2,10 +2,87 @@
 
 ## Project overview
 
-This started as a school project, but the goal is to take it further. It is an app that helps teenagers with their mental health.
+SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbeing app for teenagers. It started as a school project (vocational internship), and the team wants to take it further. Team: Marcel (founder, backend, Supabase), Waldek (backend), Bartek (design + frontend), Tymek (frontend).
 
-## Front-end
+**This repo is the design prototype**, built in plain HTML/CSS/JS. The target product is **React Native + Expo Router + React Native Web** (iOS, Android and web from one codebase), styled with NativeWind and backed by Supabase. Build every screen here so it ports easily: split screens into components (JS functions that return markup), keep data separate from markup, and take all colours from tokens.
 
-- `Main_Front-End/` — plain HTML/CSS/JS, no build step. Pages must also work opened straight from disk (`file://`), so use classic `<script defer>` files, not ES modules.
-- Colour palette: "Clean Teal" (palette no. 3). Tokens live in `Main_Front-End/css/tokens.css` — reuse them on every new screen.
-- UI copy is in Polish.
+**Read `notes/CLAUDE.md` before designing anything.** It holds the product context from the team's plan: features, tabs, the check-in data model, the target stack, safety rules (crisis lines, PHQ-9 question 9, GDPR Art. 9), the team's decisions and the open questions.
+
+## Working agreements
+
+- UI copy is in **Polish**. Write code comments in Polish too, matching the existing files.
+- **Mobile-first.** Phones are the main target. Every screen also has to look good on a tablet and on desktop.
+- The mood is **calm, modern and orderly**. The **plant is the app's central motif**: it grows as the user takes care of themselves.
+- **Never punish the user.** The plant never wilts or dies, and a missed day never removes anything. Guilt is harmful in a mental-health app.
+- Keep an **SOS button visible** on in-app screens. For now it lists 116 111 (the free, 24/7 helpline for children and young people in Poland) and 112. The team still has to confirm the numbers.
+- Accessibility: use real text rather than text drawn on canvas for anything important, keep visible focus styles, add `aria-*` where it's needed, support `prefers-reduced-motion`, and keep white text on `--primary` at least as readable as the default theme.
+
+## Running it
+
+- There's no build step. Each page also works opened straight from disk (`file://`), so use classic `<script defer>` files and never ES modules.
+- For a local server, serve the `Main_Front-End/` folder with any static server, e.g. `npx serve Main_Front-End` or `python3 -m http.server -d Main_Front-End`, and open `index.html`, which lists all screens.
+- **Test in a phone viewport first**, e.g. 375×812, then tablet (~820) and desktop (≥1024).
+- URL helpers:
+  - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
+  - `?widok=statyczny` renders a page without animation and with demo data (for screenshots and team previews).
+- Canvas scenes only animate while the tab is visible. When the browser tab is in the background (e.g. during automated testing), call `HomeScene.debugAdvance(sec)` / `Home2Scene.debugAdvance(sec)` in the console to step the scene forward manually.
+
+## Structure (`Main_Front-End/`)
+
+| Screen | Files |
+|---|---|
+| Screen index | `index.html` |
+| Login | `logowanie.html`, `js/logowanie.js` |
+| Registration (3 stages, one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
+| Shared by login and registration | `css/auth.css`, `js/auth-common.js` (toast, haptics, password field, `account` storage), `js/plant-scene.js` (growing plant canvas, `window.PlantScene`) |
+| Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
+| **Home page, version 2: plant on top (current direction)** | `strona-glowna-2.html`, `css/home2.css`, `js/home2.js`, `js/home2-scene.js` |
+| Themes and tokens | `css/tokens.css`, `js/theme.js` |
+
+### Colours and themes
+
+- Tokens live in `css/tokens.css`. **Never hard-code theme colours**; use `var(--primary)`, `rgba(var(--primary-rgb), .1)`, `var(--plant-leaf-1)` and so on.
+- The user picks a plant colour at the end of registration, and the whole palette follows it. There are six calm, muted themes and **no reds or neons**:
+  - `morski` (default, the "Clean Teal" palette)
+  - `zielony`
+  - `niebieski`
+  - `lawenda`
+  - `rozowy`
+  - `morelowy`
+- The colour can be changed again on the home page (v2) with the round button next to SOS.
+- `js/theme.js` is loaded **without `defer`** in `<head>`, right after the stylesheets, so the theme is set before first paint. It sets `<html data-theme>`, saves the choice in `localStorage` (`sci.theme`), and fires a `themechange` event on `window`.
+- Canvas scenes read the `--plant-*` tokens (always written as `#RRGGBB`) and recolour smoothly on `themechange`.
+- `[data-palette="<id>"]` gives any element the tokens of a given theme. The colour swatches use this.
+- To add a theme, add one block to `tokens.css` and one entry to the `LIST` in `theme.js`.
+
+### Canvas scenes (the plant)
+
+- All three scenes (`plant-scene.js`, `home-scene.js`, `home2-scene.js`) follow the same pattern. Each is an IIFE that exposes a small API on `window`. Everything is drawn procedurally on a 2D canvas with DPR capped at 2. Growth uses critically damped springs, colours come from theme tokens, and `prefers-reduced-motion` or `?widok` turns the animation off.
+- Geometry uses "plant units", where the full height is about 100 units and y points up (negative). The scene scales these to pixels (`S`) to fit its area.
+- In React Native these would be rebuilt with `react-native-skia` (or SVG + Reanimated), measuring layout with `onLayout`.
+
+### Home page v2: how the plant works
+
+These are the current rules. They are also shown on the page under "Jak działa roślinka?", and the team still has to confirm them.
+
+- The 7 twigs are the **last 7 days**. The window moves every day at midnight, and there is **no weekly reset**.
+- A day with an entry ("Podlewanie" = watering = the daily mood check-in) gets a leaf. Its size and colour intensity come from that day's mood.
+- A day without an entry gets a small, pale "sleeping" bud. Nothing wilts.
+- Today is a bud in a dashed circle, and it opens after watering.
+- The flower is open when there were at least 3 waterings in the last 7 days. Otherwise it closes into a bud and reopens with the next watering.
+- The oldest leaf falls off every day, which the page animates on load.
+- The weekly score is the average of the days that have an entry only.
+- Scrolling:
+  - scroll speed turns into wind;
+  - reaching "Twój tydzień" shows day labels and sends a light wave through the day leaves;
+  - reaching "Myśl na dziś" makes the flower flash and shed petals.
+- Tapping a day leaf or a day bar highlights both, via the `dayselect` event.
+- The stage tint depends on the time of day.
+
+### Data and backend (not built yet)
+
+- There's no backend. Login and password reset are simulated (see `TODO backend` in `js/logowanie.js`).
+- Registration keeps the profile in `localStorage` (`sci.account`) so the other screens can greet the user. It **never stores the password**.
+- The "Twój tydzień" data on the home page is **random demo data**, generated in `js/home2.js` and shaped like the planned `daily_checkins` table: mood 1–10 per day, `null` means no entry.
+- The "Podlej roślinkę" button only plays the animation. The check-in questions flow is still to be designed (`TODO` in `js/home2.js`).
+- There are no tabs or navigation yet, on purpose. The plan's tabs are Dashboard / Skrytka / Tracker / Testy / Blog (see `notes/CLAUDE.md`).

@@ -11,9 +11,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/tokens.css">
-  <link rel="stylesheet" href="css/rejestracja.css">
+  <link rel="stylesheet" href="css/auth.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
 
   <script src="js/plant-scene.js" defer></script>
+  <script src="js/auth-common.js" defer></script>
   <script src="js/rejestracja.js" defer></script>
 </head>
 <body>
@@ -115,7 +118,7 @@
           </button>
         </div>
         <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
-        <p class="foot">Masz już konto? <a href="#">Zaloguj się</a></p>
+        <p class="foot">Masz już konto? <a href="logowanie.html">Zaloguj się</a></p>
       </form>
 
       <!-- ========== ETAP 2: o Tobie ========== -->
@@ -212,6 +215,21 @@
             </div>
           </div>
 
+          <div class="page" data-page="color" tabindex="-1">
+            <fieldset class="field" aria-describedby="color-hint">
+              <legend class="q" id="color-q">Jaki kolor ma mieć Twoja roślinka?</legend>
+              <p class="q-hint" id="color-hint">Razem z nią zmieni się cała aplikacja. Możesz to zmienić później.</p>
+              <div class="swatches">
+                <label class="swatch" data-palette="morski"><input type="radio" name="theme" value="morski" checked><span><i></i>Morski</span></label>
+                <label class="swatch" data-palette="zielony"><input type="radio" name="theme" value="zielony"><span><i></i>Zielony</span></label>
+                <label class="swatch" data-palette="niebieski"><input type="radio" name="theme" value="niebieski"><span><i></i>Niebieski</span></label>
+                <label class="swatch" data-palette="lawenda"><input type="radio" name="theme" value="lawenda"><span><i></i>Lawenda</span></label>
+                <label class="swatch" data-palette="rozowy"><input type="radio" name="theme" value="rozowy"><span><i></i>Różowy</span></label>
+                <label class="swatch" data-palette="morelowy"><input type="radio" name="theme" value="morelowy"><span><i></i>Morelowy</span></label>
+              </div>
+            </fieldset>
+          </div>
+
           <div class="page" data-page="reminder" tabindex="-1">
             <fieldset class="field" aria-describedby="reminder-hint">
               <legend class="q">Kiedy przypominać Ci o check-inie?</legend>
@@ -272,14 +290,14 @@
         <div class="badge" aria-hidden="true">
           <svg viewBox="0 0 64 64">
             <g transform="translate(32 32)">
-              <g fill="#F6B89E">
+              <g class="petals">
                 <ellipse cy="-12.5" rx="7.5" ry="11.5"/>
                 <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(72)"/>
                 <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(144)"/>
                 <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(216)"/>
                 <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(288)"/>
               </g>
-              <circle r="7.5" fill="#F6B86A"/>
+              <circle class="core" r="7.5"/>
               <circle cx="-2.4" cy="-2.4" r="2.6" fill="#fff" opacity=".6"/>
             </g>
           </svg>
@@ -288,7 +306,7 @@
         <p id="done-text"></p>
         <ul class="pills" id="done-pills"></ul>
         <div class="actions">
-          <a href="#" class="btn btn-primary" id="enter-app">
+          <a href="strona-glowna.html" class="btn btn-primary" id="enter-app">
             Przejdź do aplikacji
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>

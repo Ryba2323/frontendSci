@@ -9,6 +9,8 @@
   'use strict';
 
   const Scene = window.PlantScene || { setStage() {}, setProgress() {}, rustle() {} };
+  const { EMAIL_RE, haptic, passwordField, account } = window.AuthCommon;
+  const Theme = window.Theme || { list: [], current: null, apply() {} };
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(pointer: fine)').matches;
   const mqDesktop = window.matchMedia('(min-width: 900px)');
@@ -24,9 +26,6 @@
     for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
     return arr;
   };
-  const haptic = pattern => {
-    if (!finePointer && navigator.vibrate) { try { navigator.vibrate(pattern); } catch (_) { /* brak wsparcia */ } }
-  };
 
   const card = $('.card');
   const stepsWrap = $('#steps');
@@ -41,13 +40,15 @@
 
   const data = {};
   const pageIdx = { 1: 0, 2: 0, 3: 0 };
+  const passed = new Set();   // ekrany, przez które użytkownik już przeszedł (liczą się do wzrostu rośliny)
+  let reminderTouched = false;
+  let colorTouched = false;
   let current = 1;
   let busy = false;
 
   const pagesOf = n => (n >= 1 && n <= 3 ? $$('.page', steps[n]) : []);
   const isTextInput = el => el instanceof HTMLInputElement && el.classList.contains('input');
 
-  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 
   const MSG = {
@@ -61,11 +62,14 @@
     parent: 'Potrzebujemy potwierdzenia zgody opiekuna.',
   };
 
+  // Podpis nad roślinką: etap + czy jest już za połową etapu
   const CAPTIONS = {
     1: 'Każda roślina zaczyna się od jednego nasionka.',
     '1+': 'Kiełkuje! Tak trzymaj.',
-    2: 'Rośnie, kiedy dajesz jej odrobinę uwagi.',
-    3: 'Jeszcze kilka liści i gotowe.',
+    2: 'Wypuszcza pierwsze gałązki.',
+    '2+': 'Rośnie, kiedy dajesz jej odrobinę uwagi.',
+    3: 'Pojawiają się pierwsze pąki.',
+    '3+': 'Jeszcze chwila — zaraz rozkwitnie.',
     4: 'Rozkwita — tak jak Ty, krok po kroku.',
   };
 
@@ -89,12 +93,24 @@
   const needsParent = () => { const age = parseInt(f2.elements.age.value, 10); return !isNaN(age) && age < 16; };
   const consentsOk = () => $('#terms').checked && (!needsParent() || $('#parent').checked);
 
+  // Ekran jest „zrobiony”, gdy ma poprawną odpowiedź albo użytkownik już przez niego przeszedł
+  // (np. pominął opcjonalne pytanie). Każdy zrobiony ekran to kawałek wzrostu rośliny.
+  const PAGE_FILLED = {
+    nick: nickOk,
+    email: emailOk,
+    password: passwordOk,
+    age: () => !!f2.elements.age.value,
+    gform: () => !!f2.elements.gform.value,
+    topics: () => $$('input[name=topics]:checked', f2).length > 0,
+    plant: () => !!plantInput.value.trim(),
+    color: () => colorTouched,
+    reminder: () => reminderTouched,
+    consents: consentsOk,
+  };
+  const pageDone = p => passed.has(p.dataset.page) || PAGE_FILLED[p.dataset.page]();
   function stageProgress(n) {
-    const share = checks => checks.filter(Boolean).length / checks.length;
-    if (n === 1) return share([nickOk(), emailOk(), passwordOk()]);
-    if (n === 2) return share([f2.elements.age.value, f2.elements.gform.value, $$('input[name=topics]:checked', f2).length]);
-    if (n === 3) return share([plantInput.value.trim(), consentsOk()]);
-    return 0;
+    const pages = pagesOf(n);
+    return pages.length ? pages.filter(pageDone).length / pages.length : 0;
   }
 
   // ================================================================
@@ -218,9 +234,12 @@
     void to.offsetWidth;
     to.classList.add('is-entering');
 
+    if (dir > 0) passed.add(from.dataset.page);
     pageIdx[n] = idx;
     syncControls();
     Scene.rustle(.15);
+    Scene.setProgress(stageProgress(n));
+    updateCaption();
     if (dir > 0) pushGuard();
 
     // Otwarta klawiatura → od razu kolejne pole, żeby nie zamykała się między pytaniami
@@ -307,7 +326,8 @@
     const plant = plantInput.value.trim();
     eyebrow.textContent = current >= 3 && plant ? plant : 'Twoja roślinka';
 
-    const key = current === 1 && stageProgress(1) > 0 ? '1+' : current;
+    const p = current <= 3 ? stageProgress(current) : 0;
+    const key = current === 1 ? (p > 0 ? '1+' : 1) : current <= 3 && p >= .5 ? current + '+' : current;
     if (key === captionKey) return;
     captionKey = key;
     clearTimeout(captionTimer);
@@ -393,6 +413,7 @@
   });
 
   function completeStage(n) {
+    pagesOf(n).forEach(p => passed.add(p.dataset.page));
     if (n === 1) {
       Object.assign(data, { nick: nickInput.value.trim(), email: emailInput.value.trim(), password: pwInput.value });
       $('#s2-title').textContent = `Miło Cię poznać, ${data.nick}!`;
@@ -402,10 +423,13 @@
       data.topics = $$('input[name=topics]:checked', f2).map(i => i.value);
     } else if (n === 3) {
       data.plant = plantInput.value.trim();
+      data.theme = f3.elements.theme.value;
+      Theme.apply(data.theme, { save: true });
       data.reminder = f3.elements.reminder.value;
       data.parentConsent = needsParent() ? true : null;
-      // Tymczasowo: brak backendu — dane lądują w konsoli (bez hasła)
-      console.log('Rejestracja (tymczasowo):', { ...data, password: '•'.repeat(data.password.length) });
+      // Tymczasowo, do czasu backendu: profil (bez hasła) zostaje w przeglądarce, żeby logowanie mogło przywitać po imieniu
+      const { password, ...profile } = data;
+      account.save(profile);
       fillDone();
     }
     goTo(n + 1);
@@ -480,23 +504,8 @@
     emailInput.focus();
   });
 
-  // Pokaż / ukryj hasło
-  const pwToggle = $('#pw-toggle');
-  pwToggle.addEventListener('click', () => {
-    const show = pwInput.type === 'password';
-    pwInput.type = show ? 'text' : 'password';
-    pwToggle.setAttribute('aria-pressed', String(show));
-    pwToggle.setAttribute('aria-label', show ? 'Ukryj hasło' : 'Pokaż hasło');
-    $('.eye-open', pwToggle).style.display = show ? 'none' : '';
-    $('.eye-closed', pwToggle).style.display = show ? '' : 'none';
-  });
-
-  // Caps Lock
-  const capsHint = $('#caps-hint');
-  const syncCaps = e => { if (e.getModifierState) capsHint.hidden = !e.getModifierState('CapsLock'); };
-  pwInput.addEventListener('keydown', syncCaps);
-  pwInput.addEventListener('keyup', syncCaps);
-  pwInput.addEventListener('blur', () => { capsHint.hidden = true; });
+  // Pokaż / ukryj hasło, Caps Lock
+  const pwField = passwordField(pwInput, $('#pw-toggle'), $('#caps-hint'));
 
   // Siła hasła
   const meter = $('#pw-meter');
@@ -531,6 +540,26 @@
     if (!needs) { $('#parent').checked = false; setErr('parent', ''); }
   }
   f2.addEventListener('change', e => { if (e.target.name === 'age') syncParentConsent(); });
+  f3.addEventListener('change', e => { if (e.target.name === 'reminder') reminderTouched = true; });
+
+  // Kolor roślinki: podgląd na żywo (roślina i cała paleta), zapis dopiero po założeniu konta
+  const colorQ = $('#color-q');
+  const syncColorQuestion = () => {
+    const plant = plantInput.value.trim();
+    colorQ.textContent = `Jaki kolor ma mieć ${plant || 'Twoja roślinka'}?`;
+  };
+  const selectCurrentTheme = () => {
+    const radio = $$('input[name=theme]', f3).find(r => r.value === Theme.current);
+    if (radio) radio.checked = true;
+  };
+  plantInput.addEventListener('input', syncColorQuestion);
+  f3.addEventListener('change', e => {
+    if (e.target.name !== 'theme') return;
+    colorTouched = true;
+    Theme.apply(e.target.value);
+    haptic(8);
+  });
+  selectCurrentTheme();
 
   // ================================================================
   //  Etap 3 — roślinka
@@ -570,19 +599,11 @@
       li.append(dot, document.createTextNode(text));
       pills.append(li);
     };
-    add(data.reminder === 'brak' ? 'Bez przypomnień' : `Check-in ${data.reminder}`, 'var(--teal-light)');
+    const theme = Theme.list.find(t => t.id === data.theme);
+    if (theme) add(`Kolor: ${theme.name}`, 'var(--plant-leaf-1)');
+    add(data.reminder === 'brak' ? 'Bez przypomnień' : `Check-in ${data.reminder}`, 'var(--accent-light)');
     data.topics.forEach(tp => add(tp, TOPIC_COLORS[tp]));
   }
-
-  const toast = $('#toast');
-  let toastTimer;
-  $('#enter-app').addEventListener('click', e => {
-    e.preventDefault();
-    toast.textContent = 'Tu podepniemy ekran główny aplikacji.';
-    toast.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
-  });
 
   $('#replay').addEventListener('click', () => {
     forms.forEach(f => { f.reset(); clearErrors(f); });
@@ -591,8 +612,12 @@
     syncParentConsent();
     suggestBox.hidden = true;
     suggestedFor = null;
-    capsHint.hidden = true;
-    if (pwInput.type === 'text') pwToggle.click();
+    pwField.reset();
+    passed.clear();
+    reminderTouched = false;
+    colorTouched = false;
+    selectCurrentTheme();
+    syncColorQuestion();
     $('#s2-title').textContent = 'Miło Cię poznać!';
     for (const k in data) delete data[k];
     goTo(1, 0);
