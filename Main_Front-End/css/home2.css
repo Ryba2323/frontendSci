@@ -203,32 +203,44 @@ button, a { touch-action: manipulation; }
 .how ul { margin: 10px 0 2px; padding-left: 30px; display: grid; gap: 8px; }
 .how li b { color: var(--text); }
 
+/* Dni jako wyraźne przyciski: ramka, pełny kolorowy słupek, wynik nad słupkiem */
 .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .day {
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px;
-  height: 92px; padding: 6px 0 8px; border: 0; border-radius: 14px; background: transparent;
-  font: inherit; cursor: pointer; transition: background .2s;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px;
+  height: 118px; padding: 8px 0 9px;
+  border: 1.5px solid var(--line); border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 6px 14px -10px rgba(30, 42, 50, .35);
+  font: inherit; cursor: pointer;
+  transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
 }
+.day b { font-size: .8rem; font-weight: 800; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
 .day i {
-  display: block; width: 60%; max-width: 22px; min-height: 6px; height: calc(var(--v) * 56px);
-  border-radius: 8px 8px 4px 4px; background: rgba(var(--primary-rgb), .35);
+  display: block; width: 58%; max-width: 22px; min-height: 6px; height: calc(var(--v) * 60px);
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(to top, var(--primary), var(--accent-light));
   transform: scaleY(0); transform-origin: 50% 100%;
-  transition: transform .9s var(--ease-spring), background .2s;
+  transition: transform .9s var(--ease-out), background .2s;
   transition-delay: calc(var(--k) * 60ms);
 }
 .days.is-in .day i { transform: none; }
-.day span { font-size: .7rem; font-weight: 700; color: var(--text-soft); }
-.day:hover { background: rgba(var(--primary-rgb), .06); }
-.day:focus-visible { outline: 3px solid var(--ring); }
-.day.is-active { background: rgba(var(--primary-rgb), .1); }
-.day.is-active i { background: var(--primary); }
-.day.is-active span { color: var(--primary-dark); }
+.day span { font-size: .72rem; font-weight: 700; color: var(--text-muted); }
+.day:hover { border-color: var(--line-hover); transform: translateY(-2px); box-shadow: 0 10px 18px -12px rgba(var(--primary-rgb), .6); }
+.day:active { transform: scale(.96); }
+.day:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.day.is-active { border-color: var(--primary); background: rgba(var(--primary-rgb), .1); box-shadow: 0 10px 20px -12px rgba(var(--primary-rgb), .8); }
+.day.is-active i { background: var(--primary-dark); }
+.day.is-active b, .day.is-active span { color: var(--primary-dark); }
+/* dziś: przerywany słupek czeka na podlanie */
+.day.is-today { border-style: dashed; border-color: rgba(var(--primary-rgb), .55); }
 .day.is-today i { background: transparent; border: 2px dashed var(--primary); }
-/* dzień bez podlania: mały, przerywany „pąk” */
-.day.is-missed i { background: transparent; border: 2px dotted var(--line-hover); }
-.day.is-missed span { color: var(--line-hover); }
+.day.is-today b { color: var(--primary); }
+.day.is-today.is-watered i { background: linear-gradient(to top, var(--primary), var(--accent-light)); border-style: solid; }
+/* dzień bez podlania: mały, kropkowany „pąk” */
+.day.is-missed { background: rgba(255, 255, 255, .6); }
+.day.is-missed i { background: transparent; border: 2px dotted var(--text-soft); }
+.day.is-missed b { color: var(--text-soft); }
 .day.is-missed.is-active i { border-color: var(--primary); }
-.day.is-today.is-watered i { background: var(--accent-light); border-style: solid; }
 .day-detail { min-height: 1.4em; margin: 10px 0 0; text-align: center; font-size: .9rem; font-weight: 700; color: var(--primary-dark); }
 
 /* ---------- Myśl na dziś ---------- */

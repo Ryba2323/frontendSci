@@ -85,10 +85,11 @@
     base = hue > 0 ? mixC(base, pal.l3, hue) : mixC(base, pal.l1, -hue);
     const lively = mixC(tint(base, .62), base, .2 + .8 * vivid);
     return {
-      light: rgba(tint(lively, .18)),
+      light: rgba(tint(lively, .07)),
       mid: rgba(lively),
-      dark: rgba(mixC(lively, pal.stem, .35 + .15 * tone)),
-      vein: rgba(tint(lively, .55), .55),
+      dark: rgba(mixC(lively, pal.stem, .2 + .1 * tone)),
+      edge: rgba(mixC(lively, pal.stem, .55), .35),
+      vein: rgba(tint(lively, .45), .3),
     };
   }
 
@@ -152,60 +153,104 @@
   //  Roślina (jednostki: pełna wysokość ≈ 100; y w górę ujemne)
   // ================================================================
   const FULL_H = 96;
-  const bez = (P, t) => {
-    const u = 1 - t, a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
-    return [a * P[0][0] + b * P[1][0] + c * P[2][0] + d * P[3][0], a * P[0][1] + b * P[1][1] + c * P[2][1] + d * P[3][1]];
-  };
-  const stemP = h => [[0, 0], [-5, -h * .34], [6, -h * .68], [0, -h]];
+  // Kształt rośliny jest naturalny i niesymetryczny, ale stały (losowanie z ziarnem — zawsze ta sama roślinka).
+  const FLIP = rnd() < .5 ? -1 : 1;                                   // w którą stronę się przechyla
+  const LEAN = srand(6, 10) * FLIP;
+  const STEM_CP = [
+    [0, 0], [srand(-2.4, -.8) * FLIP, -.16], [srand(.6, 2) * FLIP, -.33], [LEAN * .22 + srand(-1.2, 1.2), -.5],
+    [LEAN * .5 + srand(-1, 1), -.67], [LEAN * .8, -.84], [LEAN * .95, -.95], [LEAN, -1],
+  ];
+  // Łodyga jako gładka krzywa (Catmull-Rom) z parametrem po długości
+  function stemP(h) {
+    const k = h / FULL_H;
+    const cp = STEM_CP.map(([x, y]) => [x * k, y * h]);
+    const pts = [];
+    for (let i = 0; i < cp.length - 1; i++) {
+      const p0 = cp[i - 1] || cp[i], p1 = cp[i], p2 = cp[i + 1], p3 = cp[i + 2] || p2;
+      for (let s = i ? 1 : 0; s <= 8; s++) {
+        const t = s / 8, t2 = t * t, t3 = t2 * t;
+        pts.push([0, 1].map(c => .5 * (2 * p1[c] + (-p0[c] + p2[c]) * t + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * t2 + (-p0[c] + 3 * p1[c] - 3 * p2[c] + p3[c]) * t3)));
+      }
+    }
+    const L = [0];
+    for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    return { pts, L, tot: L[L.length - 1] || 1 };
+  }
+  function stemRaw(P, t) {
+    const d = clamp(t) * P.tot;
+    let i = 1;
+    while (i < P.L.length - 1 && P.L[i] < d) i++;
+    const f = (d - P.L[i - 1]) / ((P.L[i] - P.L[i - 1]) || 1);
+    return [lerp(P.pts[i - 1][0], P.pts[i][0], f), lerp(P.pts[i - 1][1], P.pts[i][1], f)];
+  }
 
-  // Odnogi dni: im nowszy dzień, tym wyżej na łodydze
-  const DAY_T = i => .24 + i * .094;
-  const DAY_SIDE = i => (i % 2 ? 1 : -1);
-  const dayLeaf = Array.from({ length: 7 }, (_, i) => ({
-    curl: srand(-.75, .75), fold: srand(.1, .7), wr: srand(.36, .56), ph: srand(0, TAU),
-    tilt: srand(-.22, .22), twist: srand(.2, .55), bend: srand(.12, .38),
-    shape: i % 3 === 2 ? 'round' : 'ovate', serr: i % 4 === 3 ? 0 : 1, hue: srand(-.25, .25),
+  // Odnogi dni: im nowszy dzień, tym wyżej. Odstępy, kąty i długości nierówne; niższe (starsze) opadają.
+  const DAY_T0 = [.19, .28, .37, .47, .57, .67, .78];
+  const SIDES = [1, -1, -1, 1, -1, 1, -1].map(v => v * FLIP);
+  const dayTwig = Array.from({ length: 7 }, (_, i) => ({
+    t: DAY_T0[i] + srand(-.015, .015), side: SIDES[i],
+    spread: srand(.95, 1.35) - i * .03,            // odchylenie od łodygi
+    droop: (1 - i / 6) * .32 + srand(0, .14),      // grawitacja: starsze odnogi są cięższe
+    lenK: srand(.82, 1.18),
+    leafDroop: srand(.12, .4),
+    curl: srand(-.6, .6), fold: srand(.1, .45), ph: srand(0, TAU),
+    // różnorodność: część liści wąska i długa, część szersza; różna wielkość i odcień
+    shape: i === 1 || i === 4 ? 'lance' : 'ovate', wr: i === 1 || i === 4 ? srand(.28, .33) : srand(.36, .46),
+    sizeK: srand(.82, 1.15), toneK: srand(-.15, .15),
+    serr: rnd() < .5 ? 1 : 0, hue: srand(-.3, .3),
     beads: Array.from({ length: 3 }, () => [srand(.35, .8), srand(-.35, .35), srand(.6, 1)]),
+    // drobne listki po drodze (nie oznaczają dni — robią roślinkę gęstszą)
+    extra: Array.from({ length: i < 5 ? (rnd() < .6 ? 1 : 2) : 1 }, (_, e) => ({ f: srand(.35, .65), side: e % 2 ? 1 : -1, len: srand(4.5, 7), tone: srand(.4, .8), wr: srand(.34, .42), curl: srand(-.5, .5), ph: srand(0, TAU) })),
   }));
+  const dayLeaf = dayTwig;   // (zgodność nazw w rysowaniu)
 
-  // Liście na łodydze: duże i ciemne u dołu, małe i jasne przy czubku
+  // Liście na łodydze: gęsta, nierówna kępa u dołu, pojedyncze wyżej, młode przy czubku
+  // (dolne liście łukiem w górę i na boki, za łodygą — nie opadają do ziemi jak „nogi”)
   const STEM_LEAVES = [
-    { t: .04, side: 1, len: 17, tone: .95, wr: .5, shape: 'ovate' },
-    { t: .09, side: -1, len: 19, tone: 1, wr: .48, shape: 'ovate' },
-    { t: .16, side: 1, len: 14, tone: .8, wr: .46, shape: 'ovate' },
-    { t: .33, side: 1, len: 7, tone: .6, wr: .42, shape: 'ovate' },
-    { t: .52, side: -1, len: 6.5, tone: .5, wr: .4, shape: 'ovate' },
-    { t: .72, side: 1, len: 6, tone: .35, wr: .38, shape: 'lance' },
-    { t: .88, side: -1, len: 8, tone: .2, wr: .34, shape: 'lance' },
-    { t: .93, side: 1, len: 7, tone: .12, wr: .32, shape: 'lance' },
-  ].map(l => ({ ...l, curl: srand(-.5, .5), fold: srand(.1, .5), ph: srand(0, TAU), serr: l.shape === 'ovate' ? 1 : 0, beads: Array.from({ length: 2 }, () => [srand(.35, .8), srand(-.35, .35), srand(.6, 1)]) }));
+    { t: .07, side: -1, len: 15, spread: 1.08, droop: .05, tone: 1, wr: .42, behind: true },
+    { t: .09, side: 1, len: 13.5, spread: 1.0, droop: .04, tone: .95, wr: .41, behind: true },
+    { t: .135, side: -1, len: 10, spread: .88, droop: .02, tone: .85, wr: .4 },
+    { t: .42, side: 1, len: 6, spread: .95, tone: .55, wr: .38 },
+    { t: .62, side: -1, len: 5.5, spread: .9, tone: .45, wr: .36 },
+    { t: .86, side: 1, len: 7.5, spread: .75, tone: .25, wr: .3, shape: 'lance' },
+    { t: .93, side: -1, len: 6.5, spread: .62, tone: .15, wr: .28, shape: 'lance' },
+  ].map(l => ({ ...l, side: l.side * FLIP, t: l.t + srand(-.01, .01), len: l.len * srand(.9, 1.1), curl: srand(-.5, .5), fold: srand(.15, .5), ph: srand(0, TAU), serr: l.shape ? 0 : 1, beads: Array.from({ length: 2 }, () => [srand(.35, .8), srand(-.35, .35), srand(.6, 1)]) }));
+
+  // Zapasowy pąk przy czubku (po przeciwnej stronie niż przechył)
+  const SPARE_BUD = { t: .9, side: -FLIP, spread: .75, len: 7 };
 
   // Źdźbła trawy i kamyki przy ziemi
   const GRASS = Array.from({ length: 9 }, (_, i) => ({ x: (i / 8 - .5) * 30 + srand(-2, 2), h: srand(3.5, 7.5), lean: srand(-.5, .5), ph: srand(0, TAU), tone: srand(.2, .9) }));
   const PEBBLES = [{ x: -11, r: 1.6 }, { x: 13, r: 1.2 }, { x: 8.5, r: .8 }];
 
+  // Łodyga prawie sztywna: kołysze się tylko lekko u góry (szeleszczą głównie liście)
   function toScreen(x, y) {
     const hh = clamp(-y / 100, 0, 1.2);
-    const calm = Math.sin(clock * .8 + y * .035) * 1.6 + Math.sin(clock * 1.9 + y * .09) * .4;
-    const rustle = Math.sin(clock * 7 + y * .22) * wind * 1.2;
-    const dx = (calm * (1 + wind * .6) + rustle) * Math.pow(hh, 1.5) * motion;
+    const calm = Math.sin(clock * .55 + y * .02) * .6 + Math.sin(clock * 1.3 + y * .05) * .18;
+    const rustle = Math.sin(clock * 6 + y * .15) * wind * .45;
+    const dx = (calm * (1 + wind * .8) + rustle) * hh * hh * motion;
     return [baseX + (x + dx) * S, baseY + y * S];
   }
-  const stemPt = (P, t) => { const p = bez(P, t); return toScreen(p[0], p[1]); };
+  const stemPt = (P, t) => { const p = stemRaw(P, t); return toScreen(p[0], p[1]); };
   const stemAng = (P, t) => { const a = stemPt(P, Math.max(0, t - .02)), b = stemPt(P, Math.min(1, t + .02)); return Math.atan2(b[1] - a[1], b[0] - a[0]); };
+  // kąt „z opadaniem”: przesunięcie w stronę dołu-na-zewnątrz
+  const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
+  const droopAng = (a, side, k) => a + angDiff(a, side > 0 ? .5 : Math.PI - .5) * k;
 
-  // Fazy wejścia (roślinka sama wyrasta po otwarciu strony)
+  // Fazy wejścia (roślinka sama wyrasta po otwarciu strony) — płynnie, bez sprężynowania
   const introStem = () => easeOutCubic(clamp(st.intro / .5));
   const introLeaf = k => clamp((st.intro - .15 - k * .03) / .35);
   const introBranch = i => clamp((st.intro - .3 - i * .06) / .4);
   const introBloom = () => easeOutCubic(clamp((st.intro - .62) / .38));
+  const grown = e => (reduceMotion ? 1 : easeOutCubic(e));
+  // długość liścia dnia: zależy od samopoczucia, ale każdy liść ma też swój rozmiar
+  const dayLeafLen = tw => (6.5 + 7.5 * tw.mood / 10) * 1.3 * tw.L.sizeK * S * tw.k;
 
   // ================================================================
   //  Rysowanie liścia: ogonek, blaszka zagięta wzdłuż nerwu, ząbki, gradient, żyłki, kropelki
   // ================================================================
   function leafProfile(shape, u) {
     if (shape === 'lance') return Math.pow(Math.sin(Math.PI * u), 1.15) * .7;
-    if (shape === 'round') return Math.pow(Math.sin(Math.PI * Math.pow(u, .85)), .55) * .92;
     return Math.pow(Math.sin(Math.PI * Math.pow(u, .72)), .82);
   }
   function drawLeaf(x, y, ang, len, o, alpha = 1) {
@@ -228,7 +273,7 @@
       const dx = b[0] - a[0], dy = b[1] - a[1], dl = Math.hypot(dx, dy) || 1;
       const nx = -dy / dl, ny = dx / dl;
       let w = Wd * leafProfile(shape, u);
-      if (teeth && u > .12 && u < .96) w *= 1 + .07 * (1 - Math.abs(((u * teeth) % 1) * 2 - 1));
+      if (teeth && u > .12 && u < .96) w *= 1 + .035 * (1 - Math.abs(((u * teeth) % 1) * 2 - 1));
       up.push([mid[k][0] - nx * w * (1 - fold * .35), mid[k][1] - ny * w * (1 - fold * .35)]);
       lo.push([mid[k][0] + nx * w * (1 + fold * .06), mid[k][1] + ny * w * (1 + fold * .06)]);
     }
@@ -272,6 +317,14 @@
     for (let k = N; k >= 0; k--) ctx.lineTo(mid[k][0], mid[k][1]);
     ctx.fillStyle = col.dark;
     ctx.fill();
+    // cienki kontur — liść wygląda na płaski i matowy, nie „gumowy”
+    ctx.beginPath();
+    ctx.moveTo(mid[0][0], mid[0][1]);
+    trace(up);
+    for (let k = N; k >= 0; k--) ctx.lineTo(lo[k][0], lo[k][1]);
+    ctx.strokeStyle = col.edge;
+    ctx.lineWidth = Math.max(.5, len * .012);
+    ctx.stroke();
 
     // nerw główny i boczne żyłki
     ctx.strokeStyle = col.vein;
@@ -283,7 +336,7 @@
     if (len > 18) {
       ctx.lineWidth = Math.max(.5, len * .009);
       ctx.beginPath();
-      const pairs = len > 40 ? 6 : 4;
+      const pairs = len > 40 ? 4 : 3;
       for (let j = 1; j <= pairs; j++) {
         const k = Math.round(N * (.1 + j * (.78 / pairs)));
         const m = mid[k], tu = up[Math.min(N, k + 2)], tl = lo[Math.min(N, k + 2)];
@@ -293,7 +346,7 @@
       ctx.stroke();
     }
     // światło na brzegu
-    ctx.strokeStyle = 'rgba(255,255,255,.28)';
+    ctx.strokeStyle = 'rgba(255,255,255,.12)';
     ctx.lineWidth = Math.max(.6, len * .012);
     ctx.beginPath();
     ctx.moveTo(up[1][0], up[1][1]);
@@ -319,10 +372,9 @@
   // Kwiat: dwie warstwy płatków, pręciki, lekki „oddech”
   function drawFlower(x, y, R, open, flash) {
     if (open <= 0) return;
-    const breathe = 1 + .035 * Math.sin(clock * 1.3) * motion;
     ctx.save();
     ctx.translate(x, y);
-    ctx.rotate(Math.sin(clock * .6) * .06 * motion);
+    ctx.rotate(Math.sin(clock * .5) * .03 * motion);
     const gR = R * (2.4 + flash * 1.2);
     const gl = ctx.createRadialGradient(0, 0, 0, 0, 0, gR);
     gl.addColorStop(0, rgba(pal.glow, (.5 + flash * .35) * open));
@@ -330,7 +382,9 @@
     ctx.fillStyle = gl;
     ctx.beginPath(); ctx.arc(0, 0, gR, 0, TAU); ctx.fill();
 
-    ctx.scale(open * breathe, open * breathe * .92);
+    // lekko z profilu, przechylony w stronę, w którą rośnie roślinka
+    ctx.rotate(FLIP * .18);
+    ctx.scale(open * .9, open * .82);
     const petal = (len, wid, rot, c1, c2) => {
       ctx.save();
       ctx.rotate(rot);
@@ -361,18 +415,18 @@
   }
 
   function drawStem(P) {
-    const n = 40, pts = [];
+    const n = 48, pts = [];
     for (let i = 0; i <= n; i++) pts.push(stemPt(P, i / n));
     ctx.lineCap = 'round';
-    const col = rgba(pal.stem), hi = rgba(tint(pal.stem, .45), .45);
+    const col = rgba(pal.stem), hi = rgba(tint(pal.stem, .4), .35);
     ctx.strokeStyle = col;
     for (let i = 1; i <= n; i++) {
-      ctx.lineWidth = Math.max(1.2, lerp(2.3, .9, i / n) * S);
+      ctx.lineWidth = Math.max(1.2, lerp(2.7, .85, Math.pow(i / n, .8)) * S);
       ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]); ctx.stroke();
     }
     ctx.strokeStyle = hi;
     for (let i = 1; i <= n; i++) {
-      ctx.lineWidth = Math.max(.6, lerp(2.3, .9, i / n) * S * .3);
+      ctx.lineWidth = Math.max(.6, lerp(2.7, .85, Math.pow(i / n, .8)) * S * .28);
       ctx.beginPath(); ctx.moveTo(pts[i - 1][0] - .8, pts[i - 1][1]); ctx.lineTo(pts[i][0] - .8, pts[i][1]); ctx.stroke();
     }
   }
@@ -389,8 +443,16 @@
     ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
     ctx.restore();
     // cień roślinki
-    ctx.fillStyle = rgba(pal.stem, .12);
-    ctx.beginPath(); ctx.ellipse(baseX + 3 * S, baseY + 1.6 * S, 14 * S, 2.2 * S, 0, 0, TAU); ctx.fill();
+    const sh = ctx.createRadialGradient(baseX + 2 * S, baseY + 1.4 * S, 0, baseX + 2 * S, baseY + 1.4 * S, 16 * S);
+    sh.addColorStop(0, rgba(pal.stem, .22));
+    sh.addColorStop(1, rgba(pal.stem, 0));
+    ctx.save();
+    ctx.translate(0, baseY + 1.4 * S);
+    ctx.scale(1, .2);
+    ctx.translate(0, -(baseY + 1.4 * S));
+    ctx.fillStyle = sh;
+    ctx.beginPath(); ctx.arc(baseX + 2 * S, baseY + 1.4 * S, 16 * S, 0, TAU); ctx.fill();
+    ctx.restore();
     const rx = 20 * S, ry = 4.4 * S, cy = baseY + 1.3 * S;
     const mg = ctx.createLinearGradient(0, cy - ry, 0, cy + ry);
     mg.addColorStop(0, rgba(tint(pal.ground, .4)));
@@ -416,6 +478,32 @@
       ctx.strokeStyle = leafColors(g.tone, .7).mid;
       ctx.lineWidth = Math.max(1, .55 * S);
       ctx.beginPath(); ctx.moveTo(gx, gy); ctx.quadraticCurveTo(gx + g.lean * g.h * .3 * S, gy - g.h * .6 * S, tx, ty); ctx.stroke();
+    }
+  }
+
+  // Kopczyk ziemi u nasady: łodyga z niego wyrasta (z korzonkami i odrobiną mchu)
+  function drawSoil(P) {
+    const [bx0] = stemPt(P, 0);
+    const cy = baseY + .6 * S;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = rgba(mixC(pal.stem, pal.ground, .35));
+    ctx.lineWidth = Math.max(1, .7 * S);
+    for (const [dx, len, bend] of [[-1, 4.5, .6], [1, 5, -.5], [-.3, 3, .2]]) {
+      ctx.beginPath();
+      ctx.moveTo(bx0 + dx * .4 * S, cy - .3 * S);
+      ctx.quadraticCurveTo(bx0 + dx * len * .6 * S, cy + bend * S, bx0 + dx * len * S, cy + .9 * S);
+      ctx.stroke();
+    }
+    const g = ctx.createRadialGradient(bx0, cy - .6 * S, 0, bx0, cy - .6 * S, 6 * S);
+    g.addColorStop(0, rgba(mixC(pal.ground, pal.stem, .45)));
+    g.addColorStop(1, rgba(mixC(pal.ground, pal.stem, .2)));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(bx0, cy - .2 * S, 5.5 * S, 1.9 * S, 0, Math.PI, TAU); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(bx0, cy - .2 * S, 5.5 * S, .9 * S, 0, 0, Math.PI); ctx.fill();
+    // mech
+    ctx.fillStyle = rgba(mixC(pal.l2, pal.stem, .25), .9);
+    for (const [dx, r] of [[-4.2, .9], [-3.2, .7], [3.6, .85], [4.6, .6], [2.8, .55]]) {
+      ctx.beginPath(); ctx.arc(bx0 + dx * S, cy - .7 * S, r * S, 0, TAU); ctx.fill();
     }
   }
 
@@ -629,19 +717,19 @@
     for (let i = 0; i < 7; i++) {
       const e = introBranch(i);
       if (e <= 0) { leafPos[i] = null; continue; }
-      const k = reduceMotion ? 1 : easeOutBack(e);
-      const t = DAY_T(i), side = DAY_SIDE(i), L = dayLeaf[i];
+      const k = grown(e);
+      const L = dayTwig[i], t = L.t, side = L.side;
       const [sx, sy] = stemPt(P, t);
-      // stemAng wskazuje w górę łodygi; odnoga odchyla się od niej na zewnątrz
-      const dir = stemAng(P, t) + side * (1.15 - i * .05) + L.tilt * .5;
+      // stemAng wskazuje w górę łodygi; odnoga odchyla się na zewnątrz i trochę opada pod własnym ciężarem
+      const dir = stemAng(P, t) + side * L.spread;
       const isToday = i === 6;
       const off = !isToday && !!missed[i];                           // dzień bez podlania
       const watered = isToday && wateredAt != null && clock >= wateredAt;
       const m = days[i];
       const mood = off ? 2.5 : m == null ? (watered ? 7 : 4) : m;
-      const len = (11 + 11 * mood / 10) * k * S;
-      const ex = sx + Math.cos(dir) * len, ey = sy + Math.sin(dir) * len - len * L.bend * .5;
-      const cx = sx + Math.cos(dir) * len * .45, cy = sy + Math.sin(dir) * len * .45 - len * L.bend;
+      const len = (9 + 9 * mood / 10) * L.lenK * k * S;
+      const ex = sx + Math.cos(dir) * len, ey = sy + Math.sin(dir) * len + len * L.droop * .55;
+      const cx = sx + Math.cos(dir) * len * .5, cy = sy + Math.sin(dir) * len * .5 - len * (.2 - L.droop * .25);
       twigs.push({ i, sx, sy, cx, cy, ex, ey, k, mood, m, isToday, watered, off, side, L });
     }
     if (twigs.length && twigs[0].i === 0 && !fallDone) {
@@ -655,30 +743,62 @@
       g.addColorStop(0, rgba(pal.stem));
       g.addColorStop(1, rgba(mixC(pal.stem, pal.l1, .35)));
       ctx.strokeStyle = g;
-      ctx.lineWidth = Math.max(1.3, 1.05 * S);
-      ctx.beginPath(); ctx.moveTo(tw.sx, tw.sy); ctx.quadraticCurveTo(tw.cx, tw.cy, tw.ex, tw.ey); ctx.stroke();
+      // dwa pociągnięcia: grubsza nasada, cieńszy koniec
+      const qx = (a, b, c, t) => (1 - t) * (1 - t) * a + 2 * (1 - t) * t * b + t * t * c;
+      const mx = qx(tw.sx, tw.cx, tw.ex, .5), my = qx(tw.sy, tw.cy, tw.ey, .5);
+      ctx.lineWidth = Math.max(1.4, 1.25 * S);
+      ctx.beginPath(); ctx.moveTo(tw.sx, tw.sy); ctx.quadraticCurveTo(lerp(tw.sx, tw.cx, .5), lerp(tw.sy, tw.cy, .5), mx, my); ctx.stroke();
+      ctx.lineWidth = Math.max(1, .8 * S);
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.quadraticCurveTo(lerp(tw.cx, tw.ex, .5), lerp(tw.cy, tw.ey, .5), tw.ex, tw.ey); ctx.stroke();
+      // drobne listki po drodze
+      for (const x of tw.L.extra) {
+        const px = qx(tw.sx, tw.cx, tw.ex, x.f), py = qx(tw.sy, tw.cy, tw.ey, x.f);
+        const tx = qx(tw.sx, tw.cx, tw.ex, x.f + .05) - px, ty = qx(tw.sy, tw.cy, tw.ey, x.f + .05) - py;
+        const a0 = Math.atan2(ty, tx) + x.side * .95;
+        const sw = (Math.sin(clock * 1.3 + x.ph) * .04 + Math.sin(clock * 7 + x.ph * 2) * .12 * wind) * motion;
+        drawLeaf(px, py, droopAng(a0, Math.cos(a0) >= 0 ? 1 : -1, .25) + sw, x.len * 1.1 * S * tw.k, { wr: x.wr, curl: x.curl, fold: .35, serr: 1, colors: leafColors(x.tone, .7) });
+      }
     }
 
+    // ---- liście na łodydze (dolne za łodygą, reszta przed) ----
+    const wet = clamp(1 - (clock - wetAt) / 7) * (clock >= wetAt ? 1 : 0);
+    const stemLeaves = behind => STEM_LEAVES.forEach((l, idx) => {
+      if (!!l.behind !== behind) return;
+      const e = introLeaf(idx);
+      if (e <= 0) return;
+      const s = grown(e);
+      const [x, y] = stemPt(P, l.t);
+      const sway = (Math.sin(clock * 1.2 + l.ph) * .035 + Math.sin(clock * 7.5 + l.ph * 3) * .11 * wind) * motion;
+      // rozwija się z pozycji złożonej przy łodydze; duże liście u dołu opadają
+      const ang = stemAng(P, l.t) + l.side * l.spread * (.55 + .45 * s);
+      drawLeaf(x, y, droopAng(ang, l.side, l.droop != null ? l.droop : .08) + sway, l.len * 1.2 * S * s, { wr: l.wr, curl: l.curl * l.side, fold: l.fold, serr: l.serr, shape: l.shape, colors: leafColors(l.tone, .85), wet, beads: l.beads });
+    });
+    stemLeaves(true);
     drawStem(P);
+    drawSoil(P);
     // węzły przy odnogach
     ctx.fillStyle = rgba(pal.stem);
     for (const tw of twigs) { ctx.beginPath(); ctx.arc(tw.sx, tw.sy, Math.max(1.2, 1.2 * S), 0, TAU); ctx.fill(); }
-
-    // ---- liście na łodydze ----
-    const wet = clamp(1 - (clock - wetAt) / 7) * (clock >= wetAt ? 1 : 0);
-    STEM_LEAVES.forEach((l, idx) => {
-      const e = introLeaf(idx);
+    stemLeaves(false);
+    // zapasowy pąk przy czubku
+    [SPARE_BUD].forEach(b => {
+      const e = introBranch(3);
       if (e <= 0) return;
-      const s = reduceMotion ? 1 : easeOutBack(e);
-      const [x, y] = stemPt(P, l.t);
-      const sway = (Math.sin(clock * 1.5 + l.ph) * .07 + Math.sin(clock * 8.5 + l.ph * 3) * .15 * wind) * motion;
-      const ang = stemAng(P, l.t) + l.side * (1.05 + l.fold * .25 + (l.t < .2 ? .35 : 0)) + sway;
-      drawLeaf(x, y, ang, l.len * 1.5 * S * s, { wr: l.wr, curl: l.curl * l.side, fold: l.fold, serr: l.serr, shape: l.shape, colors: leafColors(l.tone, .85), wet, beads: l.beads });
+      const [x, y] = stemPt(P, b.t);
+      const a = stemAng(P, b.t) + b.side * b.spread + Math.sin(clock * 1.1) * .03 * motion;
+      const len = b.len * S * grown(e);
+      ctx.strokeStyle = rgba(pal.stem);
+      ctx.lineWidth = Math.max(1, .6 * S);
+      const bx = x + Math.cos(a) * len * .7, by = y + Math.sin(a) * len * .7;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + Math.cos(a) * len * .3, y + Math.sin(a) * len * .3 - len * .15, bx, by); ctx.stroke();
+      drawLeaf(bx, by, a - b.side * .25, len * .7, { wr: .32, curl: .3, fold: .6, stalk: .1, shape: 'lance', colors: leafColors(.3, .8) });
+      ctx.fillStyle = rgba(mixC(pal.flower, pal.l2, .35));
+      ctx.beginPath(); ctx.ellipse(bx + Math.cos(a) * len * .5, by + Math.sin(a) * len * .5, len * .12, len * .18, a + Math.PI / 2, 0, TAU); ctx.fill();
     });
 
     // ---- najstarszy liść: wisi, a chwilę po wejściu odpada ----
     if (!fallDone && twig0 && motion && st.intro > .55) {
-      const s = easeOutBack(clamp((st.intro - .55) / .3));
+      const s = easeOutCubic(clamp((st.intro - .55) / .3));
       drawLeaf(twig0.x, twig0.y, twig0.ang, twig0.len * s, { wr: .42, curl: .3, fold: .3, serr: 1, colors: leafColors(.8, .35) });
     }
     if (fallen) {
@@ -691,19 +811,21 @@
     const tags = [];
     for (const tw of twigs) {
       const L = tw.L;
-      const sway = (Math.sin(clock * 1.4 + L.ph) * .08 + Math.sin(clock * 8 + L.ph * 3) * .16 * wind) * motion;
-      const angTip = Math.atan2(tw.ey - tw.cy, tw.ex - tw.cx) + sway;
+      const sway = (Math.sin(clock * 1.2 + L.ph) * .04 + Math.sin(clock * 7 + L.ph * 3) * .12 * wind) * motion;
+      // liść na końcu odnogi zwisa trochę pod własnym ciężarem
+      const angTip = droopAng(Math.atan2(tw.ey - tw.cy, tw.ex - tw.cx), tw.side, L.leafDroop) + sway;
       const waveK = motion ? Math.exp(-Math.pow((wave - tw.i * .12 - .2) * 5, 2)) : 0;
       const selK = tw.i === sel ? 1 : 0;
-      const bump = 1 + .1 * waveK + (selK ? .08 + .1 * Math.exp(-(clock - selAt) * 4) * Math.sin((clock - selAt) * 16) : 0);
+      // zaznaczenie / fala: łagodne powiększenie, bez sprężynowania
+      const bump = 1 + .05 * waveK + (selK ? .07 * (1 - Math.exp(-(clock - selAt) * 6)) : 0);
 
       if (tw.isToday && !tw.watered) {
         // pąk na dziś: zwinięty listek w przerywanym kółku
-        const pr = 1 + .07 * Math.sin(clock * 3) * motion;
+        const pr = 1 + .03 * Math.sin(clock * 2) * motion;
         drawLeaf(tw.ex, tw.ey, angTip - .3, 7 * S * tw.k * pr, { wr: .28, curl: .4, fold: .6, stalk: .2, shape: 'lance', colors: leafColors(.1, .9) });
         const bx = tw.ex + Math.cos(angTip - .3) * 3.5 * S, by = tw.ey + Math.sin(angTip - .3) * 3.5 * S;
         ctx.beginPath();
-        ctx.arc(bx, by, (6.5 + 1.5 * Math.sin(clock * 3) * motion) * S * .9, 0, TAU);
+        ctx.arc(bx, by, (6.5 + 1 * Math.sin(clock * 2) * motion) * S * .9, 0, TAU);
         ctx.setLineDash([3, 3]);
         ctx.strokeStyle = rgba(pal.primary, .6 * tw.k);
         ctx.lineWidth = 1.4;
@@ -727,12 +849,12 @@
         }
         leafPos[tw.i] = { x: tw.ex + Math.cos(a) * 4 * S, y: tw.ey + Math.sin(a) * 4 * S };
       } else {
-        const grow = tw.isToday ? (reduceMotion ? 1 : easeOutBack(clamp((clock - wateredAt) / 1))) : 1;
-        const len = (8 + 10 * tw.mood / 10) * 1.55 * S * tw.k * grow * bump;
+        const grow = tw.isToday ? grown(clamp((clock - wateredAt) / 1.2)) : 1;
+        const len = dayLeafLen(tw) * grow * bump;
         const vivid = tw.isToday ? .95 : clamp((tw.mood - 3) / 6);
-        const tone = .35 + .5 * (1 - tw.i / 6);
-        // liść powoli obraca się w świetle (widać go raz szerzej, raz węziej)
-        const sy = 1 - L.twist * .6 * (.5 + .5 * Math.sin(clock * .35 + L.ph)) * motion;
+        const tone = clamp(.35 + .5 * (1 - tw.i / 6) + L.toneK);
+        // liść bardzo powoli obraca się w świetle
+        const sy = 1 - .08 * (.5 + .5 * Math.sin(clock * .3 + L.ph)) * motion;
         if (selK || waveK > .05) {
           const hx = tw.ex + Math.cos(angTip) * len * .55, hy = tw.ey + Math.sin(angTip) * len * .55;
           const gr = ctx.createRadialGradient(hx, hy, 0, hx, hy, len * .95);
@@ -749,7 +871,7 @@
       const lab = tw.i === sel ? 1 : st.labels;
       if (lab > .02) {
         const selected = tw.i === sel;
-        const reach = (tw.isToday && !tw.watered) || tw.off ? 12 * S : (8 + 10 * tw.mood / 10) * 1.55 * S * tw.k + 10;
+        const reach = (tw.isToday && !tw.watered) || tw.off ? 12 * S : dayLeafLen(tw) + 10;
         const text = !selected ? labels[tw.i]
           : tw.off ? `${labels[tw.i]} · bez podlania`
           : tw.m == null ? `${labels[tw.i]} · ${tw.watered ? 'podlane' : 'czeka'}` : `${labels[tw.i]} · ${tw.m}/10`;

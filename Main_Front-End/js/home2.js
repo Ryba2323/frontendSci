@@ -79,7 +79,8 @@
     const cls = today ? ' is-today' : off ? ' is-missed' : '';
     const aria = today ? 'Dziś — roślinka czeka na podlanie' : off ? `${names[i]}: bez podlania` : `${names[i]}: ${v} na 10`;
     const hgt = today ? .5 : off ? .18 : v / 10;
-    return `<button type="button" class="day${cls}" data-i="${i}" style="--v:${hgt};--k:${i}" aria-label="${aria}" aria-pressed="false"><i></i><span>${labels[i]}</span></button>`;
+    const val = today ? '?' : off ? '–' : v;
+    return `<button type="button" class="day${cls}" data-i="${i}" style="--v:${hgt};--k:${i}" aria-label="${aria}" aria-pressed="false"><b aria-hidden="true">${val}</b><i></i><span>${labels[i]}</span></button>`;
   }).join('');
 
   const detail = $('#day-detail');
@@ -147,7 +148,9 @@
     if (window.innerWidth < 1024 && window.scrollY > 0) window.scrollTo({ top: 0, behavior: isStatic ? 'auto' : 'smooth' });
     setTimeout(() => {
       watered = true;
-      $('.day.is-today', daysEl).classList.add('is-watered');
+      const t = $('.day.is-today', daysEl);
+      t.classList.add('is-watered');
+      $('b', t).textContent = '✓';
     }, 1000);
     clearTimeout(toastTimer);
     // TODO: tu otworzy się ekran z pytaniami o samopoczucie
