@@ -1,0 +1,45 @@
+/*
+ * Design tokens — paleta nr 3 „Clean Teal” (świeża, lekka, terapeutyczna).
+ * Wspólne dla wszystkich ekranów aplikacji.
+ */
+:root {
+  /* Kolory bazowe */
+  --primary: #3A8D9E;
+  --primary-hover: #337F8F;
+  --primary-dark: #2F7F8F;
+  --text: #1E2A32;
+  --text-muted: #5E6F78;
+  --text-soft: #8A9BA4;
+  --bg: #F4FAFB;
+  --surface: #FFFFFF;
+  --teal-light: #7CC9D4;
+  --blue-mist: #B7DCE5;
+  --soft-mint: #B8E3D3;
+  --peach: #F6B89E;
+
+  /* Kolory kategorii (wykresy / suwaki) */
+  --mood: #3A8D9E;
+  --energy: #F6B86A;
+  --stress: #7CC9D4;
+  --sleep: #78C9B7;
+
+  /* Linie, stany */
+  --line: #D6E7EB;
+  --line-hover: #BCD8DE;
+  --error: #C4553C;
+  --warning: #B7792F;
+  --ring: rgba(58, 141, 158, .18);
+
+  /* Typografia */
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Zaokrąglenia */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 28px;
+
+  /* Ruch */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-in-out: cubic-bezier(.4, 0, .2, 1);
+  --ease-spring: cubic-bezier(.3, 1.5, .5, 1);
+}

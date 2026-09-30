@@ -1,0 +1,12 @@
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Edytory
+.vscode/
+.idea/
+
+# Lokalna konfiguracja Claude Code (ścieżki specyficzne dla tego komputera)
+.claude/launch.json
+.claude/settings.local.json
