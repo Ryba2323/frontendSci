@@ -1,0 +1,79 @@
+/*
+ * Suwak nastroju „łodyga” (js/mood-slider.js) — pasek suwaka jest łodygą, która rośnie w prawo.
+ * Łodygę, liście, kwiat i ścieżkę rysuje canvas; liczba, opis i podziałka są w DOM.
+ * Kolory tylko z tokenów (css/tokens.css).
+ */
+
+.ms { position: relative; }
+
+/* Odczyt: duża liczba + słowo (nad canvasem, który wystaje w górę) */
+.ms-readout { position: relative; z-index: 1; text-align: center; }
+.ms-value {
+  margin: 0; line-height: 1;
+  font-size: 2.75rem; font-weight: 800; letter-spacing: -.03em;
+  color: var(--primary-dark); font-variant-numeric: tabular-nums;
+}
+.ms-value span { margin-left: 2px; font-size: 1rem; font-weight: 700; letter-spacing: 0; color: var(--text-soft); }
+.ms-value.is-empty { color: var(--line-strong); }
+.ms-num { display: inline-block; }
+.ms-num.is-bump { animation: ms-bump .4s var(--ease-spring); }
+@keyframes ms-bump { 40% { transform: translateY(-3px) scale(1.16); } }
+.ms-word { min-height: 1.4em; margin: 6px 0 0; font-size: 1.02rem; font-weight: 700; color: var(--text); }
+.ms-value.is-empty + .ms-word { color: var(--text-muted); font-weight: 600; }
+
+/* Pole suwaka: na telefonie pionowe przewijanie działa, przeciąganie zaczyna ruch w bok */
+.ms-slider {
+  position: relative;
+  height: 160px;
+  height: clamp(150px, 19svh, 185px);
+  touch-action: pan-y;
+  cursor: grab;
+  outline: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ms-slider.is-dragging { cursor: grabbing; }
+/* Canvas wystaje poza pole (pozycję i rozmiar ustawia JS), żeby kwiat i poświata nie były ucinane */
+.ms-canvas { position: absolute; display: block; pointer-events: none; }
+
+/* Obwódka fokusu wokół czubka łodygi (tylko z klawiatury) */
+.ms-ring {
+  position: absolute; left: 0; top: 0;
+  width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), .5);
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.ms-slider:focus-visible .ms-ring { opacity: 1; }
+
+/* Podpowiedź, póki nic nie wybrano */
+.ms-hint {
+  position: absolute; left: 50%; top: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line);
+  box-shadow: 0 8px 20px -12px rgba(30, 42, 50, .35);
+  font-size: .82rem; font-weight: 700; color: var(--primary-dark);
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity .35s ease;
+}
+.ms-hint svg { width: 15px; height: 15px; animation: ms-nudge 1.6s ease-in-out infinite; }
+.ms-hint.is-hidden { opacity: 0; }
+@keyframes ms-nudge { 50% { transform: translateX(4px); } }
+
+/* Podziałka 1–10 (pozycje liczb ustawia JS, żeby zgadzały się z kółkami na ścieżce) */
+.ms-scale { position: relative; height: 30px; margin-top: -4px; }
+.ms-scale span {
+  position: absolute; top: 0;
+  min-width: 28px; padding: 4px 0;
+  text-align: center; font-size: .82rem; font-weight: 600; color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
+  cursor: pointer;
+  transition: color .2s, transform .25s var(--ease-spring);
+}
+.ms-scale span.is-on { color: var(--primary-dark); font-weight: 800; transform: translateX(-50%) scale(1.2); }
+
+@media (min-width: 700px) {
+  .ms-value { font-size: 3rem; }
+}

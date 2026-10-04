@@ -1,0 +1,179 @@
+/*
+ * Ekran pytania z codziennego podlewania (check-in) — na razie „Jak się dziś czujesz?” (nastroj.html).
+ * Mobile-first: górny pasek (zamknij), pytanie, odpowiedź, przycisk na dole w zasięgu kciuka.
+ * Tablet od 700 px, komputer od 1024 px (kolumna na środku). Kolory tylko z tokenów (css/tokens.css).
+ */
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background:
+    radial-gradient(900px 560px at 50% 30%, rgba(var(--mint-rgb), .55), transparent 62%),
+    radial-gradient(800px 520px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+button, a { touch-action: manipulation; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+/* ================================================================
+   Układ ekranu
+   ================================================================ */
+.ci {
+  display: flex; flex-direction: column;
+  max-width: 560px; min-height: 100vh; min-height: 100dvh;
+  margin: 0 auto; padding: 0 20px;
+}
+
+.ci-top {
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(12px + env(safe-area-inset-top)) 0 6px;
+}
+.ci-close {
+  flex: 0 0 40px; height: 40px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface); border: 1.5px solid var(--line); color: var(--text-muted);
+  transition: border-color .2s, color .2s, transform .15s;
+}
+.ci-close svg { width: 18px; height: 18px; }
+.ci-close:hover { border-color: var(--primary); color: var(--primary-dark); }
+.ci-close:active { transform: scale(.94); }
+.ci-close:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.ci-kicker {
+  flex: 1; display: flex; align-items: center; gap: 6px; margin: 0;
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary);
+}
+.ci-kicker svg { width: 13px; height: 13px; fill: currentColor; }
+
+.ci-main { flex: 1; display: flex; flex-direction: column; padding-top: 10px; animation: rise .6s var(--ease-out) both; }
+.ci-q { margin: 6px 0 6px; font-size: 1.6rem; line-height: 1.25; font-weight: 800; letter-spacing: -.02em; }
+.ci-hint { margin: 0 0 18px; font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
+
+.ci-mood { margin: 0 -10px; }
+
+.ci-note {
+  min-height: 3em; margin: 6px 0 0;
+  text-align: center; font-size: .95rem; line-height: 1.5; color: var(--text-muted);
+  transition: opacity .25s ease;
+}
+.ci-note.is-fading { opacity: 0; }
+
+/* ================================================================
+   Wsparcie (Asystent + telefon zaufania przy niskim nastroju)
+   ================================================================ */
+.support {
+  display: grid; gap: 10px;
+  margin-top: 14px; padding: 0; border-radius: 22px;
+  border: 1px solid transparent;
+  transition: background .4s ease, border-color .4s ease, padding .4s var(--ease-out);
+}
+.support.is-low {
+  padding: 16px;
+  background: rgba(var(--mist-rgb), .45);
+  border-color: rgba(var(--primary-rgb), .18);
+}
+.support-low, .support-call { display: none; }
+.support.is-low .support-low { display: block; animation: rise .45s var(--ease-out) both; }
+.support.is-low .support-call { display: flex; animation: rise .45s var(--ease-out) .08s both; }
+.support-title { margin: 0 0 4px; font-size: 1.05rem; font-weight: 800; }
+.support-text { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--text-muted); }
+
+.assist-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 12px 14px; border-radius: 18px;
+  border: 1.5px solid var(--line); background: var(--surface);
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+  transition: border-color .2s, background .3s, transform .15s, box-shadow .2s;
+}
+.assist-btn:hover { border-color: var(--primary); }
+.assist-btn:active { transform: scale(.985); }
+.assist-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.assist-ico {
+  flex: 0 0 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(var(--primary-rgb), .1); color: var(--primary-dark);
+  transition: background .3s, color .3s;
+}
+.assist-ico svg { width: 21px; height: 21px; }
+.assist-text { flex: 1; min-width: 0; }
+.assist-text b { display: block; font-size: .95rem; }
+.assist-text small { display: block; margin-top: 2px; font-size: .8rem; color: var(--text-muted); }
+.assist-chev { flex: 0 0 18px; width: 18px; height: 18px; color: var(--text-soft); }
+.support.is-low .assist-btn { border-color: var(--primary); box-shadow: 0 10px 24px -16px rgba(var(--primary-rgb), .8); }
+.support.is-low .assist-ico { background: var(--primary); color: #fff; }
+
+.support-call {
+  align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 16px;
+  background: var(--surface); border: 1.5px solid var(--line);
+  font-weight: 700; font-size: .92rem; color: var(--primary-dark); text-decoration: none;
+}
+.support-call svg { flex: 0 0 18px; width: 18px; height: 18px; }
+.support-call small { margin-left: auto; font-weight: 500; font-size: .78rem; color: var(--text-muted); }
+.support-call:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* ================================================================
+   Dolny przycisk (Pomiń / Dalej)
+   ================================================================ */
+.ci-actions {
+  position: sticky; bottom: 0; z-index: 2;
+  margin: 20px -20px 0; padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg-2) 72%, rgba(var(--mist-rgb), 0));
+}
+.btn-primary {
+  width: 100%; height: 56px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  border: 0; border-radius: 16px;
+  background: var(--primary); color: #fff;
+  box-shadow: 0 12px 26px -12px rgba(var(--primary-rgb), .85);
+  font: inherit; font-size: 1.02rem; font-weight: 700; cursor: pointer;
+  transition: background .2s, transform .15s;
+}
+.btn-primary svg { width: 20px; height: 20px; transition: transform .25s var(--ease-out); }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:hover svg { transform: translateX(3px); }
+.btn-primary:active { transform: translateY(1px) scale(.99); }
+.btn-primary:focus-visible { outline: 3px solid rgba(var(--primary-rgb), .45); outline-offset: 3px; }
+
+/* ================================================================
+   Toast — jak na stronie głównej
+   ================================================================ */
+.toast {
+  position: fixed; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom)); z-index: 40;
+  max-width: calc(100% - 32px); padding: 12px 18px; border-radius: var(--radius-md);
+  background: var(--text); color: #fff; font-size: .88rem; font-weight: 600; text-align: center;
+  box-shadow: 0 16px 30px -12px rgba(30, 42, 50, .5);
+  transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ================================================================
+   Tablet (od 700 px) i komputer (od 1024 px)
+   ================================================================ */
+@media (min-width: 700px) {
+  .ci { padding: 0 32px; }
+  .ci-top { padding-top: 24px; }
+  .ci-main { padding-top: 24px; }
+  .ci-q { font-size: 1.9rem; }
+  .ci-actions { margin: 24px -32px 0; padding: 16px 32px 28px; }
+}
+@media (min-width: 1024px) {
+  .ci-main { justify-content: center; }
+  .ci-actions { position: static; background: none; }
+}
+
+/* Podgląd (?widok=…) i ograniczony ruch: bez animacji */
+.is-static *, .is-static *::before, .is-static *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
+}

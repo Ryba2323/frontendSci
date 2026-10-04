@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Jak się dziś czujesz?</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/checkin.css">
+  <link rel="stylesheet" href="css/mood-slider.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/mood-slider.js" defer></script>
+  <script src="js/nastroj.js" defer></script>
+</head>
+<body>
+
+<!--
+  Pierwsze pytanie codziennego podlewania (check-in): „Jak się dziś czujesz?”, skala 1–10.
+  Suwak to komponent js/mood-slider.js — pasek jest łodygą, która wyłania się z tła, rośnie w prawo i zakwita przy wysokich wartościach.
+  Pod suwakiem: przycisk Asystenta Wsparcia (przy niskim nastroju wyróżniony, z numerem 116 111).
+  Każde pytanie można pominąć. Kolejne pytania i powrót do strony głównej z animacją podlewania — osobne zadania.
+-->
+<div class="ci">
+  <header class="ci-top">
+    <a class="ci-close" href="strona-glowna-2.html" aria-label="Wróć na stronę główną">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </a>
+    <p class="ci-kicker">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg>
+      Codzienne podlewanie
+    </p>
+  </header>
+
+  <main class="ci-main">
+    <h1 class="ci-q">Jak się dziś czujesz?</h1>
+    <p class="ci-hint">Im lepiej, tym dalej przeciągnij łodygę.</p>
+
+    <!-- Suwak (js/mood-slider.js) -->
+    <div class="ci-mood" id="mood"></div>
+
+    <p class="ci-note" id="mood-note" aria-live="polite"></p>
+
+    <!-- Wsparcie: przy nastroju 1–3 karta się wyróżnia i pokazuje telefon zaufania -->
+    <section class="support" id="support" aria-label="Wsparcie">
+      <div class="support-low">
+        <p class="support-title">Ciężki dzień?</p>
+        <p class="support-text">Nie musisz zostawać z tym sam na sam.</p>
+      </div>
+      <button type="button" class="assist-btn" id="assist-btn">
+        <span class="assist-ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></svg>
+        </span>
+        <span class="assist-text">
+          <b>Porozmawiaj z Asystentem Wsparcia</b>
+          <small>Gdy chcesz pogadać</small>
+        </span>
+        <svg class="assist-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <!-- Numer do potwierdzenia przez zespół (notes/CLAUDE.md) -->
+      <a class="support-call" href="tel:116111">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg>
+        Zadzwoń: 116 111 <small>bezpłatnie, całą dobę</small>
+      </a>
+    </section>
+  </main>
+
+  <footer class="ci-actions">
+    <button type="button" class="btn-primary" id="next-btn">
+      <span id="next-label">Pomiń</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>
