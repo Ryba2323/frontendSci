@@ -19,7 +19,11 @@
  * Kolory z motywu (css/tokens.css, --plant-*), płynna zmiana po 'themechange'.
  * ?widok=… — bez animacji (zrzuty, podgląd dla zespołu).
  *
- * API (window.Home2Scene): start({ days, labels, missed }), water(), select(i), isWatered(), debugAdvance(sec)
+ * API (window.Home2Scene): start({ days, labels, missed }), water(mood?), select(i), isWatered(), debugAdvance(sec)
+ *   water(mood) — mood 1–10 z pytań podlewania ustala wielkość dzisiejszego liścia (bez niego: średni liść).
+ *   full(t, fast) — 0–1: scena rośnie do pełnego ekranu (telefon; aplikacja pociąga w dół na górze strony).
+ * <div class="stage" data-blisko> (aplikacja.html) — na telefonie roślinka jest większa („bliżej”), lekko w prawo od powitania,
+ * a canvas ma wysokość całego ekranu, żeby scena mogła urosnąć do pełnego ekranu.
  */
 (function () {
   'use strict';
@@ -28,6 +32,7 @@
   const stage = document.getElementById('stage');
   if (!canvas || !canvas.getContext) { window.Home2Scene = { start() {}, water() {}, select() {}, isWatered: () => false }; return; }
   const ctx = canvas.getContext('2d');
+  const closeUp = stage.hasAttribute('data-blisko');
 
   const view = new URLSearchParams(location.search).get('widok');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!view;
@@ -135,9 +140,11 @@
   let clock = 0, lastMs = performance.now(), wind = 0, lastScroll = window.scrollY;
   let started = false;
 
-  const st = { intro: 0, shrink: 0, greet: 0, labels: 0, awake: 1 };
+  const st = { intro: 0, shrink: 0, greet: 0, labels: 0, awake: 1, full: 0 };
+  let fullTarget = 0, fullRate = 6;
   let days = [], labels = [], missed = [];
   let fallen = null, fallDone = false, twig0 = null;
+  let todayMood = null;                                           // nastrój z dzisiejszego podlewania
   let wateredAt = null, wetAt = -99, sel = -1, selAt = -10, flareAt = -10, pulseAt = null;
   let waveAt = -10, weekIn = false, quoteIn = false, bloomFlashAt = -10;
   const drops = [], rings = [], petals = [], sparks = [];
@@ -147,7 +154,9 @@
   const bokeh = Array.from({ length: 5 }, (_, i) => ({ nx: rand(0, 1), ny: rand(0, 1), r: rand(70, 150), spr: i % 4, a: rand(.16, .28), f: rand(.03, .07), ph: rand(0, TAU) }));
   const floaters = Array.from({ length: 6 }, () => ({ nx: rand(0, 1), ny: rand(0, 1), len: rand(12, 18), tone: rand(0, .6), f: rand(.15, .3), ph: rand(0, TAU), fall: rand(5, 10), rot: rand(0, TAU), spin: rand(-.35, .35), al: rand(.2, .34), wr: rand(.36, .44), curl: rand(-.5, .5) }));
   const fireflies = Array.from({ length: FIREFLY_N }, () => ({ cx: rand(-40, 40), cy: rand(-100, -10), rx: rand(6, 18), ry: rand(4, 12), sp: rand(.25, .55) * (Math.random() < .5 ? -1 : 1), ph: rand(0, TAU), size: rand(18, 28), bs: rand(.9, 1.9), bp: rand(0, TAU) }));
-  const stars = DAYPART === 'night' ? Array.from({ length: 26 }, () => ({ nx: rand(0, 1), ny: rand(0, .55), r: rand(.6, 1.5), ph: rand(0, TAU), sp: rand(.6, 1.6) })) : [];
+  const stars = Array.from({ length: 30 }, () => ({ nx: rand(0, 1), ny: rand(0, .55), r: rand(.6, 1.5), ph: rand(0, TAU), sp: rand(.6, 1.6) }));
+  // Tryb nocny (js/theme.js): zawsze nocne niebo z gwiazdami i księżycem
+  const darkMode = () => !!(window.Theme && window.Theme.isDark && window.Theme.isDark());
 
   // ================================================================
   //  Roślina (jednostki: pełna wysokość ≈ 100; y w górę ujemne)
@@ -509,7 +518,25 @@
 
   // Pora dnia: delikatne światło nad roślinką
   function drawSky() {
-    if (DAYPART === 'morning') {
+    const part = darkMode() ? 'moon' : DAYPART;
+    if (part === 'moon') {
+      // księżyc w prawym górnym rogu: miękka poświata + tarcza
+      const mx = CW * .8, my = Math.max(70, stageH * .17), r = 15;
+      const glow = ctx.createRadialGradient(mx, my, 0, mx, my, r * 7);
+      glow.addColorStop(0, 'rgba(255,244,214,.28)');
+      glow.addColorStop(1, 'rgba(255,244,214,0)');
+      ctx.fillStyle = glow; ctx.fillRect(0, 0, CW, stageH);
+      ctx.fillStyle = 'rgba(255,246,222,.95)';
+      ctx.beginPath(); ctx.arc(mx, my, r, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(214,206,186,.35)';
+      ctx.beginPath(); ctx.arc(mx - 4, my - 3, 3.2, 0, TAU); ctx.arc(mx + 5, my + 4, 2.2, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fff';
+      for (const s of stars) {
+        ctx.globalAlpha = .3 + .5 * (.5 + .5 * Math.sin(clock * s.sp + s.ph));
+        ctx.beginPath(); ctx.arc(s.nx * CW, s.ny * stageH, s.r, 0, TAU); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else if (DAYPART === 'morning') {
       const g = ctx.createRadialGradient(CW * .85, 0, 0, CW * .85, 0, Math.max(CW, stageH) * .9);
       g.addColorStop(0, 'rgba(255,226,180,.32)');
       g.addColorStop(1, 'rgba(255,226,180,0)');
@@ -558,7 +585,7 @@
       probe.remove();
     }
     CW = wide ? W / 2 : W;
-    CH = stageMax;
+    CH = closeUp && !wide ? H : stageMax;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(CW * dpr);
     canvas.height = Math.round(CH * dpr);
@@ -569,15 +596,18 @@
 
   const greetEl = stage.querySelector('.stage-greet');
   function frameLayout() {
-    stageH = wide ? H : lerp(stageMax, stageMax * .86, st.shrink);
+    const f = wide ? 0 : st.full;
+    stageH = wide ? H : lerp(lerp(stageMax, stageMax * .86, st.shrink), H, f);
     if (!wide) stage.style.setProperty('--stage-h', stageH.toFixed(1) + 'px');
-    greetEl.style.opacity = (1 - st.greet).toFixed(3);
+    greetEl.style.opacity = ((1 - st.greet) * (1 - f)).toFixed(3);
     const greetBottom = greetEl.offsetTop + greetEl.offsetHeight + 8;
     // na telefonie powitanie znika przy przewijaniu, a roślinka zajmuje zwolnione miejsce
-    topReserve = wide ? Math.max(greetBottom + 30, H * .14) : lerp(greetBottom, 58, st.greet);
-    baseX = CW / 2;
-    baseY = stageH - (wide ? H * .1 : 24);
-    S = clamp(Math.min((baseY - topReserve) / (FULL_H + 12), CW * .9 / 78), .9, 7);
+    if (wide) topReserve = Math.max(greetBottom + 30, H * .14);
+    else if (closeUp) topReserve = lerp(lerp(Math.min(104, greetBottom), 58, st.greet), 84, f);   // „bliżej”: roślinka sięga nad powitanie (stoi obok niego)
+    else topReserve = lerp(greetBottom, 58, st.greet);
+    baseX = closeUp && !wide ? CW * lerp(lerp(.57, .5, st.greet), .5, f) : CW / 2;
+    baseY = stageH - (wide ? H * .1 : lerp(22, 150, f));                // w pełnym ekranie nad kaflem i paskiem zakładek
+    S = clamp(Math.min((baseY - topReserve) / (FULL_H + 12), CW * lerp(.9, 1, f) / 78), .9, 7);
   }
 
   // ================================================================
@@ -615,7 +645,9 @@
       st.greet = approach(st.greet, tGreet, 8, dt);
       st.labels = approach(st.labels, weekVis ? 1 : 0, 5, dt);
       st.awake = approach(st.awake, awake, 2, dt);
+      st.full = approach(st.full, fullTarget, fullRate, dt);
     }
+    if (reduceMotion) st.full = fullTarget;
     frameLayout();
 
     // najstarszy liść odpada chwilę po wejściu (okno 7 dni przesunęło się o dzień)
@@ -726,7 +758,7 @@
       const off = !isToday && !!missed[i];                           // dzień bez podlania
       const watered = isToday && wateredAt != null && clock >= wateredAt;
       const m = days[i];
-      const mood = off ? 2.5 : m == null ? (watered ? 7 : 4) : m;
+      const mood = off ? 2.5 : m == null ? (watered ? todayMood || 7 : 4) : m;
       const len = (9 + 9 * mood / 10) * L.lenK * k * S;
       const ex = sx + Math.cos(dir) * len, ey = sy + Math.sin(dir) * len + len * L.droop * .55;
       const cx = sx + Math.cos(dir) * len * .5, cy = sy + Math.sin(dir) * len * .5 - len * (.2 - L.droop * .25);
@@ -1034,7 +1066,8 @@
     wind = Math.min(1.5, wind + .3 * motion);
   }
 
-  function water() {
+  function water(mood) {
+    if (Number.isInteger(mood) && mood >= 1 && mood <= 10) todayMood = mood;
     for (let k = 0; k < 28; k++) {
       const x = baseX + rand(-38, 38) * S;
       const floor = baseY - rand(0, FULL_H * .9) * S;
@@ -1060,7 +1093,16 @@
 
   paintBokeh();
 
+  // Pełny ekran: t 0–1 (fast — w trakcie przeciągania palcem scena idzie za palcem bez opóźnienia)
+  function full(t, fast) {
+    const was = fullTarget;
+    fullTarget = clamp(t);
+    fullRate = fast ? 30 : 5;
+    if (!fast && fullTarget === 1 && was < 1) { wind = Math.min(1.5, wind + .9 * motion); if (motion) petalBurst(5); }
+  }
+
   window.Home2Scene = {
+    full,
     start(opts) {
       days = opts.days;
       labels = opts.labels;

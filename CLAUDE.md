@@ -35,9 +35,31 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 | Login | `logowanie.html`, `js/logowanie.js` |
 | Registration (3 stages, one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
 | Shared by login and registration | `css/auth.css`, `js/auth-common.js` (toast, haptics, password field, `account` storage), `js/plant-scene.js` (growing plant canvas, `window.PlantScene`) |
+| **The app: all tabs on one page (main entry)** | `aplikacja.html`, `css/app.css`, `js/app.js` (tabs/router) — see "The app" below |
 | Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
 | **Home page, version 2: plant on top (current direction)** | `strona-glowna-2.html`, `css/home2.css`, `js/home2.js`, `js/home2-scene.js` |
+| Check-in, first question only (the design `aplikacja.html` reuses) | `nastroj.html`, `css/checkin.css`, `js/nastroj.js`, `css/mood-slider.css`, `js/mood-slider.js` |
+| Bottom sheets (shared) | `js/sheets.js` (`window.Sheets`) |
 | Themes and tokens | `css/tokens.css`, `js/theme.js` |
+
+### The app (`aplikacja.html`)
+
+- One page with five tabs from the plan: **Dom · Skrytka · Tracker · Testy · Blog**. The tab lives in the hash (`#/skrytka`), so it works from `file://` and the back button switches tabs. `js/app.js` handles the tabs, remembers each tab's scroll position, and wires `[data-sos]`, `[data-breath]` and `[data-go]`.
+- The app should feel **calm**: little text per screen, soft cards, slow fade-in animations (`soft-in`, staggered by `--i`). Prefer hiding details behind a tap (expand) over showing everything.
+- Phone: tab bar at the bottom; the plant stage shows only on the Dom tab. On Dom the content card scrolls **over** the plant (the stage sits underneath and drifts up slightly); the top bar with logo, colour and SOS (`.app-top`, outside the stage) stays on top and gets a background once the card reaches it. The stage has `data-blisko`, so on phones the plant is bigger and sits a bit to the right of the greeting. The plant can grow to **full screen** (`Home2Scene.full(t)`, logic in `js/app.js`): the zoom button at the stage's bottom-right corner (`#plant-zoom`, always works), pulling down at the very top, or the iOS rubber band (`scrollY < 0`). Some hosts (e.g. the Claude app showing the artifact) swallow the pull gesture, hence the button. The card slides down to a peek; a swipe up, a tap on the card or the button brings it back. Tablet: floating tab bar. Desktop: the plant stays in the left half on every tab, content and floating tab bar on the right.
+- **Dom** is home v2 (`js/home2.js`). "Podlej roślinkę" opens the check-in (`js/checkin.js`, `window.Checkin`): the screen grows as a circle out of the button. Step 1 is the `nastroj.html` design (mood slider + support at mood ≤ 3), then sleep, "what mattered today" (food, family, friends, love, nature, study: −1/0/1) and a note. Every question can be skipped. After the last one the circle shrinks into the plant and it rains (`Home2Scene.water(mood)` sizes today's leaf from the mood).
+- **Skrytka** has two panes (`#skrytka-seg`): thoughts and the **Słoik dobrych chwil** (`js/sloik.js`, `localStorage` `sci.sloik`): small good moments shown as fireflies in a jar; a tap draws one at random, and after a check-in with mood 1–3 the home page shows one (`watered` event from `js/home2.js`).
+- **Skrytka thoughts** (`js/skrytka.js`): one text field and two buttons. "Schowaj" saves (prototype: `localStorage` `sci.skrytka`, unencrypted), "Puść z wiatrem" lets a thought fly away as a leaf and saves nothing. Saved thoughts are collapsed; a tap shows "Zapytaj Asystenta" (placeholder, AI only on explicit request) and "Usuń".
+- **Blog** (`js/blog.js`): a calm list (title + 2 lines), Popularne/Nowe and a floating "Napisz" button. A tap expands a post (full text, comments, report). Anonymous plant pseudonyms, votes. Every post and comment goes through **`js/moderacja.js`**, a word-list DEMO with the API the real AI moderation will have: `kryzys` (self-harm → not published, 116 111 / 112 / breathing / "schowaj w Skrytce"), `obrazliwe` (insults, threats → highlighted, "popraw"), `dane` (phone, e-mail, @nick), `ok`. Crisis words in the check-in note and in Skrytka don't block anything but show 116 111 right away.
+- **Tracker** (`js/tracker.js`), insight-first (fixed demo data, 8 weeks):
+  - "Twój tydzień w skrócie": 7 small bars and 3 sentences (average vs last week, best day and what helped, one thing to try);
+  - "Co zauważyliśmy": personalised insights, each showing only a title, a small chart and one short sentence; the possible causes computed from the data and the suggestion are folded under "Skąd to może się brać?" (keep the screen calm) ("Może to wynikać z tego, że…": shorter sleep the night before, study stress, fewer outings…) and one suggestion. Example: "Niedzielne wieczory bywają trudniejsze". Wording is a hint, never a diagnosis;
+  - "Co Ci pomaga": the 3 check-in answers with the highest mood above average;
+  - "Zielnik": one pressed flower per week with at least 3 waterings; weeks without one simply don't appear. **Testy** (`js/testy.js`): empty "coming soon" screen for now.
+- **Oddychaj z roślinką** (`js/oddech.js`, `window.Oddech`): one minute of breathing (4 s in, 2 s hold, 6 s out) with a flower that opens and closes, plus optional nature sounds generated with Web Audio (rain, waves that follow the breath, forest). Reachable from SOS, from a shortcut on Dom and from the blog's crisis screen.
+- **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
+- **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
+- **Tryb nocny**: `Theme.setMode('auto'|'light'|'dark')` in `js/theme.js` sets `<html data-mode>` (saved in `sci.mode`); `css/tokens.css` redefines only the neutral tokens for dark (also follows the system setting in auto). The switch is in the "Kolor roślinki" sheet. The plant scene shows a night sky with stars and the moon in dark mode. Use `--glass`, `--toast-bg` / `--toast-fg` instead of hard-coded white or dark colours.
 
 ### Colours and themes
 
@@ -84,5 +106,5 @@ These are the current rules. They are also shown on the page under "Jak działa 
 - There's no backend. Login and password reset are simulated (see `TODO backend` in `js/logowanie.js`).
 - Registration keeps the profile in `localStorage` (`sci.account`) so the other screens can greet the user. It **never stores the password**.
 - The "Twój tydzień" data on the home page is **random demo data**, generated in `js/home2.js` and shaped like the planned `daily_checkins` table: mood 1–10 per day, `null` means no entry.
-- The "Podlej roślinkę" button only plays the animation. The check-in questions flow is still to be designed (`TODO` in `js/home2.js`).
-- There are no tabs or navigation yet, on purpose. The plan's tabs are Dashboard / Skrytka / Tracker / Testy / Blog (see `notes/CLAUDE.md`).
+- In `aplikacja.html` the check-in answers, blog posts and votes live only in page memory; Skrytka uses `localStorage`. On `strona-glowna-2.html` the "Podlej roślinkę" button only plays the animation.
+- Blog moderation is a word list (`js/moderacja.js`) until the AI moderation exists (planned as a server-side function).

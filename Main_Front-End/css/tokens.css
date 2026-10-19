@@ -16,6 +16,9 @@
   --text-soft: #8A9BA4;
   --surface: #FFFFFF;
   --error: #C4553C;
+  --glass: rgba(255, 255, 255, .6);      /* półprzezroczyste tło na scenie i listach */
+  --toast-bg: #1E2A32;                   /* ciemny dymek (toast) i przycisk „Usuń” */
+  --toast-fg: #FFFFFF;
   --warning: #B7792F;
 
   /* Kolory kategorii (wykresy / suwaki) — znaczą to samo w każdym motywie */
@@ -214,4 +217,54 @@
   --plant-core: #E7A456;
   --plant-ground: #EFCDB8;
   --plant-glow: #F6DCCB;
+}
+
+/* ================================================================
+   Tryb nocny — <html data-mode="dark"> albo ciemny motyw systemu (gdy nie wybrano „jasny”).
+   Zmienia tylko kolory neutralne (tło, tekst, linie); akcent i roślinka zostają z wybranego motywu.
+   Ustawia js/theme.js (Theme.setMode: auto / light / dark, zapis w sci.mode).
+   ================================================================ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="light"]) {
+    --text: #E4EDEF;
+    --text-muted: #A2B4BA;
+    --text-soft: #75898F;
+    --surface: #1A2B30;
+    --glass: rgba(255, 255, 255, .06);
+    --toast-bg: #E4EDEF;
+    --toast-fg: #0E181B;
+    --bg: #0E181B;
+    --bg-2: #0B1417;
+    --sheet: #132126;
+    --line: #263A40;
+    --line-hover: #34505A;
+    --line-strong: #2E454B;
+    --track: #213439;
+    --mist: #1D3338;   --mist-rgb: 29, 51, 56;
+    --mint: #1A3832;   --mint-rgb: 26, 56, 50;
+    --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
+    --ring: rgba(var(--primary-rgb), .45);
+    color-scheme: dark;
+  }
+}
+:root[data-mode="dark"] {
+  --text: #E4EDEF;
+  --text-muted: #A2B4BA;
+  --text-soft: #75898F;
+  --surface: #1A2B30;
+  --glass: rgba(255, 255, 255, .06);
+  --toast-bg: #E4EDEF;
+  --toast-fg: #0E181B;
+  --bg: #0E181B;
+  --bg-2: #0B1417;
+  --sheet: #132126;
+  --line: #263A40;
+  --line-hover: #34505A;
+  --line-strong: #2E454B;
+  --track: #213439;
+  --mist: #1D3338;   --mist-rgb: 29, 51, 56;
+  --mint: #1A3832;   --mint-rgb: 26, 56, 50;
+  --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
+  --ring: rgba(var(--primary-rgb), .45);
+  color-scheme: dark;
 }

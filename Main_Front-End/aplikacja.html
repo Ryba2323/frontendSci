@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>SCI++</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/home2.css">
+  <link rel="stylesheet" href="css/checkin.css">
+  <link rel="stylesheet" href="css/mood-slider.css">
+  <link rel="stylesheet" href="css/app.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/sheets.js" defer></script>
+  <script src="js/moderacja.js" defer></script>
+  <script src="js/mood-slider.js" defer></script>
+  <script src="js/home2-scene.js" defer></script>
+  <script src="js/skrytka.js" defer></script>
+  <script src="js/sloik.js" defer></script>
+  <script src="js/checkin.js" defer></script>
+  <script src="js/home2.js" defer></script>
+  <script src="js/cytaty.js" defer></script>
+  <script src="js/oddech.js" defer></script>
+  <script src="js/kontakty.js" defer></script>
+  <script src="js/blog.js" defer></script>
+  <script src="js/tracker.js" defer></script>
+  <script src="js/testy.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body data-tab="dom">
+
+<!--
+  CAŁA APLIKACJA NA JEDNEJ STRONIE: zakładki Dom · Skrytka · Tracker · Testy · Blog (js/app.js, adres #/zakładka).
+  Telefon: pasek zakładek na dole; roślinka (scena) tylko na zakładce Dom.
+  Komputer: roślinka zawsze w lewej połowie, zakładki zmieniają treść po prawej, pasek pływa na dole.
+  „Podlej roślinkę” → pytania (js/checkin.js) wylewają się z przycisku → po ostatnim zwijają się do roślinki i pada deszcz.
+-->
+
+<!-- Scena z roślinką (js/home2-scene.js) -->
+<div class="stage" id="stage" data-blisko>
+  <canvas id="plant" aria-label="Twoja roślinka. Każdy liść na odnogach to jeden dzień tygodnia — im większy, tym lepszy dzień." role="img"></canvas>
+
+  <!-- Roślinka na cały ekran (telefon) — js/app.js -->
+  <button type="button" class="plant-zoom" id="plant-zoom" aria-pressed="false" aria-label="Powiększ roślinkę na cały ekran">
+    <svg class="z-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    <svg class="z-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+  </button>
+
+  <div class="stage-greet">
+    <p class="greet-date" id="greet-date"></p>
+    <h1 id="greet-title">Cześć!</h1>
+  </div>
+
+</div>
+
+<!-- Górny pasek: logo, kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę -->
+<header class="app-top" id="app-top">
+  <span class="logo-ph" aria-label="Logo aplikacji (miejsce na logo)">logo</span>
+  <div class="top-actions">
+    <!-- Kolor roślinki (ten sam wybór co w rejestracji); kółko pokazuje aktualny motyw -->
+    <button type="button" class="color-btn" id="color-open" aria-haspopup="dialog" aria-label="Zmień kolor roślinki">
+      <span class="color-dot" aria-hidden="true"></span>
+    </button>
+    <button type="button" class="sos" id="sos-open" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+      <span>SOS</span>
+    </button>
+  </div>
+</header>
+
+<main class="content" id="content">
+
+  <!-- ===================== DOM (strona główna v2) ===================== -->
+  <div class="sheet view" id="view-dom" data-view="dom">
+    <p class="scroll-hint" id="scroll-hint" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      Przewiń, żeby zobaczyć swój tydzień
+    </p>
+
+    <!-- Codzienne podlewanie: przycisk otwiera pytania (js/checkin.js), po ostatnim — deszcz na roślince -->
+    <section class="sec sec-water" id="sec-water" aria-labelledby="water-title">
+      <p class="kicker">Codzienne podlewanie</p>
+      <h2 id="water-title">Jak się dziś czujesz?</h2>
+      <p class="lead" id="water-lead">Kilka krótkich pytań o Twój dzień. Każda odpowiedź to kropla dla Twojej roślinki.</p>
+      <button type="button" class="water-btn" id="water-btn">
+        <span class="drop" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg></span>
+        <span class="water-label" id="water-label">Podlej roślinkę</span>
+      </button>
+    </section>
+
+    <!-- Twój tydzień: ogólny bilans + dni połączone z liśćmi na roślince (na razie dane losowe) -->
+    <section class="sec sec-week" id="sec-week" aria-labelledby="week-title">
+      <p class="kicker" id="week-title">Twój tydzień</p>
+      <div class="score">
+        <p class="score-num"><strong id="score-num">0</strong><span>/10</span></p>
+        <p class="score-word" id="score-word"></p>
+      </div>
+      <div class="meter" id="meter" role="img">
+        <span class="meter-fill" id="meter-fill"></span>
+        <span class="meter-prev" id="meter-prev"></span>
+      </div>
+      <p class="trend" id="trend"></p>
+
+      <!-- Zasady roślinki (uzgodnić z zespołem; opis w notes/CLAUDE.md) -->
+      <details class="how">
+        <summary>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg>
+          <span><b>Każdy liść to jeden z ostatnich 7 dni.</b> Stuknij dzień albo liść. <u>Jak to działa?</u></span>
+        </summary>
+        <ul>
+          <li><b>Większy i żywszy liść = lepszy dzień.</b> Wielkość i kolor liścia biorą się z Twojego podlewania tego dnia.</li>
+          <li><b>Dzień bez podlania nic nie psuje.</b> Zostaje po nim mały, uśpiony pąk. Roślinka nie więdnie i nie traci liści — po prostu na Ciebie czeka.</li>
+          <li><b>Nie ma resetu tygodnia.</b> Codziennie o północy najstarszy liść opada, a na górze wyrasta pąk na nowy dzień. „Twój tydzień” to zawsze ostatnie 7 dni.</li>
+          <li><b>Kwiat</b> jest otwarty, gdy w ostatnich 7 dniach podlejesz roślinkę co najmniej 3 razy. Jeśli nie — zamyka się w pąk i otwiera przy następnym podlaniu.</li>
+        </ul>
+      </details>
+      <div class="days" id="days" role="group" aria-label="Dni tygodnia"></div>
+      <p class="day-detail" id="day-detail" aria-live="polite"></p>
+    </section>
+
+    <!-- Myśl na dziś: gdy tu dojdziesz, na czubku roślinki rozkwita kwiat -->
+    <section class="sec sec-quote" id="sec-quote" aria-labelledby="quote-title">
+      <p class="kicker" id="quote-title">Myśl na dziś</p>
+      <blockquote class="quote" id="quote"></blockquote>
+    </section>
+
+    <!-- Na skróty -->
+    <section class="sec sec-short" aria-labelledby="short-title">
+      <p class="kicker" id="short-title">Na skróty</p>
+      <div class="shortcuts">
+        <button type="button" class="shortcut" data-go="skrytka">
+          <span class="insight-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg></span>
+          <b>Zapisz myśl</b><small>w Skrytce, tylko dla Ciebie</small>
+        </button>
+        <button type="button" class="shortcut" data-breath>
+          <span class="insight-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5" stroke-dasharray="2 3"/></svg></span>
+          <b>Minuta oddechu</b><small>z roślinką, gdy jest za szybko</small>
+        </button>
+      </div>
+    </section>
+
+    <footer class="plant-foot">
+      <b id="plant-name">Mięta</b>
+      <span id="plant-days"></span>
+    </footer>
+  </div>
+
+  <!-- ===================== SKRYTKA (js/skrytka.js) ===================== -->
+  <section class="sheet view" id="view-skrytka" data-view="skrytka" aria-labelledby="skrytka-title" hidden>
+    <header class="view-head">
+      <div>
+        <h1 id="skrytka-title">Skrytka</h1>
+      </div>
+      <button type="button" class="sos view-sos" data-sos aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <span>SOS</span>
+      </button>
+    </header>
+    <p class="lead view-lead">Miejsce na Twoje myśli. Widzisz je tylko Ty.</p>
+    <div class="seg pane-seg" id="skrytka-seg" role="group" aria-label="Skrytka">
+      <button type="button" data-pane="mysli" aria-pressed="true">Myśli</button>
+      <button type="button" data-pane="sloik" aria-pressed="false">Słoik dobrych chwil</button>
+    </div>
+    <div id="skrytka-root"></div>
+    <div id="sloik-root" hidden></div>
+  </section>
+
+  <!-- ===================== TRACKER (js/tracker.js) ===================== -->
+  <section class="sheet view" id="view-tracker" data-view="tracker" aria-labelledby="tracker-title" hidden>
+    <header class="view-head">
+      <div>
+        <h1 id="tracker-title">Tracker</h1>
+      </div>
+      <button type="button" class="sos view-sos" data-sos aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <span>SOS</span>
+      </button>
+    </header>
+    <p class="lead view-lead">Jak zmienia się Twój nastrój i co Ci pomaga.</p>
+    <div id="tracker-root"></div>
+  </section>
+
+  <!-- ===================== TESTY (js/testy.js) ===================== -->
+  <section class="sheet view" id="view-testy" data-view="testy" aria-labelledby="testy-title" hidden>
+    <header class="view-head">
+      <div>
+        <h1 id="testy-title">Testy</h1>
+      </div>
+      <button type="button" class="sos view-sos" data-sos aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <span>SOS</span>
+      </button>
+    </header>
+    <div id="testy-root"></div>
+  </section>
+
+  <!-- ===================== BLOG (js/blog.js + js/moderacja.js) ===================== -->
+  <section class="sheet view" id="view-blog" data-view="blog" aria-labelledby="blog-title" hidden>
+    <header class="view-head">
+      <div>
+        <h1 id="blog-title">Blog</h1>
+      </div>
+      <button type="button" class="sos view-sos" data-sos aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <span>SOS</span>
+      </button>
+    </header>
+    <p class="lead view-lead">Anonimowo i życzliwie.</p>
+    <div id="blog-root"></div>
+  </section>
+</main>
+
+<!-- Menu aplikacji: telefon — pasek na dole, tablet/komputer — pływający pasek -->
+<nav class="tabbar" id="tabbar" aria-label="Menu aplikacji">
+  <a class="tab" href="#/dom" data-tab="dom"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg></span><span class="tab-label">Dom</span></a>
+  <a class="tab" href="#/skrytka" data-tab="skrytka"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg></span><span class="tab-label">Skrytka</span></a>
+  <a class="tab" href="#/tracker" data-tab="tracker"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"/><path d="M5 15.5l4-5 4 3 6-7.5"/></svg></span><span class="tab-label">Tracker</span></a>
+  <a class="tab" href="#/testy" data-tab="testy"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4.5h6"/><path d="M9 12.5l2 2 4-4"/></svg></span><span class="tab-label">Testy</span></a>
+  <a class="tab" href="#/blog" data-tab="blog"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h8A2.5 2.5 0 0 1 17 6.5v5a2.5 2.5 0 0 1-2.5 2.5H9l-4 3v-3.3A2.5 2.5 0 0 1 4 11.5z"/><path d="M17 9h.5A2.5 2.5 0 0 1 20 11.5v8l-3-2.5h-4.5A2.5 2.5 0 0 1 10 14.5"/></svg></span><span class="tab-label">Blog</span></a>
+</nav>
+
+<!-- Pytania codziennego podlewania (treść wstawia js/checkin.js) -->
+<section class="ci-overlay" id="checkin" role="dialog" aria-modal="true" aria-labelledby="ci-title" hidden></section>
+
+<div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
+
+<!-- Arkusz: kolor roślinki (aktualny motyw zaznaczony; zmiana od razu przebarwia roślinkę i się zapisuje) -->
+<section class="bsheet" id="color-sheet" role="dialog" aria-modal="true" aria-labelledby="color-title" hidden>
+  <span class="grabber" aria-hidden="true"></span>
+  <h2 class="sos-title" id="color-title">Kolor roślinki</h2>
+  <p class="sos-sub">Razem z roślinką zmieni się cała aplikacja.</p>
+  <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="color-title"></div>
+  <!-- Tryb nocny (js/theme.js → Theme.setMode) -->
+  <p class="sheet-label" id="mode-title">Tryb</p>
+  <div class="seg mode-seg" id="mode-seg" role="group" aria-labelledby="mode-title">
+    <button type="button" data-mode="auto" aria-pressed="true">Jak w telefonie</button>
+    <button type="button" data-mode="light" aria-pressed="false">Dzienny</button>
+    <button type="button" data-mode="dark" aria-pressed="false">Nocny</button>
+  </div>
+  <button type="button" class="sos-close" data-close>Gotowe</button>
+</section>
+
+<!-- Arkusz SOS -->
+<section class="bsheet" id="sos-sheet" role="dialog" aria-modal="true" aria-labelledby="sos-title" hidden>
+  <span class="grabber" aria-hidden="true"></span>
+  <h2 class="sos-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sos-sub">Rozmowa naprawdę może pomóc. Tu szybko znajdziesz pomoc.</p>
+  <!-- Numery do potwierdzenia przez zespół (notes/CLAUDE.md) -->
+  <!-- Oddech z roślinką (js/oddech.js) — szybka pomoc, zanim ktoś zadzwoni -->
+  <button type="button" class="sos-breath" data-breath>
+    <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7.5" stroke-dasharray="2 3"/></svg></span>
+    <span><b>Oddychaj z roślinką</b><small>Minuta spokojnego oddechu, gdy wszystko jest za szybko</small></span>
+  </button>
+  <!-- Bliskie osoby: 1–3 zaufane kontakty, dzwonisz jednym dotknięciem (js/kontakty.js) -->
+  <section class="trusted" id="trusted" aria-labelledby="trusted-title"></section>
+  <p class="sheet-label" id="help-title">Telefony pomocowe</p>
+  <ul class="sos-list" aria-labelledby="help-title">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sos-close" data-close>Zamknij</button>
+</section>
+
+<!-- Arkusz: zapisane myśli na dziś (treść wstawia js/cytaty.js) -->
+<section class="bsheet" id="quotes-sheet" role="dialog" aria-modal="true" aria-labelledby="quotes-title" hidden></section>
+
+<!-- Arkusz: oddech z roślinką (treść wstawia js/oddech.js) -->
+<section class="bsheet" id="breath-sheet" role="dialog" aria-modal="true" aria-labelledby="breath-title" hidden></section>
+
+<!-- Blog: przycisk „Napisz” (widoczny tylko na zakładce Blog) -->
+<button type="button" class="fab" id="blog-fab">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>
+  Napisz
+</button>
+
+<!-- Arkusz: nowy wpis na blogu + wynik moderacji (treść wstawia js/blog.js) -->
+<section class="bsheet bsheet-tall" id="compose-sheet" role="dialog" aria-modal="true" aria-labelledby="compose-title" hidden></section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

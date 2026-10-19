@@ -74,7 +74,9 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 - Mechanika roślinki w codziennym użyciu.
 - Zawartość strony głównej, ton komunikacji, dark mode.
 - Konkretne numery pomocowe i treści kryzysowe.
-- Skale pól check-inu (poza nastrojem).
+- Skale pól check-inu (poza nastrojem). Propozycja w `aplikacja.html`: sen w przedziałach (<5, 5–6, 7–8, 9+ h), jakość snu 1–4, obszary dnia −1 / 0 / 1 („ciężko / ok / dobrze”).
+- Nastrój jest w bazie wymagany, a design pytań pozwala go pominąć — czy wpis bez nastroju się zapisuje?
+- Moderacja bloga: w prototypie lista słów (`js/moderacja.js`); docelowo AI po stronie serwera. Co robimy z historiami wyjścia z kryzysu (np. „kiedyś myślałem o samobójstwie, dziś jest lepiej”) — publikować po sprawdzeniu przez człowieka?
 - Rejestracja: pytania o tematy (Nastrój, Energia, Stres, Sen…) i przypomnienia nie wynikają z planu — sprawdzić z zespołem, co z nimi robimy (np. powiązać z polami check-inu i pushami).
 - Rejestracja: brakuje osobnej zgody RODO na przetwarzanie danych o zdrowiu (Art. 9).
 

@@ -10,8 +10,9 @@
  *   • Bilans tygodnia = średnia tylko z dni z wpisem.
  *
  * Tydzień jest na razie LOSOWY (dane demonstracyjne), z jednym dniem bez podlania dla przykładu.
- * „Podlewanie” to codzienny wpis o samopoczuciu — na razie sam przycisk z animacją, pytania dojdą później.
- * Roślinka: js/home2-scene.js (window.Home2Scene). Motyw: js/theme.js (window.Theme).
+ * „Podlewanie” to codzienny wpis o samopoczuciu. W aplikacji (aplikacja.html) przycisk otwiera pytania
+ * (js/checkin.js, window.Checkin), a po ostatnim roślinka dostaje deszcz. Bez pytań (strona-glowna-2.html) — sama animacja.
+ * Roślinka: js/home2-scene.js (window.Home2Scene). Motyw: js/theme.js (window.Theme). Arkusze: js/sheets.js (window.Sheets).
  */
 (function () {
   'use strict';
@@ -60,18 +61,28 @@
   const labels = dates.map((d, i) => (i === 6 ? 'dziś' : DAY_LETTER[d.getDay()]));
   const names = dates.map((d, i) => (i === 6 ? 'Dziś' : DAY_NAME[d.getDay()]));
 
-  const recorded = days.filter(v => v != null);
-  const score = Math.round(recorded.reduce((a, b) => a + b, 0) / recorded.length * 10) / 10;
-  const prev = Math.round(clamp(score + rand(-1.2, .9), 3, 9.6) * 10) / 10;
   const WORDS = [[8.5, 'Świetny tydzień'], [7, 'Całkiem dobrze'], [5.5, 'Nieźle'], [4, 'Tak sobie'], [0, 'Trudniejszy czas']];
   const MOOD_WORDS = ['', 'bardzo źle', 'bardzo źle', 'słabo', 'słabo', 'tak sobie', 'tak sobie', 'dobrze', 'dobrze', 'świetnie', 'świetnie'];
+  function avg(list) {
+    const rec = list.filter(v => v != null);
+    return rec.length ? Math.round(rec.reduce((a, b) => a + b, 0) / rec.length * 10) / 10 : 0;
+  }
+  const prev = Math.round(clamp(avg(days) + rand(-1.2, .9), 3, 9.6) * 10) / 10;
 
-  $('#score-word').textContent = WORDS.find(([min]) => score >= min)[1];
-  $('#meter').setAttribute('aria-label', `Ogólny bilans ostatnich 7 dni: ${fmt(score)} na 10. Tydzień wcześniej: ${fmt(prev)}.`);
-  $('#meter-prev').style.left = `${prev * 10}%`;
-  const diff = score - prev;
-  const n = recorded.length;
-  $('#trend').innerHTML = `<b>${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}</b> od zeszłego tygodnia · średnia z ${n} ${n === 1 ? 'dnia' : 'dni'} z podlaniem`;
+  // Bilans tygodnia — liczony od nowa po podlaniu (dzisiejszy nastrój też się liczy)
+  let todayMood = null;                                          // null = jeszcze nie podlano albo nastrój pominięty
+  let score = 0;
+  function renderScore() {
+    const all = days.slice(0, 6).concat(todayMood);
+    score = avg(all);
+    const n = all.filter(v => v != null).length;
+    $('#score-word').textContent = WORDS.find(([min]) => score >= min)[1];
+    $('#meter').setAttribute('aria-label', `Ogólny bilans ostatnich 7 dni: ${fmt(score)} na 10. Tydzień wcześniej: ${fmt(prev)}.`);
+    $('#meter-prev').style.left = `${prev * 10}%`;
+    const diff = score - prev;
+    $('#trend').innerHTML = `<b>${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}</b> od zeszłego tygodnia · średnia z ${n} ${n === 1 ? 'dnia' : 'dni'} z podlaniem`;
+  }
+  renderScore();
 
   const daysEl = $('#days');
   daysEl.innerHTML = days.map((v, i) => {
@@ -92,7 +103,7 @@
       b.setAttribute('aria-pressed', String(on));
     });
     detail.textContent = i === 6
-      ? (watered ? 'Dziś — roślinka podlana' : 'Dziś — roślinka czeka na podlanie')
+      ? (watered ? (todayMood ? `Dziś · ${todayMood}/10 · ${MOOD_WORDS[todayMood]}` : 'Dziś — roślinka podlana') : 'Dziś — roślinka czeka na podlanie')
       : missed[i]
         ? `${names[i]} · bez podlania — został uśpiony pąk, nic się nie stało`
         : `${names[i]} · ${days[i]}/10 · ${MOOD_WORDS[days[i]]}`;
@@ -134,12 +145,13 @@
   $('#quote').textContent = 'Nie musisz mieć dziś wszystkiego poukładanego. Wystarczy jeden mały krok.';
 
   // ================================================================
-  //  Podlewanie (sam przycisk — pytania dojdą później)
+  //  Podlewanie: przycisk → pytania (js/checkin.js) → deszcz na roślince
   // ================================================================
   const waterBtn = $('#water-btn');
-  let toastTimer;
-  waterBtn.addEventListener('click', () => {
-    Scene.water();
+  let toastTimer, entry = null;
+
+  function pour(e) {
+    Scene.water(e && e.mood);
     waterBtn.classList.remove('is-pouring');
     void waterBtn.offsetWidth;
     waterBtn.classList.add('is-pouring');
@@ -148,55 +160,45 @@
     if (window.innerWidth < 1024 && window.scrollY > 0) window.scrollTo({ top: 0, behavior: isStatic ? 'auto' : 'smooth' });
     setTimeout(() => {
       watered = true;
+      todayMood = e ? e.mood : null;
       const t = $('.day.is-today', daysEl);
       t.classList.add('is-watered');
-      $('b', t).textContent = '✓';
+      if (todayMood) t.style.setProperty('--v', todayMood / 10);
+      $('b', t).textContent = todayMood || '✓';
+      t.setAttribute('aria-label', todayMood ? `Dziś: ${todayMood} na 10` : 'Dziś — roślinka podlana');
+      renderScore();
+      if (counted) { $('#meter-fill').style.width = `${score * 10}%`; scoreNum.textContent = fmt(score); }
+      if (e) showWatered(e);
+      window.dispatchEvent(new CustomEvent('watered', { detail: e }));   // np. słoik dobrych chwil przy niskim nastroju
     }, 1000);
+  }
+
+  // Po podlaniu sekcja mówi, co zapisaliśmy, i pozwala zmienić wpis
+  function showWatered(e) {
+    $('#sec-water').classList.add('is-done');
+    $('#water-title').textContent = 'Roślinka podlana';
+    $('#water-lead').textContent = e.mood
+      ? `Dziś: ${e.mood}/10 · ${MOOD_WORDS[e.mood]}. Dzięki, że o siebie dbasz. Wpis możesz jeszcze zmienić.`
+      : 'Dzięki, że o siebie dbasz. Wpis możesz jeszcze zmienić.';
+    $('#water-label').textContent = 'Zmień dzisiejszy wpis';
+  }
+
+  waterBtn.addEventListener('click', () => {
+    if (window.Checkin) {
+      window.Checkin.open({ from: waterBtn, entry, onDone(e) { entry = e; pour(e); } });
+      return;
+    }
+    // bez pytań (strona-glowna-2.html): sama animacja
+    pour(null);
     clearTimeout(toastTimer);
-    // TODO: tu otworzy się ekran z pytaniami o samopoczucie
-    toastTimer = setTimeout(() => toast('Tu otworzą się pytania o Twój dzień.'), 1400);
+    toastTimer = setTimeout(() => toast('W aplikacji tu otworzą się pytania o Twój dzień.'), 1400);
   });
 
   // ================================================================
-  //  Arkusze od dołu (SOS, kolor roślinki)
+  //  Arkusze od dołu (SOS, kolor roślinki) — js/sheets.js
   // ================================================================
-  const backdrop = $('#sheet-backdrop');
-  let openSheet = null, lastFocus = null;
-  function showSheet(sheet) {
-    if (openSheet) hideSheet(true);
-    lastFocus = document.activeElement;
-    openSheet = sheet;
-    backdrop.hidden = false;
-    sheet.hidden = false;
-    void sheet.offsetWidth;
-    backdrop.classList.add('is-open');
-    sheet.classList.add('is-open');
-    document.body.classList.add('sheet-open');
-    const first = sheet.querySelector('input:checked') || sheet.querySelector('a, button, input');
-    setTimeout(() => first && first.focus({ preventScroll: true }), 60);
-  }
-  function hideSheet(instant) {
-    const sheet = openSheet;
-    if (!sheet) return;
-    openSheet = null;
-    sheet.classList.remove('is-open');
-    backdrop.classList.remove('is-open');
-    document.body.classList.remove('sheet-open');
-    const done = () => { sheet.hidden = true; if (!openSheet) backdrop.hidden = true; };
-    if (instant) done(); else setTimeout(done, 380);
-    if (lastFocus) lastFocus.focus({ preventScroll: true });
-  }
-  backdrop.addEventListener('click', () => hideSheet());
-  $$('[data-close]').forEach(b => b.addEventListener('click', () => hideSheet()));
-  document.addEventListener('keydown', e => {
-    if (!openSheet) return;
-    if (e.key === 'Escape') { hideSheet(); return; }
-    if (e.key !== 'Tab') return;
-    const f = $$('a, button, input:checked', openSheet);
-    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
-    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
-  });
-  $('#sos-open').addEventListener('click', () => showSheet($('#sos-sheet')));
+  const Sheets = window.Sheets || { show() {}, hide() {} };
+  $('#sos-open').addEventListener('click', () => Sheets.show($('#sos-sheet')));
 
   // ================================================================
   //  Kolor roślinki — ten sam wybór co w rejestracji, aktualny motyw zaznaczony
@@ -215,7 +217,7 @@
   $('#color-open').addEventListener('click', () => {
     const cur = $(`input[value="${Theme.current}"]`, swatches);
     if (cur) cur.checked = true;
-    showSheet($('#color-sheet'));
+    Sheets.show($('#color-sheet'));
   });
 
   // ================================================================

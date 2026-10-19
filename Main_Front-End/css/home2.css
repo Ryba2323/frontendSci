@@ -57,7 +57,7 @@ button, a { touch-action: manipulation; }
 }
 .logo-ph {
   display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px;
-  border: 1.5px dashed rgba(var(--primary-rgb), .5); background: rgba(255, 255, 255, .6);
+  border: 1.5px dashed rgba(var(--primary-rgb), .5); background: var(--glass);
   font-size: .56rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primary-dark);
 }
 .top-actions { display: flex; align-items: center; gap: 8px; }
@@ -192,7 +192,7 @@ button, a { touch-action: manipulation; }
 /* „Jak działa roślinka?” — zasady liści dni */
 .how {
   margin: 22px 0 14px; padding: 12px 14px; border-radius: 16px;
-  background: rgba(var(--mint-rgb), .45); font-size: .84rem; line-height: 1.5; color: #3F5660;
+  background: rgba(var(--mint-rgb), .45); font-size: .84rem; line-height: 1.5; color: var(--text-muted);
 }
 .how summary { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; list-style: none; }
 .how summary::-webkit-details-marker { display: none; }
@@ -237,7 +237,7 @@ button, a { touch-action: manipulation; }
 .day.is-today b { color: var(--primary); }
 .day.is-today.is-watered i { background: linear-gradient(to top, var(--primary), var(--accent-light)); border-style: solid; }
 /* dzień bez podlania: mały, kropkowany „pąk” */
-.day.is-missed { background: rgba(255, 255, 255, .6); }
+.day.is-missed { background: var(--glass); }
 .day.is-missed i { background: transparent; border: 2px dotted var(--text-soft); }
 .day.is-missed b { color: var(--text-soft); }
 .day.is-missed.is-active i { border-color: var(--primary); }
@@ -256,8 +256,8 @@ button, a { touch-action: manipulation; }
 .swatch span {
   width: 100%; display: flex; flex-direction: column; align-items: center; gap: 9px;
   padding: 14px 4px 12px; border-radius: 16px;
-  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
-  font-size: .86rem; font-weight: 600; color: #3D4E57;
+  border: 1.5px solid var(--line); background: var(--surface);
+  font-size: .86rem; font-weight: 600; color: var(--text);
   transition: background .2s, border-color .2s, box-shadow .2s, transform .2s;
 }
 .swatch i {
@@ -308,7 +308,7 @@ button, a { touch-action: manipulation; }
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 40;
   max-width: calc(100% - 32px); padding: 12px 18px; border-radius: var(--radius-md);
-  background: var(--text); color: #fff; font-size: .88rem; font-weight: 600; text-align: center;
+  background: var(--toast-bg); color: var(--toast-fg); font-size: .88rem; font-weight: 600; text-align: center;
   box-shadow: 0 16px 30px -12px rgba(30, 42, 50, .5);
   transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;
 }

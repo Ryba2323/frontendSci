@@ -8,6 +8,7 @@
  *   current                  id aktualnego motywu
  *   apply(id, { save })      zmienia motyw (save: true — zapamiętuje go na tym urządzeniu)
  *   saved()                  zapamiętany motyw albo domyślny
+ *   mode / setMode('auto'|'light'|'dark') / isDark()   tryb nocny (<html data-mode>, zapis w sci.mode)
  * Po każdej zmianie leci zdarzenie window 'themechange' (detail: { id }) — słucha go scena z roślinką.
  */
 (function () {
@@ -52,10 +53,33 @@
   const fromUrl = new URLSearchParams(location.search).get('motyw');
   apply(valid(fromUrl) ? fromUrl : saved());
 
+  // ================================================================
+  //  Tryb nocny: auto (jak system) / light / dark — <html data-mode>, zapis w sci.mode
+  // ================================================================
+  const MODE_KEY = 'sci.mode';
+  const MODES = ['auto', 'light', 'dark'];
+  const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : { matches: false };
+  let mode = 'auto';
+  try { const m = localStorage.getItem(MODE_KEY); if (MODES.includes(m)) mode = m; } catch (_) { /* tryb prywatny */ }
+  function setMode(m, opts = {}) {
+    if (!MODES.includes(m)) m = 'auto';
+    mode = m;
+    if (opts.save !== false) { try { localStorage.setItem(MODE_KEY, m); } catch (_) { /* tryb prywatny */ } }
+    const root = document.documentElement;
+    if (m === 'auto') delete root.dataset.mode; else root.dataset.mode = m;
+    window.dispatchEvent(new CustomEvent('themechange', { detail: { id: current, mode: m } }));
+  }
+  const isDark = () => mode === 'dark' || (mode === 'auto' && systemDark.matches);
+  if (mode !== 'auto') document.documentElement.dataset.mode = mode;
+  if (systemDark.addEventListener) systemDark.addEventListener('change', () => { if (mode === 'auto') setMode('auto', { save: false }); });
+
   window.Theme = {
     list: LIST,
     get current() { return current; },
     apply,
     saved,
+    get mode() { return mode; },
+    setMode,
+    isDark,
   };
 })();
