@@ -331,6 +331,9 @@ button, a { touch-action: manipulation; }
    ================================================================ */
 @media (min-width: 1024px) {
   .stage { right: auto; width: 50vw; height: 100vh !important; }
+  /* prawa krawędź sceny łagodnie znika — bez widocznej „ściany” między roślinką a treścią */
+  #plant { -webkit-mask-image: linear-gradient(to right, #000 62%, transparent 98%); mask-image: linear-gradient(to right, #000 62%, transparent 98%); }
+  .stage { background: transparent; }
   .stage::after { display: none; }
   .scroll-hint { display: none; }
   .stage-greet { top: 84px; left: 40px; }
