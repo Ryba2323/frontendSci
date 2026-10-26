@@ -241,7 +241,7 @@ const scene12 = (t: number, u: number) => {
   }
   // wieczka: 29 od dołu, 30 z boku
   const cap = (at: number, final: THREE.Matrix4, from: THREE.Vector3, spinAxis: THREE.Vector3, spinA: number) => {
-    const p = seg(u, at - 22, at, bezier(0.55, 0, 0.9, 0.55));
+    const p = seg(u, at - 22, at, bezier(0.35, 0, 0.12, 1));
     const settle = u > at ? kick(u, at, 0.05, 6, 5) : 0;
     const fp = V(), fq = Q(), fs = V();
     final.decompose(fp, fq, fs);
@@ -290,8 +290,11 @@ export class World {
       mesh.frustumCulled = false;
       const final = fToWorld(V(d.center.x, d.center.y, STACK_FRONT - DEPTH + d.center.z));
       const k = order.indexOf(key);
-      // start: za kamerą, rozrzucone na boki
-      const startF = V(d.center.x * 0.6 + (r() - 0.5) * 6, d.center.y * 0.5 + (r() - 0.5) * 5 - 2, 15 + k * 2.5);
+      // start: rozsadzony pierścień wokół ściany liter — litery zbiegają się z krawędzi kadru, nie przez obiektyw
+      const dir = V(d.center.x - 1.1, d.center.y - 7.4, 0);
+      if (dir.lengthSq() < 0.5) dir.set(1, 0.4, 0);
+      dir.normalize();
+      const startF = V(d.center.x + dir.x * (9 + r() * 3), d.center.y + dir.y * (8 + r() * 3), 5.5 + k * 0.9 + r() * 1.5);
       this.letters.push({ mesh, final, order: k, start: fToWorld(startF), axis: V(r() - 0.5, r() - 0.5, r() - 0.5).normalize(), angle: (1.2 + r()) * (r() < 0.5 ? -1 : 1) });
       this.scene.add(mesh);
     });
