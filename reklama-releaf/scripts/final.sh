@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Render finalny: out/releaf-to-tez-sie-liczy-final.mp4 (1080×1920, 60 kl/s, 25 s, H.264 + AAC stereo).
+# Render finalny: out/releaf-to-tez-sie-liczy-final.mp4 (1080×1920, 60 kl/s, 25 s, H.264 + AAC stereo, −14 LUFS).
 # Nie ruszy, dopóki brakuje któregokolwiek ujęcia albo muzyki — film nie może wyjść z planszami zastępczymi.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -26,4 +26,12 @@ npx remotion render ReLeaf-ToTezSieLiczy out/releaf-to-tez-sie-liczy-final.mp4 \
   --codec=h264 --crf=12 --x264-preset=slow --pixel-format=yuv420p \
   --audio-codec=aac --audio-bitrate=320k --color-space=bt709
 
-python3 scripts/sprawdz.py out/releaf-to-tez-sie-liczy-final.mp4
+# Mastering dźwięku pod Instagram: −14 LUFS, true peak ≤ −1,5 dBTP (dwa przebiegi loudnorm); obraz kopiowany bez zmian
+OUT=out/releaf-to-tez-sie-liczy-final.mp4
+mv "$OUT" out/.render-przed-masteringiem.mp4
+POM=$(ffmpeg -hide_banner -i out/.render-przed-masteringiem.mp4 -af loudnorm=I=-14:TP=-1.5:LRA=9:print_format=json -f null - 2>&1 | python3 -c "import sys,json,re; d=json.loads(re.search(r'\{[^{}]*\}', sys.stdin.read(), re.S).group(0)); print(':'.join(f'measured_{k}={d[\"input_\"+k]}' for k in ('i','tp','lra','thresh')) + f':offset={d[\"target_offset\"]}')")
+ffmpeg -v error -y -i out/.render-przed-masteringiem.mp4 -c:v copy \
+  -af "loudnorm=I=-14:TP=-1.5:LRA=9:$POM:linear=true,aresample=48000" -c:a aac -b:a 320k -ar 48000 -movflags +faststart "$OUT"
+rm out/.render-przed-masteringiem.mp4
+
+python3 scripts/sprawdz.py "$OUT"

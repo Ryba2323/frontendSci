@@ -4,6 +4,7 @@ Kontrola gotowego pliku: parametry (ffprobe), czarne klatki, logo bez prostokąt
 Użycie: python3 scripts/sprawdz.py out/plik.mp4 [--bez-dzwieku]
 """
 import json
+import re
 import subprocess
 import sys
 
@@ -34,6 +35,12 @@ if bez_dzwieku:
     ok.append('dźwięk pominięty (podgląd)')
 else:
     spr(a is not None and int(a.get('channels', 0)) == 2, f"dźwięk stereo ({a and a.get('codec_name')}, {a and a.get('channels')} kan.)")
+    lo = subprocess.run(['ffmpeg', '-hide_banner', '-i', plik, '-vn', '-af', 'ebur128=peak=true', '-f', 'null', '-'],
+                        capture_output=True, text=True).stderr
+    lufs = float(re.findall(r'I:\s+(-?[\d.]+) LUFS', lo)[-1])
+    tp = float(re.findall(r'Peak:\s+(-?[\d.]+) dBFS', lo)[-1])
+    spr(abs(lufs + 14) <= 1.0, f"głośność {lufs:.1f} LUFS (Instagram ≈ −14)")
+    spr(tp <= -1.0, f"true peak {tp:.1f} dBTP")
 
 # Czarne klatki
 bd = subprocess.run(['ffmpeg', '-v', 'info', '-i', plik, '-vf', 'blackdetect=d=0.03:pix_th=0.06', '-an', '-f', 'null', '-'],

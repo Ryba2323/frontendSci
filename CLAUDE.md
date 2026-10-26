@@ -44,7 +44,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 
 ### Ad film (`reklama-releaf/`)
 
-A separate Remotion project for the 25 s Instagram ad "To też się liczy." (see its `README.md` and `ASSET_SOURCES.md`). It only reads `Main_Front-End` (`scripts/nagraj-ui.cjs` records the real check-in screen frame by frame); never change the app for the film. Stock footage and music are not in the repo yet, and `npm run final` refuses to render until they are.
+A separate Remotion project for the 25 s Instagram ad "To też się liczy." (see its `README.md` and `ASSET_SOURCES.md`). It only reads `Main_Front-End` (`scripts/nagraj-ui.cjs` records the real check-in screen frame by frame); never change the app for the film. Footage, music and ambience come from Mixkit (free licences, sources in `ASSET_SOURCES.md`); the raw files live in `surowe/` and are not committed. `npm run final` renders `out/releaf-to-tez-sie-liczy-final.mp4` and refuses to run while any shot or the music is missing.
 
 ### The app (`aplikacja.html`)
 

@@ -33,7 +33,7 @@ export const Aplikacja: React.FC = () => {
       {/* Kamera spokojnie odjeżdża od łodygi do całego ekranu */}
       <AbsoluteFill
         style={{
-          scale: interpolate(f, [0, durationInFrames], [1.05, 1.0], t),
+          scale: interpolate(f, [0, durationInFrames], [1.05, 1.0], tt),
           transformOrigin: "50% 58%",
         }}
       >

@@ -5,8 +5,10 @@ Dla każdego ujęcia z ujecia.json szuka surowego pliku surowe/<id>.(mp4|mov|web
 public/footage/<id>.mp4:
   - wycina od `wejscie` (s) 8 sekund (zapas na montaż),
   - kadruje do 1080×1920 wokół `ogniskowa` (bez rozciągania; ostrzega, gdy trzeba powiększać),
-  - ujednolica do 60 kl/s (ostrzega przy 23.976/24 kl/s — wtedy lepiej poszukać wersji 25/30/50/60),
+  - ujednolica do 60 kl/s (24p dostaje kadencję 3:2 — tak samo pokazuje je każdy ekran 60 Hz; bez interpolacji klatek),
+  - opcjonalnie zwalnia ujęcie ("tempo", np. 0.85 = 85% prędkości),
   - opcjonalne korekty z ujecia.json: "ekspozycja" (−1…1), "temperatura" (K, np. 5600 → cieplej), "nasycenie",
+    "balans" ([r, g, b] mnożniki bieli przed LUT-em, np. [1.04, 0.97, 0.98] zabiera zieleń),
   - wspólny grading: public/lut/releaf-grade.cube (scripts/lut.py) i bardzo delikatne ziarno,
   - H.264 wysokiej jakości, krótki GOP (szybkie przewijanie w Remotion), bez dźwięku.
 Dźwięki z surowe/audio/<id>.(wav|mp3|flac|ogg|m4a) → public/audio/<id>.wav (48 kHz, stereo).
@@ -52,7 +54,8 @@ def ujecie(u):
         return False
     w, h, fps, dur = sonda(src)
     start = float(u.get('wejscie', 0))
-    dl = min(ZAPAS, dur - start)
+    tempo = float(u.get('tempo', 1))
+    dl = min(ZAPAS * tempo, dur - start)    # tyle sekund źródła daje ZAPAS sekund filmu
     skala = max(W / w, H / h)
     sw, sh = round(w * skala / 2) * 2, round(h * skala / 2) * 2
     fx, fy = u.get('ogniskowa', [0.5, 0.5])
@@ -61,22 +64,24 @@ def ujecie(u):
     uwagi = []
     if skala > 1.0:
         uwagi.append(f'POWIĘKSZENIE ×{skala:.2f} — szukaj wyższej rozdzielczości' if skala > 1.15 else f'lekkie powiększenie ×{skala:.2f}')
-    if abs(fps - 24) < 0.2 or abs(fps - 23.976) < 0.05:
-        uwagi.append('24 kl/s → 60 kl/s da szarpanie; lepiej materiał 25/30/50/60')
-    if dl < 5:
-        uwagi.append(f'tylko {dl:.1f} s materiału od punktu wejścia')
+    if dl / tempo < 5:
+        uwagi.append(f'tylko {dl / tempo:.1f} s filmu od punktu wejścia')
 
     korekty = []
     if u.get('ekspozycja'):
         korekty.append(f"eq=brightness={0.08 * float(u['ekspozycja']):.3f}")
     if u.get('nasycenie'):
         korekty.append(f"eq=saturation={float(u['nasycenie']):.3f}")
+    if u.get('balans'):
+        r, g, b = (float(v) for v in u['balans'])
+        korekty.append(f'colorchannelmixer=rr={r}:gg={g}:bb={b}')
     if u.get('temperatura'):
         korekty.append(f"colortemperature=temperature={int(u['temperatura'])}:mix=0.5")
 
     vf = ','.join([
         f'scale={sw}:{sh}:flags=lanczos',
         f'crop={W}:{H}:{x}:{y}',
+        *([f'setpts=PTS/{tempo}'] if tempo != 1 else []),
         f'fps={FPS}',
         *korekty,
         f"lut3d='{LUT}'",
@@ -89,7 +94,7 @@ def ujecie(u):
                     '-c:v', 'libx264', '-preset', 'slow', '-crf', '11', '-g', '30', '-bf', '0',
                     '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
                     '-movflags', '+faststart', dst], check=True)
-    print(f'  ✓ {u["id"]}: {w}×{h} @ {fps:.2f} → {W}×{H} @ {FPS}, {dl:.1f} s' + (' | ' + '; '.join(uwagi) if uwagi else ''))
+    print(f'  ✓ {u["id"]}: {w}×{h} @ {fps:.2f} → {W}×{H} @ {FPS}, {dl / tempo:.1f} s' + (f' (tempo {tempo})' if tempo != 1 else '') + (' | ' + '; '.join(uwagi) if uwagi else ''))
     return True
 
 

@@ -1,16 +1,16 @@
 {
   "_opis": "Generowane przez `npm run ujecia` — które ujęcia i dźwięki są już przygotowane w public/. Nie edytuj ręcznie.",
   "ujecia": {
-    "01-okno-deszcz": false,
-    "02-poranne-swiatlo": false,
-    "03-spacer": false,
-    "04-smiech": false,
-    "05-cisza": false
+    "01-okno-deszcz": true,
+    "02-poranne-swiatlo": true,
+    "03-spacer": true,
+    "04-smiech": true,
+    "05-cisza": true
   },
   "audio": {
-    "muzyka": false,
-    "deszcz": false,
-    "miasto": false,
+    "muzyka": true,
+    "deszcz": true,
+    "miasto": true,
     "smiech": false
   }
 }

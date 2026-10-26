@@ -4,7 +4,7 @@ dist
 .env
 
 # Ignore the output video from Git but not videos you import into src/.
-out
+out/*
 
 # Materiał źródłowy i pliki generowane (odtwarzane skryptami, patrz README.md)
 surowe/
@@ -12,3 +12,6 @@ public/footage/*.mp4
 public/audio/*.wav
 public/ui/checkin/
 public/lut/*.cube
+
+# Gotowy film jest w repo (reszta out/ nie)
+!out/releaf-to-tez-sie-liczy-final.mp4

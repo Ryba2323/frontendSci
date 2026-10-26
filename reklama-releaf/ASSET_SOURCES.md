@@ -1,61 +1,53 @@
 # ASSET_SOURCES — ReLeaf „To też się liczy.”
 
-Stan na 26.10.2026. Każdy plik, który trafia do filmu, ma tu wpis: skąd jest, na jakiej licencji i czy wymaga podpisu autora.
+Stan na 26.10.2026. Każdy plik użyty w `out/releaf-to-tez-sie-liczy-final.mp4`: skąd jest, na jakiej licencji i czy wymaga podpisu.
 
-## Status
+**Podpis autorów: niewymagany** dla żadnego elementu (licencje Mixkit Free: „Attribution is not required”). Jeśli jest miejsce w opisie posta, Mixkit prosi o grzecznościowe „Mixkit”, ale to nieobowiązkowe.
 
-| Element | Status |
-|---|---|
-| Logo, krój, ekran aplikacji, grading | ✅ gotowe (poniżej) |
-| Materiał filmowy (5 ujęć) | ⛔ **brak** — w sesji, w której powstał projekt, polityka sieci blokowała pobieranie (patrz niżej) |
-| Muzyka | ⛔ **brak** — z tego samego powodu |
-| Dźwięki tła (deszcz, miasto, śmiech) | ⛔ brak (opcjonalne) |
+## Materiał filmowy (Mixkit — Stock Video Free License)
 
-Render finalny (`npm run final`) jest zablokowany, dopóki brakuje ujęć albo muzyki. Animatik (`npm run podglad`) pokazuje w ich miejscu wyraźne plansze „PODGLĄD · BRAK UJĘCIA”, a nie zastępcze ilustracje.
+Licencja każdego klipu sprawdzona na jego stronie (pole pobierania „…under the Mixkit Stock Video Free License”; klipy z „Mixkit Restricted License” — zakaz reklam — zostały odrzucone już przy wyborze). Pliki pobrane przez oficjalny przycisk pobierania Mixkit w najwyższej dostępnej rozdzielczości.
 
-### Dlaczego nie ma materiału
+| Ujęcie w filmie | Klip Mixkit | Strona | Oryginał | Użyty fragment |
+|---|---|---|---|---|
+| 01 Deszcz na szybie (0:00–0:04,9) | #99834 „Raindrops on glass with blurred city lights in the background” | https://mixkit.co/free-stock-video/raindrops-on-glass-with-blurred-city-lights-in-the-background-99834/ | 3840×2160, 23,976 kl/s | od 3,8 s, 85% prędkości |
+| 02 Poranne światło (0:04,6–0:07,1) | #3977 „View of a window with a curtain” | https://mixkit.co/free-stock-video/view-of-a-window-with-a-curtain-3977/ | 3840×2160, 23,976 kl/s | od 4,0 s |
+| 03 Spacer w słońcu (0:07,1–0:09,5) | #1214 „Woman's silhouette walking on the beach at sunset” | https://mixkit.co/free-stock-video/womans-silhouette-walking-on-the-beach-at-sunset-1214/ | 1080×1920 (pion), 23,976 kl/s | od 3,6 s |
+| 04 Śmiech (0:09,5–0:12,5) | #41236 „Two cheerful women during a girlfriends date in a cafe” | https://mixkit.co/free-stock-video/two-cheerful-women-during-a-girlfriends-date-in-a-cafe-41236/ | 1080×1920 (pion), 24 kl/s | od 7,4 s |
+| 05 Chwila ciszy + napisy (0:12,5–0:18,8) | #42741 „Girl reading a book sitting near a window” | https://mixkit.co/free-stock-video/girl-reading-a-book-sitting-near-a-window-42741/ | 3840×2160, 23,976 kl/s | od 6,3 s, 93% prędkości |
 
-Środowisko chmurowe, w którym zbudowano projekt, odrzucało połączenia (HTTP 403 na CONNECT, odmowa polityki sieci) do:
-`www.pexels.com`, `api.pexels.com`, `videos.pexels.com`, `pixabay.com`, `cdn.pixabay.com`, `mixkit.co`, `assets.mixkit.co`, `www.videvo.net`, `commons.wikimedia.org`, `upload.wikimedia.org`, `freemusicarchive.org`, `archive.org`, `incompetech.com`, `www.youtube.com`, `huggingface.co`.
+Autor: strony tych klipów na Mixkit nie podają nazwiska twórcy (właścicielem licencji jest Envato/Mixkit).
 
-Żeby dokończyć: dopuścić te domeny (co najmniej Pexels + Pixabay + Mixkit z CDN-ami) w ustawieniach sieci środowiska albo pobrać pliki lokalnie i wrzucić je do `surowe/`.
+## Muzyka (Mixkit — Stock Music Free License)
 
-## Gotowe elementy
-
-| Plik | Źródło | Licencja / prawa | Podpis |
+| Element | Źródło | Licencja | Użycie |
 |---|---|---|---|
-| `public/marka/releaf-logo.png` | Oficjalne logo ReLeaf dostarczone przez zespół (oryginał bez zmian: `public/marka/releaf-logo-oryginal.png`; w filmie tylko przycięty pusty, przezroczysty margines — piksele i kanał alfa nietknięte) | Własność ReLeaf | Nie |
-| `public/ui/checkin/*.png` (generowane) | Prawdziwy ekran podlewania z `Main_Front-End/aplikacja.html`, nagrany przez `scripts/nagraj-ui.cjs` (kod aplikacji bez zmian) | Własny kod zespołu | Nie |
-| `public/fonts/*.woff2` | Plus Jakarta Sans 5.3.0 z `@fontsource/plus-jakarta-sans` (npm) — ten sam krój co w aplikacji | SIL Open Font License 1.1 (`public/fonts/OFL-plus-jakarta-sans.txt`) | Nie |
-| `public/lut/releaf-grade.cube` | Własny LUT, generowany przez `scripts/lut.py` | Własny | Nie |
+| „A Special Feeling” — Michael Ramir C. (Mixkit #1087, 99 BPM, tagi: relaxed, positive, soft, lifestyle) | https://mixkit.co/free-stock-music/discover/a-special-feeling/ (plik: https://assets.mixkit.co/music/1087/1087.mp3 — ten sam, który daje oficjalny przycisk pobierania) | Mixkit Stock Music Free License — dozwolone: „Social Media video posts”, „Online marketing ads” | 21,7–46,7 s utworu, wyciszenie ostatnich 1,5 s; zgranie do −14 LUFS |
 
-## Do pozyskania — ujęcia
+Ograniczenia tej licencji ważne dla zespołu: nie wolno używać utworu w TV/radiu, na CD/DVD, w grach, nie wolno go remiksować jako samodzielnej muzyki ani rejestrować w systemach typu Content ID. Gdyby Instagram/YouTube zgłosił roszczenie — Mixkit prosi o kontakt na team@mixkit.co.
 
-Pełne opisy i frazy wyszukiwania: `ujecia.json`. Wymagania wspólne: prawdziwi ludzie i miejsca, naturalne światło, bez patrzenia w kamerę i bez reklamowego uśmiechu, bez znaków wodnych, najlepiej 4K lub pion ≥ 1080×1920, 25/30/50/60 kl/s (24 kl/s da szarpanie przy 60 kl/s). `npm run ujecia` ostrzeże przy powiększaniu i 24 kl/s.
+## Dźwięki tła (Mixkit — Sound Effects Free License)
 
-| Slot | Plik w `surowe/` | Treść | Źródło (URL) | Licencja | Autor / podpis |
-|---|---|---|---|---|---|
-| 01 | `01-okno-deszcz.mp4` | Krople na szybie tramwaju/okna, rozmyte miasto | — | — | — |
-| 02 | `02-poranne-swiatlo.mp4` | Poranne słońce na pościeli / ścianie, firanka | — | — | — |
-| 03 | `03-spacer.mp4` | Młoda osoba idzie w naturalnym świetle | — | — | — |
-| 04 | `04-smiech.mp4` | Dwie osoby spontanicznie się śmieją | — | — | — |
-| 05 | `05-cisza.mp4` | Spokojna chwila przy oknie / dłonie z kubkiem; miejsce na napisy w dolnej połowie | — | — | — |
+| Element | Źródło | Licencja | Użycie |
+|---|---|---|---|
+| „Light rain atmosphere” (Mixkit SFX #2474, WAV 24 bit) | https://mixkit.co/free-sound-effects/discover/light-rain/ (plik: https://assets.mixkit.co/active_storage/sfx/2474/2474.wav) | Mixkit Sound Effects Free License — dozwolone m.in. „Online marketing ads”, „Social Media video posts” | Deszcz pod pierwszym ujęciem, wycisza się z wejściem światła |
+| „Urban city ambience at night” (Mixkit SFX #2678, WAV 24 bit) | https://mixkit.co/free-sound-effects/discover/city-ambience/ (plik: https://assets.mixkit.co/active_storage/sfx/2678/2678.wav) | jw. | Bardzo cicho pod deszczem (0–6 s) |
 
-## Do pozyskania — dźwięk
+## Elementy własne
 
-| Slot | Plik w `surowe/audio/` | Treść | Źródło (URL) | Licencja | Autor / podpis |
-|---|---|---|---|---|---|
-| muzyka (wymagana) | `muzyka.wav` | Ciepły indie-electronic, miękka perkusja, ciepły bas, ~90–105 BPM, ≥ 25 s | — | — | — |
-| deszcz | `deszcz.wav` | Deszcz o szybę (wnętrze) | — | — | — |
-| miasto | `miasto.wav` | Dalekie miasto / tramwaj | — | — | — |
-| smiech | `smiech.wav` | Ciche naturalne śmiechy | — | — | — |
+| Plik | Źródło | Prawa |
+|---|---|---|
+| `public/marka/releaf-logo.png` | Oficjalne logo ReLeaf od zespołu (oryginał: `public/marka/releaf-logo-oryginal.png`; przycięty tylko pusty, przezroczysty margines — piksele i kanał alfa bez zmian) | Własność ReLeaf |
+| `public/ui/checkin/*.png` (generowane) | Prawdziwy ekran podlewania z `Main_Front-End/aplikacja.html`, nagrany przez `scripts/nagraj-ui.cjs` (kod aplikacji bez zmian) | Własny kod zespołu |
+| `public/fonts/*.woff2` | Plus Jakarta Sans 5.3.0 (`@fontsource/plus-jakarta-sans`) — krój aplikacji | SIL Open Font License 1.1 (`public/fonts/OFL-plus-jakarta-sans.txt`) |
+| `public/lut/releaf-grade.cube` | Własny LUT (`scripts/lut.py`) | Własny |
 
-## Sprawdzenie licencji przy pobieraniu (dla każdego pliku)
+## Pliki źródłowe
 
-Tekstu licencji nie dało się zweryfikować z tej sesji (strony zablokowane), więc przy pobieraniu:
+Surowe klipy i dźwięki leżą w `surowe/` (nie w repo — licencja Mixkit nie pozwala udostępniać samych plików, tylko gotowy film). `surowe/zrodla.txt` zapisuje adres każdego pobranego pliku. Odtworzenie: pobierz pliki z adresów powyżej pod nazwami z `ujecia.json` i uruchom `npm run ujecia && npm run final`.
 
-1. Otwórz stronę licencji serwisu (Pexels: `pexels.com/license`, Pixabay: `pixabay.com/service/license-summary`, Mixkit: licencja podana przy danym pliku — inna dla wideo, inna dla muzyki) i potwierdź, że pozwala na **reklamę w mediach społecznościowych** (użycie komercyjne, modyfikacje, bez podpisu albo z podpisem).
-2. **Osoby rozpoznawalne:** licencje stockowe zwykle zabraniają przedstawiania ludzi w złym świetle i sugerowania, że popierają produkt. To reklama aplikacji o zdrowiu psychicznym, więc wybierz ujęcia, w których osoby nie wyglądają, jakby same miały problemy psychiczne. Najbezpieczniej: plecy, sylwetki, dłonie, nieostre twarze. Sprawdź też, czy autor ma zgodę modela (model release).
-3. Brak znaku wodnego; pobierz oryginał w najwyższej rozdzielczości.
-4. Muzyka: sprawdź, czy utwór nie jest zgłoszony do Content ID / systemów Instagrama (wtedy reklama może dostać blokadę albo wyciszenie).
-5. Wpisz URL strony pliku, nazwę licencji, autora i datę pobrania w tabeli wyżej oraz w polach `zrodlo` / `licencja` / `autor` w `ujecia.json`.
+## Do potwierdzenia przez zespół
+
+- **Envato Acceptable Use Policy** (do niej odsyłają warunki Mixkit, pkt 9): strona `help.elements.envato.com` nie otworzyła się z tej sesji (ochrona przed botami), więc jej tekstu nie sprawdziłem. Warto przeczytać ją przed publikacją, szczególnie pod kątem pokazywania osób z klipów w reklamie aplikacji o dobrostanie psychicznym. W filmie nikt nie jest pokazany w złym świetle ani jako osoba z problemami: osoby się śmieją, czytają, idą w słońcu.
+- **Muzyka wybrana bez odsłuchu.** Utwór dobrałem po opisie i tagach Mixkit oraz po analizie (tonacja durowa, 99 BPM, łagodny wstęp → miękki puls → rozwinięcie, bez agresywnych brzmień). Cięcia są zsynchronizowane z jego taktami. Przed publikacją ktoś z zespołu powinien posłuchać całości; alternatywy na tę samą długość: „Pop 01” (#692), „Echoes Of You” (#624).
+- **Pexels i Pixabay** nie zostały użyte: oba serwisy pokazują automatom stronę „Just a moment…” (Cloudflare), a ich API wymaga klucza. Z darmowym kluczem API można dobrać alternatywne ujęcia.

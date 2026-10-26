@@ -24,7 +24,7 @@ export const Przeslanie: React.FC = () => {
     fontSize: 78,
     lineHeight: 1.13,
     letterSpacing: "-0.025em",
-    textShadow: "0 2px 28px rgba(10, 18, 22, .28)",
+    textShadow: "0 1px 2px rgba(10, 18, 22, .22), 0 2px 30px rgba(10, 18, 22, .38)",
   };
 
   return (
@@ -48,7 +48,11 @@ export const Przeslanie: React.FC = () => {
       {/* Miękkie przyciemnienie dołu kadru pod napisami — gradient, nie prostokąt */}
       <AbsoluteFill
         style={{
-          background: "linear-gradient(180deg, rgba(12,20,24,0) 42%, rgba(12,20,24,.38) 78%, rgba(12,20,24,.46) 100%)",
+          background: [
+            // miękki cień za samym blokiem tekstu (jasny sweter i okno za nim)
+            "radial-gradient(ellipse 620px 360px at 34% 62%, rgba(12,20,24,.34), rgba(12,20,24,0) 100%)",
+            "linear-gradient(180deg, rgba(12,20,24,0) 40%, rgba(12,20,24,.34) 74%, rgba(12,20,24,.42) 100%)",
+          ].join(","),
           opacity: interpolate(f, [rel(ZDANIE_1) - 30, rel(ZDANIE_1) + 20, rel(ZDANIA_ZNIKAJA), rel(ZDANIA_ZNIKAJA) + 30], [0, 1, 1, 0], t),
         }}
       />

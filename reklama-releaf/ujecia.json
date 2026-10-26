@@ -5,64 +5,173 @@
       "id": "01-okno-deszcz",
       "scena": "1 — Chwila",
       "opis": "Krople deszczu powoli spływają po szybie tramwaju albo okna; miasto za szybą miękko rozmyte, odbicia świateł.",
-      "szukaj": ["rain window bokeh city", "raindrops tram window", "rain on glass night city lights shallow depth of field"],
+      "szukaj": [
+        "rain window bokeh city",
+        "raindrops tram window",
+        "rain on glass night city lights shallow depth of field"
+      ],
       "wymagania": "Pion lub 4K poziom; 25/30/50/60 kl/s; ruch kamery minimalny albo powolny; bez ludzi w ostrości.",
-      "wejscie": 0,
-      "ogniskowa": [0.5, 0.5],
-      "zrodlo": null, "licencja": null, "autor": null
+      "wejscie": 3.8,
+      "ogniskowa": [
+        0.32,
+        0.5
+      ],
+      "zrodlo": "https://mixkit.co/free-stock-video/raindrops-on-glass-with-blurred-city-lights-in-the-background-99834/",
+      "licencja": "Mixkit Stock Video Free License",
+      "autor": null,
+      "tempo": 0.85,
+      "balans": [
+        1.06,
+        0.93,
+        1.0
+      ],
+      "plik": "https://assets.mixkit.co/active_storage/video_items/99834/1717026441/99834-video-2160.mp4"
     },
     {
       "id": "02-poranne-swiatlo",
       "scena": "2 — Małe chwile",
       "opis": "Ciepłe poranne słońce przesuwa się po pościeli albo ścianie pokoju; firanka lekko się rusza.",
-      "szukaj": ["morning sunlight bedroom curtain", "sunlight on bed sheets", "warm light through window room"],
+      "szukaj": [
+        "morning sunlight bedroom curtain",
+        "sunlight on bed sheets",
+        "warm light through window room"
+      ],
       "wymagania": "Jasne, ciepłe światło od strony, z której w poprzednim ujęciu spływały krople (match cut na świetle).",
-      "wejscie": 0,
-      "ogniskowa": [0.5, 0.5],
-      "zrodlo": null, "licencja": null, "autor": null
+      "wejscie": 4.0,
+      "ogniskowa": [
+        0.66,
+        0.5
+      ],
+      "zrodlo": "https://mixkit.co/free-stock-video/view-of-a-window-with-a-curtain-3977/",
+      "licencja": "Mixkit Stock Video Free License",
+      "autor": null,
+      "plik": "https://assets.mixkit.co/videos/3977/3977-2160.mp4"
     },
     {
       "id": "03-spacer",
       "scena": "2 — Małe chwile",
       "opis": "Młoda osoba idzie spokojnie w naturalnym świetle (park, ulica po deszczu, złota godzina). Kamera prowadzi z boku albo z tyłu.",
-      "szukaj": ["teenager walking golden hour", "young woman walking city sunset back view", "walking autumn park natural light"],
+      "szukaj": [
+        "teenager walking golden hour",
+        "young woman walking city sunset back view",
+        "walking autumn park natural light"
+      ],
       "wymagania": "Ruch w tę samą stronę co światło w ujęciu 02; bez patrzenia w kamerę.",
-      "wejscie": 0,
-      "ogniskowa": [0.5, 0.45],
-      "zrodlo": null, "licencja": null, "autor": null
+      "wejscie": 3.6,
+      "ogniskowa": [
+        0.5,
+        0.5
+      ],
+      "zrodlo": "https://mixkit.co/free-stock-video/womans-silhouette-walking-on-the-beach-at-sunset-1214/",
+      "licencja": "Mixkit Stock Video Free License",
+      "autor": null,
+      "nasycenie": 0.88,
+      "plik": "https://assets.mixkit.co/videos/1214/1214-1080.mp4"
     },
     {
       "id": "04-smiech",
       "scena": "2 — Małe chwile",
       "opis": "Dwie osoby (nastolatki / młodzi dorośli) śmieją się spontanicznie — w tramwaju, na ławce, przy kawie. Prawdziwy, nieupozowany moment.",
-      "szukaj": ["friends laughing candid", "two friends laughing bench", "teenagers laughing together natural"],
+      "szukaj": [
+        "friends laughing candid",
+        "two friends laughing bench",
+        "teenagers laughing together natural"
+      ],
       "wymagania": "Bez patrzenia w kamerę i bez reklamowego uśmiechu; naturalne światło; podobna temperatura barw jak 03.",
-      "wejscie": 0,
-      "ogniskowa": [0.5, 0.42],
-      "zrodlo": null, "licencja": null, "autor": null
+      "wejscie": 7.4,
+      "ogniskowa": [
+        0.5,
+        0.5
+      ],
+      "zrodlo": "https://mixkit.co/free-stock-video/two-cheerful-women-during-a-girlfriends-date-in-a-cafe-41236/",
+      "licencja": "Mixkit Stock Video Free License",
+      "autor": null,
+      "plik": "https://assets.mixkit.co/videos/41236/41236-1080.mp4"
     },
     {
       "id": "05-cisza",
       "scena": "3 — Przesłanie (napisy)",
       "opis": "Jedno piękne, spokojne ujęcie: ktoś siedzi przy oknie z herbatą, światło późnego popołudnia; albo dłonie z kubkiem. Zostawia miejsce na tekst w dolnej połowie kadru.",
-      "szukaj": ["person by window tea calm", "hands holding mug window light", "quiet moment window afternoon light"],
+      "szukaj": [
+        "person by window tea calm",
+        "hands holding mug window light",
+        "quiet moment window afternoon light"
+      ],
       "wymagania": "Spokojna dolna połowa kadru (tam są napisy, y ≈ 1050–1350); powolny ruch kamery; jasne miejsce w kadrze, które pod koniec przechodzi w ekran aplikacji.",
-      "wejscie": 0,
-      "ogniskowa": [0.5, 0.4],
-      "zrodlo": null, "licencja": null, "autor": null
+      "wejscie": 6.3,
+      "ogniskowa": [
+        0.52,
+        0.5
+      ],
+      "zrodlo": "https://mixkit.co/free-stock-video/girl-reading-a-book-sitting-near-a-window-42741/",
+      "licencja": "Mixkit Stock Video Free License",
+      "autor": null,
+      "balans": [
+        1.03,
+        1.0,
+        0.96
+      ],
+      "plik": "https://assets.mixkit.co/videos/42741/42741-2160.mp4",
+      "tempo": 0.93
     }
   ],
   "audio": [
     {
       "id": "muzyka",
       "opis": "Ciepły, współczesny indie-electronic z delikatnym pulsem (miękka perkusja, ciepły bas, subtelne tekstury, trochę organicznych instrumentów). Ok. 90–105 BPM, min. 25 s, z naturalnym zakończeniem albo miejscem do wyciszenia.",
-      "szukaj": ["warm indie electronic chill", "lofi organic uplifting", "gentle electronic acoustic lifestyle"],
+      "szukaj": [
+        "warm indie electronic chill",
+        "lofi organic uplifting",
+        "gentle electronic acoustic lifestyle"
+      ],
       "wymagane": true,
-      "wejscie": 0,
-      "zrodlo": null, "licencja": null, "autor": null
+      "wejscie": 21.7,
+      "zrodlo": "https://mixkit.co/free-stock-music/discover/a-special-feeling/",
+      "licencja": "Mixkit Stock Music Free License",
+      "autor": "Michael Ramir C.",
+      "plik": "https://assets.mixkit.co/music/1087/1087.mp3",
+      "tytul": "A Special Feeling"
     },
-    { "id": "deszcz", "opis": "Cichy deszcz o szybę (wnętrze).", "szukaj": ["rain on window interior ambience"], "wymagane": false, "wejscie": 0, "zrodlo": null, "licencja": null, "autor": null },
-    { "id": "miasto", "opis": "Dalekie miasto / tramwaj w tle.", "szukaj": ["distant city ambience", "tram interior ambience"], "wymagane": false, "wejscie": 0, "zrodlo": null, "licencja": null, "autor": null },
-    { "id": "smiech", "opis": "Ciche, naturalne śmiechy w tle (do ujęcia 04).", "szukaj": ["friends laughing ambience soft"], "wymagane": false, "wejscie": 0, "zrodlo": null, "licencja": null, "autor": null }
+    {
+      "id": "deszcz",
+      "opis": "Cichy deszcz o szybę (wnętrze).",
+      "szukaj": [
+        "rain on window interior ambience"
+      ],
+      "wymagane": false,
+      "wejscie": 4,
+      "zrodlo": "https://mixkit.co/free-sound-effects/discover/light-rain/",
+      "licencja": "Mixkit Sound Effects Free License",
+      "autor": null,
+      "plik": "https://assets.mixkit.co/active_storage/sfx/2474/2474.wav",
+      "tytul": "Light rain atmosphere"
+    },
+    {
+      "id": "miasto",
+      "opis": "Dalekie miasto / tramwaj w tle.",
+      "szukaj": [
+        "distant city ambience",
+        "tram interior ambience"
+      ],
+      "wymagane": false,
+      "wejscie": 10,
+      "zrodlo": "https://mixkit.co/free-sound-effects/discover/city-ambience/",
+      "licencja": "Mixkit Sound Effects Free License",
+      "autor": null,
+      "plik": "https://assets.mixkit.co/active_storage/sfx/2678/2678.wav",
+      "tytul": "Urban city ambience at night"
+    },
+    {
+      "id": "smiech",
+      "opis": "(nieużywane) Ciche śmiechy w tle — świadomie pominięte, żeby nie brzmiało sztucznie.",
+      "szukaj": [
+        "friends laughing ambience soft"
+      ],
+      "wymagane": false,
+      "wejscie": 0,
+      "zrodlo": null,
+      "licencja": null,
+      "autor": null
+    }
   ]
 }
