@@ -42,6 +42,10 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 | Bottom sheets (shared) | `js/sheets.js` (`window.Sheets`) |
 | Themes and tokens | `css/tokens.css`, `js/theme.js` |
 
+### Ad film (`reklama-releaf/`)
+
+A separate Remotion project for the 25 s Instagram ad "To też się liczy." (see its `README.md` and `ASSET_SOURCES.md`). It only reads `Main_Front-End` (`scripts/nagraj-ui.cjs` records the real check-in screen frame by frame); never change the app for the film. Stock footage and music are not in the repo yet, and `npm run final` refuses to render until they are.
+
 ### The app (`aplikacja.html`)
 
 - One page with five tabs from the plan: **Dom · Skrytka · Tracker · Testy · Blog**. The tab lives in the hash (`#/skrytka`), so it works from `file://` and the back button switches tabs. `js/app.js` handles the tabs, remembers each tab's scroll position, and wires `[data-sos]`, `[data-breath]` and `[data-go]`.

@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Materiał źródłowy i pliki generowane (odtwarzane skryptami, patrz README.md)
+surowe/
+public/footage/*.mp4
+public/audio/*.wav
+public/ui/checkin/
+public/lut/*.cube
