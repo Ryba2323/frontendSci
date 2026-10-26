@@ -1,0 +1,27 @@
+{
+  "name": "releaf-30-dni",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ReLeaf — reklama „30 dni. Nowa perspektywa” (Remotion, 1080×1920, 60 fps)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render ReLeaf30 out/video-silent.mp4"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.8.2",
+    "@remotion/cli": "^4.0.539",
+    "@remotion/three": "^4.0.539",
+    "flubber": "^0.4.2",
+    "opentype.js": "^2.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "remotion": "^4.0.539",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/three": "^0.186.0",
+    "potrace": "^2.1.8",
+    "typescript": "^7.0.2"
+  }
+}
