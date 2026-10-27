@@ -121,8 +121,16 @@ body.as-open { overflow: hidden; }
    żeby nic nie było pod panelem. --as-w to szerokość panelu, --page-w to to, co zostaje dla strony. */
 @media (min-width: 1024px) {
   :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; --gutter: 112px; }
-  body.as-open { --page-w: calc(100vw - var(--as-w)); --gutter: 48px; overflow: auto; }
-  .as { left: auto; width: var(--as-w); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
+  body.as-open { --page-w: calc(100vw - var(--as-w) - 16px); --gutter: 48px; overflow: auto; }
+  /* osobne okienko: pływająca karta z własnym, jednolitym tłem (bez świateł strony), nagłówek i pole jak w karcie */
+  .as {
+    top: 16px; right: 16px; bottom: 16px; left: auto; width: var(--as-w);
+    background: var(--sheet); border: 1.5px solid var(--line); border-radius: var(--radius-lg);
+    box-shadow: 0 28px 64px -28px rgba(30, 42, 50, .45);
+  }
+  .as::before { display: none; }
+  .as-top { background: var(--surface); border-bottom: 1px solid var(--line); padding-top: 12px; }
+  .as-compose { background: var(--surface); border-top: 1px solid var(--line); padding-bottom: 12px; }
   body.as-open .tabbar { transform: translateX(-50%); }
   /* przy otwartym panelu pasek jest węższy: podpis tylko przy bieżącej zakładce, reszta to ikony */
   body.as-open .tab:not([aria-current="page"]) { gap: 0; padding: 0 4px; font-size: 0; }
