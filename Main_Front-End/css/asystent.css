@@ -143,6 +143,10 @@ body.as-open { overflow: hidden; }
   /* wszystko (też scena z roślinką) przesuwa się razem, w tym samym tempie co otwieranie panelu */
   .stage, .content, .tabbar, .toast, .app-top { transition: width .7s var(--ease-in-out), padding .7s var(--ease-in-out), margin .7s var(--ease-in-out), left .7s var(--ease-in-out), right .7s var(--ease-in-out), transform .4s var(--ease-out); }
 }
+/* wąski komputer z otwartym okienkiem: same ikony, także przy bieżącej zakładce */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  body.as-open .tab { gap: 0; padding: 0 4px; font-size: 0; }
+}
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
   .stage, .content, .tabbar, .toast, .app-top { transition: none; }
 }
