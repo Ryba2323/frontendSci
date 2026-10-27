@@ -97,9 +97,10 @@
 <body data-tab="skrytka">
 <main class="mk">
   <div class="mk-bar" aria-label="Sterowanie makietą">
-    <b>Makieta — kolor i scenariusz</b>
+    <!-- TYMCZASOWE: przełączniki tylko do przeglądania makiety — w końcowej aplikacji usunąć -->
+    <b>Tymczasowe — kolor, jasność, scenariusz</b>
     <span id="mk-themes" style="display:flex;gap:6px;margin-right:6px"></span>
-    <button type="button" class="chip" data-mode="dark">Noc</button>
+    <button type="button" class="chip" id="mk-mode" aria-pressed="false">Tryb nocny</button>
     <button type="button" class="chip" data-open="checkin">Wejście z podlewania</button>
     <button type="button" class="chip" data-open="crisis">Scenariusz: kryzys</button>
   </div>
@@ -166,9 +167,13 @@
   $('#mk-themes').innerHTML = Theme.list.map(t => `<button type="button" class="mk-sw" data-palette="${t.id}" data-theme-id="${t.id}" title="${t.name || t.id}"></button>`).join('');
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-theme-id]'); if (t) Theme.apply(t.dataset.themeId);
-    const m = e.target.closest('[data-mode]'); if (m) Theme.setMode(Theme.isDark() ? 'light' : 'dark', { save: false });
+    // uwaga: nie szukamy [data-mode], bo ten atrybut ma też <html> (Theme.setMode) — każde kliknięcie przełączałoby jasność
+    if (e.target.closest('#mk-mode')) { Theme.setMode(Theme.isDark() ? 'light' : 'dark', { save: false }); markMode(); }
     const o = e.target.closest('[data-open]'); if (o) open(o, o.dataset.open);
   });
+
+  const markMode = () => $('#mk-mode').setAttribute('aria-pressed', String(Theme.isDark()));
+  markMode();
 
   // --- komponenty czatu (funkcje zwracające markup → łatwo przenieść do React Native) ---
   const Bubble = (who, text) => `<div class="as-msg is-${who}">${esc(text)}</div>`;
