@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Asystent — makieta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/home2.css">
+  <link rel="stylesheet" href="css/checkin.css">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="js/theme.js"></script>
+  <!--
+    MAKIETA (nie w 100%): wygląd Asystenta Wsparcia i przekazania myśli ze Skrytki.
+    Korzysta z tych samych klas co aplikacja (card, vault-item, quiet-btn, chip, sos, support-call, ci-back).
+    Nowe klasy mają prefiks as- i po akceptacji trafią do css/asystent.css + js/asystent.js.
+  -->
+  <style>
+    body { margin: 0; font-family: var(--font); color: var(--text); }
+    .mk { max-width: 480px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 18px) 16px 120px; }
+    .mk-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; padding: 10px; border-radius: 16px; border: 1.5px dashed var(--line-strong); }
+    .mk-bar b { width: 100%; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); }
+    .mk-bar .chip { font-size: .78rem; }
+    .mk-sw { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid var(--surface); background: var(--primary); box-shadow: 0 0 0 1.5px var(--line-strong); cursor: pointer; }
+
+    /* ---------- Asystent: pełny ekran wyrastający kołem (jak podlewanie) ---------- */
+    .as {
+      position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
+      background: var(--bg); clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
+      transition: clip-path .7s var(--ease-in-out); visibility: hidden;
+    }
+    .as.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); visibility: visible; }
+    .as-top {
+      display: flex; align-items: center; gap: 12px;
+      padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+      background: var(--sheet); box-shadow: 0 10px 24px -22px rgba(30, 42, 50, .5);
+    }
+    .as-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+    .as-who b { display: block; font-size: 1rem; font-weight: 800; }
+    .as-who small { display: block; font-size: .74rem; color: var(--text-muted); }
+
+    /* Awatar: kiełek w kółku; „oddycha”, gdy Asystent pisze */
+    .as-ava { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: rgba(var(--mint-rgb), 1); box-shadow: inset 0 0 0 1.5px rgba(var(--primary-rgb), .18); }
+    .as-ava svg { width: 26px; height: 26px; overflow: visible; }
+    .as-ava .lf-l { transform-origin: 12px 15px; }
+    .as-ava .lf-r { transform-origin: 12px 13px; }
+    .as.is-typing .as-ava .lf-l { animation: sway-l 1.6s ease-in-out infinite; }
+    .as.is-typing .as-ava .lf-r { animation: sway-r 1.6s ease-in-out infinite; }
+    @keyframes sway-l { 50% { transform: rotate(-10deg); } }
+    @keyframes sway-r { 50% { transform: rotate(10deg); } }
+    .as-ava.is-catch { animation: catch .7s var(--ease-spring); }
+    @keyframes catch { 40% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(var(--primary-rgb), .15); } }
+
+    .as-note { margin: 14px auto 4px; max-width: 300px; text-align: center; font-size: .74rem; line-height: 1.5; color: var(--text-soft); }
+
+    .as-log { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .as-msg { max-width: 82%; padding: 11px 14px; border-radius: 20px; font-size: .94rem; line-height: 1.5; animation: soft-in .6s var(--ease-out) both; }
+    .as-msg.is-bot { align-self: flex-start; background: var(--surface); border: 1.5px solid var(--line); border-bottom-left-radius: 6px; }
+    /* odpowiedź użytkownika: jasne tło z akcentem + zwykły tekst (czytelne w każdym motywie, bez białego na kolorze) */
+    .as-msg.is-me { align-self: flex-end; background: rgba(var(--primary-rgb), .13); border-bottom-right-radius: 6px; }
+    .as-quote { align-self: flex-end; max-width: 82%; padding: 10px 14px 12px; border-radius: 20px 20px 6px 20px; background: var(--glass); border: 1.5px dashed rgba(var(--primary-rgb), .35); animation: soft-in .6s var(--ease-out) both; }
+    .as-quote span { display: flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; color: var(--primary-dark); }
+    .as-quote span svg { width: 14px; height: 14px; }
+    .as-quote p { margin: 4px 0 0; font-size: .92rem; line-height: 1.5; font-style: italic; color: var(--text-muted); }
+    .as-dots { align-self: flex-start; display: flex; gap: 5px; padding: 14px 16px; border-radius: 20px 20px 20px 6px; background: var(--surface); border: 1.5px solid var(--line); }
+    .as-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); opacity: .35; animation: dot 1.2s ease-in-out infinite; }
+    .as-dots i:nth-child(2) { animation-delay: .15s; } .as-dots i:nth-child(3) { animation-delay: .3s; }
+    @keyframes dot { 30% { opacity: 1; transform: translateY(-3px); } }
+    .as-quick { display: flex; flex-wrap: wrap; gap: 8px; animation: soft-in .6s var(--ease-out) .2s both; }
+    .as-log .ci-alert { animation: soft-in .6s var(--ease-out) both; }
+
+    .as-compose { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--sheet); border-top: 1px solid var(--line); }
+    .as-compose textarea {
+      flex: 1; min-height: 44px; max-height: 120px; padding: 11px 16px; resize: none;
+      border: 1.5px solid var(--line); border-radius: 22px; background: var(--surface);
+      font: inherit; font-size: .95rem; color: var(--text);
+    }
+    .as-compose textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); }
+    .as-compose .icon-btn { width: 44px; height: 44px; border-radius: 50%; }
+
+    /* ---------- Przekazanie ze Skrytki: myśl zwija się w liść i leci do Asystenta ---------- */
+    .fly-leaf { position: fixed; z-index: 60; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; color: var(--plant-leaf-1); }
+    .fly-leaf svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 6px 8px rgba(var(--primary-rgb), .35)); }
+    .vault-item.is-folding { transition: transform .45s var(--ease-in-out), opacity .45s, border-radius .45s; transform: scale(.25) rotate(-8deg); opacity: 0; border-radius: 50% 0 50% 0; }
+    .as-dock { position: fixed; z-index: 30; right: 18px; bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .as, .vault-item.is-folding { transition: none; }
+      .as-msg, .as-quote, .as-quick, .as-dots i, .as.is-typing .as-ava * { animation: none !important; }
+    }
+    @media (min-width: 1024px) {
+      .as { left: auto; width: 460px; border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
+    }
+  </style>
+</head>
+<body data-tab="skrytka">
+<main class="mk">
+  <div class="mk-bar" aria-label="Sterowanie makietą">
+    <b>Makieta — kolor i scenariusz</b>
+    <span id="mk-themes" style="display:flex;gap:6px;margin-right:6px"></span>
+    <button type="button" class="chip" data-mode="dark">Noc</button>
+    <button type="button" class="chip" data-open="checkin">Wejście z podlewania</button>
+    <button type="button" class="chip" data-open="crisis">Scenariusz: kryzys</button>
+  </div>
+
+  <div class="view-head">
+    <div><h1>Skrytka</h1><p class="view-lead text-muted" style="color:var(--text-muted)">Twoje myśli, tylko dla Ciebie.</p></div>
+    <button type="button" class="sos view-sos">♡ <span>SOS</span></button>
+  </div>
+
+  <h2 class="sub-title">Twoje myśli</h2>
+  <ol class="vault-list">
+    <li class="vault-item is-open" id="mk-item">
+      <button type="button" class="vault-open" aria-expanded="true">
+        <span class="vault-when">Dziś, 18:20</span>
+        <span class="vault-text">Znowu pokłóciłam się z mamą o oceny. Czuję, że cokolwiek zrobię, to i tak będzie za mało.</span>
+      </button>
+      <div class="vault-more" id="mk-more">
+        <button type="button" class="quiet-btn" id="mk-ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/></svg>Zapytaj Asystenta</button>
+        <button type="button" class="quiet-btn">Usuń</button>
+      </div>
+      <!-- zgoda: wpis idzie do AI tylko po potwierdzeniu, nigdy automatycznie -->
+      <div class="vault-confirm" id="mk-confirm" hidden>
+        <span>Asystent zobaczy tylko tę myśl.</span>
+        <button type="button" class="quiet-btn" id="mk-no">Nie</button>
+        <button type="button" class="btn-primary is-small" id="mk-yes">Przekaż</button>
+      </div>
+    </li>
+    <li class="vault-item"><button type="button" class="vault-open"><span class="vault-when">Wczoraj, 21:04 · z podlewania</span><span class="vault-text">Dobrze było pograć z Kubą w kosza.</span></button></li>
+  </ol>
+  <p class="demo-note">Makieta: nic nie jest wysyłane, odpowiedzi są przykładowe.</p>
+</main>
+
+<!-- Ekran Asystenta -->
+<section class="as" id="as" role="dialog" aria-modal="true" aria-labelledby="as-title" aria-hidden="true">
+  <header class="as-top">
+    <button type="button" class="ci-back" id="as-close" aria-label="Wróć"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <div class="as-who">
+      <span class="as-ava" id="as-ava" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 21V12" stroke="var(--plant-stem)" stroke-width="2" stroke-linecap="round"/><path class="lf-l" d="M12 15C7 15 5 12 5 8c4 0 7 2 7 7z" fill="var(--plant-leaf-1)"/><path class="lf-r" d="M12 13c0-5 3-8 7-8 0 4-2 8-7 8z" fill="var(--plant-leaf-2)"/></svg>
+      </span>
+      <div><b id="as-title">Asystent</b><small id="as-status">Jest tu dla Ciebie</small></div>
+    </div>
+    <button type="button" class="sos">♡ <span>SOS</span></button>
+  </header>
+  <div class="as-log" id="as-log" aria-live="polite">
+    <p class="as-note">Asystent to program, nie terapeuta. Gdy jest naprawdę ciężko, zadzwoń pod 116 111.</p>
+  </div>
+  <form class="as-compose" id="as-form">
+    <textarea id="as-input" rows="1" placeholder="Napisz, co czujesz…" aria-label="Wiadomość do Asystenta"></textarea>
+    <button type="submit" class="icon-btn is-primary" aria-label="Wyślij"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+  </form>
+</section>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const as = $('#as'), log = $('#as-log');
+  const LEAF = '<svg viewBox="0 0 24 24"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="var(--surface)" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  const wait = ms => new Promise(r => setTimeout(r, reduce ? 0 : ms));
+  const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // --- przełącznik motywów (tylko makieta) ---
+  $('#mk-themes').innerHTML = Theme.list.map(t => `<button type="button" class="mk-sw" data-palette="${t.id}" data-theme-id="${t.id}" title="${t.name || t.id}"></button>`).join('');
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-theme-id]'); if (t) Theme.apply(t.dataset.themeId);
+    const m = e.target.closest('[data-mode]'); if (m) Theme.setMode(Theme.isDark() ? 'light' : 'dark', { save: false });
+    const o = e.target.closest('[data-open]'); if (o) open(o, o.dataset.open);
+  });
+
+  // --- komponenty czatu (funkcje zwracające markup → łatwo przenieść do React Native) ---
+  const Bubble = (who, text) => `<div class="as-msg is-${who}">${esc(text)}</div>`;
+  const Quote = text => `<div class="as-quote"><span>${LEAF.replace('<svg', '<svg style="color:var(--plant-leaf-1)"')}Ze Skrytki · Dziś, 18:20</span><p>${esc(text)}</p></div>`;
+  const Quick = list => `<div class="as-quick">${list.map(q => `<button type="button" class="chip" data-q>${q}</button>`).join('')}</div>`;
+  const Crisis = () => `<section class="ci-alert">
+      <p class="support-title">Martwię się o Ciebie.</p>
+      <p class="support-text">Nie musisz być z tym sam(a). Porozmawiaj teraz z kimś prawdziwym.</p>
+      <a class="support-call" href="tel:116111">Zadzwoń: 116 111 <small>całą dobę, za darmo</small></a>
+      <a class="support-call" href="tel:112">Zagrożenie życia: 112</a>
+      <button type="button" class="btn-ghost" style="margin-top:8px">Oddychaj z roślinką · 1 min</button>
+    </section>`;
+
+  const add = html => { log.insertAdjacentHTML('beforeend', html); log.scrollTop = log.scrollHeight; };
+  async function say(text, after = '') {
+    as.classList.add('is-typing'); $('#as-status').textContent = 'Pisze…';
+    add('<div class="as-dots" id="as-dots" aria-label="Asystent pisze"><i></i><i></i><i></i></div>');
+    await wait(1100 + Math.min(text.length * 12, 1400));
+    $('#as-dots').remove(); as.classList.remove('is-typing'); $('#as-status').textContent = 'Jest tu dla Ciebie';
+    add(Bubble('bot', text) + after);
+  }
+
+  function open(from, scenario) {
+    const r = from.getBoundingClientRect();
+    as.style.setProperty('--ox', `${r.left + r.width / 2}px`);
+    as.style.setProperty('--oy', `${r.top + r.height / 2}px`);
+    log.querySelectorAll(':scope > :not(.as-note)').forEach(n => n.remove());
+    as.classList.add('is-open'); as.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden';
+    run(scenario);
+  }
+  $('#as-close').onclick = () => { as.classList.remove('is-open'); as.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
+
+  async function run(s) {
+    await wait(600);
+    if (s === 'skrytka') {
+      add(Quote($('#mk-item .vault-text').textContent));
+      await say('Dziękuję, że mi to pokazujesz. Brzmi, jakby ta kłótnia mocno Cię zabolała — i jakbyś czuł(a), że Twój wysiłek nie jest widziany.',
+        Quick(['Tak, właśnie tak', 'Chcę po prostu pogadać', 'Co mogę zrobić?']));
+    } else if (s === 'checkin') {
+      await say('Widzę, że dziś było trudniej. Chcesz opowiedzieć, co się wydarzyło? Możesz też po prostu posiedzieć tu chwilę.',
+        Quick(['Opowiem', 'Tylko posiedzę', 'Pomóż mi się uspokoić']));
+    } else if (s === 'crisis') {
+      add(Bubble('me', 'nie chcę już tu być'));
+      await say('Dobrze, że to napisałeś(-aś). To, co czujesz, jest ważne i nie musisz z tym zostawać sam(a).', Crisis());
+    }
+  }
+
+  // wiadomość od użytkownika + przykładowa odpowiedź
+  $('#as-form').addEventListener('submit', e => {
+    e.preventDefault(); const v = $('#as-input').value.trim(); if (!v) return;
+    $('#as-input').value = ''; add(Bubble('me', v)); say('Rozumiem. Opowiedz mi o tym trochę więcej, jeśli chcesz.');
+  });
+  log.addEventListener('click', e => {
+    const q = e.target.closest('[data-q]'); if (!q) return;
+    q.parentElement.remove(); add(Bubble('me', q.textContent)); say('Jestem tu. Nie spiesz się — napisz, kiedy będziesz gotowy(-a).');
+  });
+
+  // --- Skrytka → Asystent: zgoda, zwinięcie w liść, lot łukiem, złapanie przez awatar, otwarcie czatu ---
+  $('#mk-ask').onclick = () => { $('#mk-more').hidden = true; $('#mk-confirm').hidden = false; };
+  $('#mk-no').onclick = () => { $('#mk-more').hidden = false; $('#mk-confirm').hidden = true; };
+  $('#mk-yes').onclick = async () => {
+    const item = $('#mk-item'), r = item.getBoundingClientRect();
+    // cel: miejsce awatara w nagłówku czatu (lewy górny róg)
+    const tx = 16 + 44 + 12 + 21, ty = 12 + 21 + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0) + 12;
+    const sx = r.left + r.width / 2, sy = r.top + r.height / 2;
+    if (reduce) return openAt(tx, ty);
+    item.classList.add('is-folding');
+    await wait(380);
+    const leaf = document.createElement('div'); leaf.className = 'fly-leaf'; leaf.innerHTML = LEAF; document.body.appendChild(leaf);
+    // łuk: przez punkt kontrolny nad i w bok; liść kręci się jak na wietrze
+    const cx = (sx + tx) / 2 + 80, cy = Math.min(sy, ty) - 60, frames = [];
+    for (let i = 0; i <= 20; i++) {
+      const t = i / 20, u = 1 - t;
+      const x = u * u * sx + 2 * u * t * cx + t * t * tx, y = u * u * sy + 2 * u * t * cy + t * t * ty;
+      frames.push({ transform: `translate(${x}px, ${y}px) rotate(${-30 + 400 * t}deg) scale(${1.3 - .5 * t})`, opacity: t > .92 ? 0 : 1 });
+    }
+    await leaf.animate(frames, { duration: 1100, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' }).finished;
+    leaf.remove();
+    openAt(tx, ty);
+    setTimeout(() => { item.classList.remove('is-folding'); $('#mk-more').hidden = false; $('#mk-confirm').hidden = true; }, 900);
+  };
+  function openAt(x, y) {
+    const ghost = { getBoundingClientRect: () => ({ left: x, top: y, width: 0, height: 0 }) };
+    open(ghost, 'skrytka');
+    $('#as-ava').classList.remove('is-catch'); void $('#as-ava').offsetWidth; $('#as-ava').classList.add('is-catch');
+  }
+})();
+</script>
+</body>
+</html>
