@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="css/checkin.css">
   <link rel="stylesheet" href="css/mood-slider.css">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/asystent.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
 
@@ -33,6 +34,7 @@
   <script src="js/blog.js" defer></script>
   <script src="js/tracker.js" defer></script>
   <script src="js/testy.js" defer></script>
+  <script src="js/asystent.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body data-tab="dom">
@@ -136,6 +138,10 @@
     <section class="sec sec-short" aria-labelledby="short-title">
       <p class="kicker" id="short-title">Na skróty</p>
       <div class="shortcuts">
+        <button type="button" class="shortcut is-wide" data-asystent="dom">
+          <span class="insight-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 15c-5 0-7-3-7-7 4 0 7 2 7 7z"/><path d="M12 13c0-5 3-8 7-8 0 4-2 8-7 8z"/></svg></span>
+          <b>Porozmawiaj z Asystentem</b><small>posłucha, gdy chcesz coś z siebie wyrzucić</small>
+        </button>
         <button type="button" class="shortcut" data-go="skrytka">
           <span class="insight-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg></span>
           <b>Zapisz myśl</b><small>w Skrytce, tylko dla Ciebie</small>

@@ -1,0 +1,111 @@
+/*
+ * Asystent Wsparcia (js/asystent.js): przycisk-kiełek, ekran rozmowy, liść lecący ze Skrytki.
+ * Ładowany PO app.css — korzysta z jego klas (ci-back, sos, chip, icon-btn, ci-alert, support-call).
+ * Kolory tylko z tokenów. Warstwy: rozmowa 26 (nad podlewaniem 25, pod arkuszami 30 — SOS otwiera się nad nią), liść 45.
+ */
+
+/* ---------- Przycisk-kiełek (Dom i Skrytka) ---------- */
+.as-fab {
+  position: fixed; z-index: 19; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom));
+  width: 56px; height: 56px; display: none; place-items: center; padding: 0;
+  border: 1.5px solid rgba(var(--primary-rgb), .3); border-radius: 50%;
+  background: var(--surface); box-shadow: 0 12px 26px -14px rgba(var(--primary-rgb), .8);
+  cursor: pointer; animation: fade-in .8s ease .4s both; transition: transform .2s var(--ease-spring);
+}
+body[data-tab="dom"] .as-fab, body[data-tab="skrytka"] .as-fab { display: grid; }
+body.ci-open .as-fab, body.as-open .as-fab, body.plant-full .as-fab { display: none; }
+.as-fab .as-sprout { width: 30px; height: 30px; }
+.as-fab:hover .lf-l, .as-fab:hover .lf-r { animation: sway-l 1.6s ease-in-out infinite; }
+.as-fab:active { transform: scale(.92); }
+.as-fab:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+.as-fab.is-catch { animation: as-catch .7s var(--ease-spring); }
+@media (min-width: 700px) and (max-width: 1023px) { .as-fab { bottom: calc(104px + env(safe-area-inset-bottom)); } }
+@media (min-width: 1024px) { .as-fab { right: 28px; bottom: 120px; } }
+
+/* ---------- Ekran rozmowy: wyrasta kołem z miejsca otwarcia ---------- */
+.as {
+  position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column;
+  background: var(--page-bg); background-color: var(--bg);
+  clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
+  transition: clip-path .7s var(--ease-in-out);
+}
+.as.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); }
+body.as-open { overflow: hidden; }
+body.as-open .tabbar { transform: translateY(120%); }
+
+.as-top {
+  display: flex; align-items: center; gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  background: var(--sheet); box-shadow: 0 10px 24px -22px rgba(30, 42, 50, .5);
+}
+.as-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.as-who b { display: block; font-size: 1rem; font-weight: 800; }
+.as-who small { display: block; font-size: .74rem; color: var(--text-muted); }
+
+/* Awatar: kiełek w kółku; „oddycha”, gdy Asystent pisze */
+.as-ava { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1.5px rgba(var(--primary-rgb), .25); }
+.as-sprout { width: 26px; height: 26px; overflow: visible; }
+.as-sprout .lf-l { transform-origin: 12px 15px; }
+.as-sprout .lf-r { transform-origin: 12px 13px; }
+.as.is-typing .as-ava .lf-l, .as-fab:hover .lf-l { animation: sway-l 1.6s ease-in-out infinite; }
+.as.is-typing .as-ava .lf-r, .as-fab:hover .lf-r { animation: sway-r 1.6s ease-in-out infinite; }
+@keyframes sway-l { 50% { transform: rotate(-10deg); } }
+@keyframes sway-r { 50% { transform: rotate(10deg); } }
+.as-ava.is-catch { animation: as-catch .7s var(--ease-spring) .35s; }
+@keyframes as-catch { 40% { transform: scale(1.18); box-shadow: 0 0 0 8px rgba(var(--primary-rgb), .18); } }
+
+.as-log { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.as-note { margin: 14px auto 4px; max-width: 300px; text-align: center; font-size: .74rem; line-height: 1.5; color: var(--text-muted); }
+.as-msg { max-width: 82%; padding: 11px 14px; border-radius: 20px; font-size: .94rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; animation: soft-in .6s var(--ease-out) both; }
+.as-msg.is-bot { align-self: flex-start; background: var(--surface); border: 1.5px solid var(--line); border-bottom-left-radius: 6px; }
+/* odpowiedź użytkownika: jasne tło z akcentem + zwykły tekst (czytelne w każdym motywie) */
+.as-msg.is-me { align-self: flex-end; background: rgba(var(--primary-rgb), .14); border-bottom-right-radius: 6px; }
+.as-quote { align-self: flex-end; max-width: 82%; padding: 10px 14px 12px; border-radius: 20px 20px 6px 20px; background: var(--glass); border: 1.5px dashed rgba(var(--primary-rgb), .4); animation: as-quote-in .8s var(--ease-spring) both; }
+@keyframes as-quote-in { from { opacity: 0; transform: translate(30px, 60px) scale(.4) rotate(8deg); } }
+.as-quote span { display: flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; color: var(--primary-dark); }
+.as-quote span svg { width: 14px; height: 14px; color: var(--plant-leaf-1); }
+.as-quote p { margin: 4px 0 0; font-size: .92rem; line-height: 1.5; font-style: italic; color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+.as-dots { align-self: flex-start; display: flex; gap: 5px; padding: 14px 16px; border-radius: 20px 20px 20px 6px; background: var(--surface); border: 1.5px solid var(--line); }
+.as-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); opacity: .35; animation: as-dot 1.2s ease-in-out infinite; }
+.as-dots i:nth-child(2) { animation-delay: .15s; }
+.as-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes as-dot { 30% { opacity: 1; transform: translateY(-3px); } }
+.as-quick { display: flex; flex-wrap: wrap; gap: 8px; animation: soft-in .6s var(--ease-out) .2s both; }
+.as-crisis { display: grid; gap: 8px; animation: soft-in .6s var(--ease-out) both; }
+.as-crisis .support-call { display: flex; }
+
+.as-compose { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--sheet); border-top: 1px solid var(--line); }
+.as-compose textarea {
+  flex: 1; min-width: 0; min-height: 46px; max-height: 120px; padding: 12px 16px; resize: none;
+  border: 1.5px solid var(--line); border-radius: 23px; background: var(--surface);
+  font: inherit; font-size: .95rem; line-height: 1.4; color: var(--text);
+}
+.as-compose textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); }
+.as-compose .icon-btn { flex: none; width: 46px; height: 46px; border-radius: 50%; }
+
+/* ---------- Liść lecący ze Skrytki ---------- */
+.as-leaf { position: fixed; z-index: 45; left: 0; top: 0; width: 34px; height: 34px; margin: -17px 0 0 -17px; pointer-events: none; color: var(--plant-leaf-1); }
+.as-leaf svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 6px 8px rgba(var(--primary-rgb), .35)); }
+/* liść „pęka” w falę, z której wyrasta ekran rozmowy */
+.as-leaf::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--plant-leaf-1); opacity: 0; }
+.as-leaf.is-burst svg { animation: as-leaf-out .4s ease-in forwards; }
+.as-leaf.is-burst::after { animation: as-ring .7s var(--ease-out) forwards; }
+@keyframes as-leaf-out { to { opacity: 0; transform: scale(.3); } }
+@keyframes as-ring { from { opacity: .9; transform: scale(.4); } to { opacity: 0; transform: scale(4); } }
+.vault-item.is-folding { transition: transform .45s var(--ease-in-out), opacity .45s, border-radius .45s; transform: scale(.25) rotate(-8deg); opacity: 0; border-radius: 50% 0 50% 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .as, .vault-item.is-folding { transition: none; }
+  .as-msg, .as-quote, .as-quick, .as-crisis, .as-dots i, .as-fab, .as-sprout * { animation: none !important; }
+}
+
+/* Komputer: rozmowa to panel po prawej, roślinka zostaje widoczna */
+@media (min-width: 1024px) {
+  .as { left: auto; width: 460px; border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
+  body.as-open { overflow: auto; }
+}
+
+/* Skrót „Porozmawiaj z Asystentem” na Dom: szeroki, ikona obok tekstu */
+.shortcut.is-wide { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: center; }
+.shortcut.is-wide .insight-ico { grid-row: span 2; }
+.shortcut.is-wide b { margin-top: 0; }

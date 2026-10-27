@@ -215,9 +215,10 @@
     support.classList.toggle('is-low', v != null && v <= LOW);
     syncFooter();
   }
-  $('[data-assist]').addEventListener('click', () => {
-    // TODO: Asystent Wsparcia (chatbot AI, plan P2) — tu otworzy się rozmowa
-    toast('Asystent Wsparcia jest w przygotowaniu — tu otworzy się rozmowa.');
+  $('[data-assist]').addEventListener('click', e => {
+    // Asystent Wsparcia (js/asystent.js) wyrasta z przycisku nad ekranem podlewania
+    if (window.Asystent) window.Asystent.open({ from: e.currentTarget, zrodlo: 'podlewanie' });
+    else toast('Asystent Wsparcia jest w przygotowaniu — tu otworzy się rozmowa.');
   });
 
   // ---------- Krok 2 i 3: przyciski wyboru (stuknięcie w zaznaczony odznacza) ----------

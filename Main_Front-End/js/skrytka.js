@@ -4,7 +4,9 @@
  * Celowo mało tekstu: jedno pole i dwa przyciski.
  *   • „Schowaj” — myśl trafia na listę (tylko dla Ciebie; w aplikacji szyfrowana, plan: Supabase + szyfrowanie na urządzeniu),
  *   • „Puść z wiatrem” — myśl odlatuje jak liść i NIGDZIE się nie zapisuje (technika „liście na strumieniu”).
- * Wpis na liście jest zwinięty (data + 3 linijki); stuknięcie rozwija go i pokazuje „Zapytaj Asystenta” i „Usuń”.
+ * Wpisy leżą w dwóch kolumnach (zwinięte: data + 4 linijki); stuknięcie rozwija wpis na całą szerokość
+ * i pokazuje „Zapytaj Asystenta” (najpierw zgoda, potem myśl leci liściem do Asystenta — js/asystent.js) i „Usuń”.
+ * Przy pierwszym otwarciu Skrytka dostaje kilka przykładowych myśli (MAKIETA — żeby nie była pusta).
  * Słowa kryzysowe (js/moderacja.js) nie blokują zapisu — Skrytka jest prywatna — ale od razu pokazujemy 116 111.
  *
  * PROTOTYP: wpisy są w localStorage (`sci.skrytka`) tej przeglądarki, bez szyfrowania.
@@ -32,10 +34,24 @@
     'Czego się teraz obawiasz?',
     'Czego teraz potrzebujesz?',
   ];
+  // MAKIETA: przykładowe myśli przy pierwszym otwarciu (w aplikacji Skrytka startuje pusta)
+  const DEMO = [
+    ['Znowu pokłóciłam się z mamą o oceny. Czuję, że cokolwiek zrobię, to i tak będzie za mało.', 2],
+    ['Dobrze było pograć z Kubą w kosza po lekcjach.', 26, 'podlewanie'],
+    ['Jutro sprawdzian z matmy i nie mogę zasnąć.', 30],
+    ['Nie wiem, czy chcę iść na tę imprezę w sobotę.', 52],
+    ['Pani od polskiego pochwaliła moje wypracowanie.', 75, 'podlewanie'],
+    ['Czasem mam wrażenie, że wszyscy wokół wiedzą, co robią, a ja nie.', 98],
+  ];
+  const demo = () => DEMO.map(([text, h, from], i) => ({ id: `demo${i}`, at: Date.now() - h * 36e5, text, from: from || null, mood: null }));
   const store = {
     load() {
-      if (view) return [];
-      try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (_) { return []; }
+      if (view) return demo();
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw === null) { const d = demo(); localStorage.setItem(KEY, JSON.stringify(d)); return d; }
+        return JSON.parse(raw) || [];
+      } catch (_) { return demo(); }
     },
     save(list) {
       if (view) return;
@@ -95,7 +111,13 @@
         <button type="button" class="quiet-btn" data-act="ai">${svg(ICON.spark)}Zapytaj Asystenta</button>
         <button type="button" class="quiet-btn" data-act="del">${svg(ICON.trash)}Usuń</button>
       </div>
-      <div class="vault-confirm" hidden>
+      <!-- zgoda: myśl idzie do Asystenta tylko po potwierdzeniu, nigdy automatycznie -->
+      <div class="vault-confirm vault-ask" hidden>
+        <span>Asystent zobaczy tylko tę myśl.</span>
+        <button type="button" class="quiet-btn" data-act="keep">Nie</button>
+        <button type="button" class="btn-primary is-small" data-act="really-ai">Przekaż</button>
+      </div>
+      <div class="vault-confirm vault-del" hidden>
         <span>Usunąć na zawsze?</span>
         <button type="button" class="quiet-btn" data-act="keep">Zostaw</button>
         <button type="button" class="btn-danger" data-act="really-del">Usuń</button>
@@ -177,21 +199,25 @@
       open.setAttribute('aria-expanded', String(on));
       li.classList.toggle('is-open', on);
       li.querySelector('.vault-more').hidden = !on;
-      li.querySelector('.vault-confirm').hidden = true;
+      li.querySelectorAll('.vault-confirm').forEach(c => { c.hidden = true; });
       return;
     }
     const b = e.target.closest('[data-act]');
     if (!b) return;
     const act = b.dataset.act;
-    if (act === 'ai') {
-      // TODO: Asystent Wsparcia (P2) — wpis idzie do AI tylko po tym kliknięciu, nigdy automatycznie
-      toast('Asystent jest w przygotowaniu.');
-    } else if (act === 'del') {
+    if (act === 'ai' || act === 'del') {
       li.querySelector('.vault-more').hidden = true;
-      li.querySelector('.vault-confirm').hidden = false;
-      li.querySelector('[data-act="keep"]').focus();
+      const box = li.querySelector(act === 'ai' ? '.vault-ask' : '.vault-del');
+      box.hidden = false;
+      box.querySelector('[data-act="keep"]').focus();
+    } else if (act === 'really-ai') {
+      // TODO backend: wpis idzie do AI tylko po tej zgodzie, nigdy automatycznie
+      const it = items.find(x => x.id === li.dataset.id);
+      li.querySelector('.vault-ask').hidden = true;
+      li.querySelector('.vault-more').hidden = false;
+      if (it && window.Asystent) window.Asystent.send(li, { tekst: it.text, kiedy: when(it.at) });
     } else if (act === 'keep') {
-      li.querySelector('.vault-confirm').hidden = true;
+      li.querySelectorAll('.vault-confirm').forEach(c => { c.hidden = true; });
       li.querySelector('.vault-more').hidden = false;
     } else if (act === 'really-del') {
       items = items.filter(it => it.id !== li.dataset.id);

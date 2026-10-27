@@ -365,7 +365,10 @@ body, .sheet { transition: background-color .5s ease, color .5s ease; }
 .vault-bar .btn-primary:hover svg { transform: none; }
 #vault-alert { margin-top: 12px; }
 
-.vault-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+/* dwie kolumny karteczek; rozwinięta zajmuje całą szerokość, „dense” zapełnia luki */
+.vault-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: 8px; }
+.vault-list > .empty-state, .vault-item.is-open { grid-column: 1 / -1; }
+@media (min-width: 700px) and (max-width: 1023px) { .vault-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .vault-item { border-radius: 18px; background: var(--glass); transition: background .3s, opacity .3s, transform .3s; }
 .vault-item.is-open { background: var(--surface); box-shadow: 0 10px 24px -20px rgba(30, 42, 50, .4); }
 .vault-item.is-new { animation: pop-in .7s var(--ease-out) both; }
@@ -378,7 +381,7 @@ body, .sheet { transition: background-color .5s ease, color .5s ease; }
 .vault-when { font-size: .76rem; font-weight: 600; color: var(--text-soft); }
 .vault-text {
   font-size: .97rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
 }
 .vault-item.is-open .vault-text { display: block; }
 .vault-more, .vault-confirm { display: flex; align-items: center; gap: 4px; padding: 0 8px 10px; animation: soft-in .4s var(--ease-out) both; }
