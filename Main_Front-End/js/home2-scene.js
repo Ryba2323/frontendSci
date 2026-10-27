@@ -584,7 +584,8 @@
       stageMax = probe.offsetHeight || Math.min(440, H * .47);
       probe.remove();
     }
-    CW = wide ? W / 2 : W;
+    // komputer: szerokość sceny z CSS (połowa strony — mniej, gdy obok jest panel Asystenta)
+    CW = wide ? (stage.getBoundingClientRect().width || W / 2) : W;
     CH = closeUp && !wide ? H : stageMax;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(CW * dpr);

@@ -21,6 +21,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 
 - There's no build step. Each page also works opened straight from disk (`file://`), so use classic `<script defer>` files and never ES modules.
 - For a local server, serve the `Main_Front-End/` folder with any static server, e.g. `npx serve Main_Front-End` or `python3 -m http.server -d Main_Front-End`, and open `index.html`, which lists all screens.
+- After layout changes run `node narzedzia/sprawdz-nakladanie.js` (Playwright): it checks 5 widths × light/dark × Dom/Skrytka × assistant closed/open for overlapping elements, elements under the assistant panel, a plant canvas wider than its stage, horizontal scroll and clipped tab labels.
 - **Test in a phone viewport first**, e.g. 375×812, then tablet (~820) and desktop (≥1024).
 - URL helpers:
   - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
