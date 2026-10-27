@@ -23,9 +23,13 @@ body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)
   .as-fab { right: 24px; bottom: calc(104px + env(safe-area-inset-bottom)); }
   body[data-tab="blog"] .as-fab { bottom: calc(158px + env(safe-area-inset-bottom)); }
 }
-/* komputer: kiełek stoi w prawym dolnym rogu sceny, przy roślince (nie zasłania karty z treścią) */
+/* komputer: kiełek w prawym dolnym rogu ekranu, nad paskiem zakładek; treść ma po prawej pas (--gutter), żeby go nie zasłaniać */
 @media (min-width: 1024px) {
-  .as-fab, body[data-tab="blog"] .as-fab { right: auto; left: calc(var(--page-w, 100vw) / 2 - 92px); bottom: 36px; transition: left .7s var(--ease-in-out), transform .2s var(--ease-spring); }
+  .as-fab { right: 28px; bottom: 100px; }
+  body[data-tab="blog"] .as-fab { bottom: 164px; }
+  /* „Napisz” na Blogu: okrągły, w tym samym prawym pasie co kiełek (podpis zostaje dla czytników ekranu) */
+  body .fab { right: 28px; bottom: 100px; width: 56px; height: 56px; padding: 0; justify-content: center; gap: 0; border-radius: 50%; font-size: 0; }
+  body .fab svg { width: 22px; height: 22px; }
 }
 
 /* ---------- Ekran rozmowy: wyrasta kołem z miejsca otwarcia ---------- */
@@ -108,19 +112,20 @@ body.as-open { overflow: hidden; }
 /* Komputer: rozmowa to panel po prawej, a cała strona (roślinka, treść, pasek zakładek) rozsuwa się w lewo,
    żeby nic nie było pod panelem. --as-w to szerokość panelu, --page-w to to, co zostaje dla strony. */
 @media (min-width: 1024px) {
-  :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; }
-  body.as-open { --page-w: calc(100vw - var(--as-w)); overflow: auto; }
+  :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; --gutter: 112px; }
+  body.as-open { --page-w: calc(100vw - var(--as-w)); --gutter: 48px; overflow: auto; }
   .as { left: auto; width: var(--as-w); background: var(--sheet); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
   body.as-open .tabbar { transform: translateX(-50%); }
   /* przy otwartym panelu pasek jest węższy: podpis tylko przy bieżącej zakładce, reszta to ikony */
   body.as-open .tab:not([aria-current="page"]) { gap: 0; padding: 0 4px; font-size: 0; }
   .stage { width: calc(var(--page-w) / 2); }
-  .content { margin-left: calc(var(--page-w) / 2); margin-right: calc(100vw - var(--page-w)); }
+  .content { margin-left: calc(var(--page-w) / 2); margin-right: calc(100vw - var(--page-w)); padding-right: var(--gutter); }
   .app-top { right: calc(100vw - var(--page-w) / 2); }
-  .tabbar, .toast { left: calc(var(--page-w) * .75); }
+  /* środek karty: przesunięty o połowę różnicy między lewym (48px) a prawym marginesem */
+  .tabbar, .toast { left: calc(var(--page-w) * .75 + (48px - var(--gutter)) / 2); }
   .ci-overlay { left: calc(var(--page-w) / 2); right: calc(100vw - var(--page-w)); }
   /* wszystko (też scena z roślinką) przesuwa się razem, w tym samym tempie co otwieranie panelu */
-  .stage, .content, .tabbar, .toast, .app-top { transition: width .7s var(--ease-in-out), margin .7s var(--ease-in-out), left .7s var(--ease-in-out), right .7s var(--ease-in-out), transform .4s var(--ease-out); }
+  .stage, .content, .tabbar, .toast, .app-top { transition: width .7s var(--ease-in-out), padding .7s var(--ease-in-out), margin .7s var(--ease-in-out), left .7s var(--ease-in-out), right .7s var(--ease-in-out), transform .4s var(--ease-out); }
 }
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
   .stage, .content, .tabbar, .toast, .app-top { transition: none; }

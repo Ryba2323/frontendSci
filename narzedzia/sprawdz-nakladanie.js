@@ -1,5 +1,5 @@
 /*
- * Test nakładania elementów (Playwright): 5 szerokości × jasny/ciemny × 4 zakładki × Asystent zamknięty/otwarty.
+ * Test nakładania elementów (Playwright): 6 szerokości × jasny/ciemny × 4 zakładki × Asystent zamknięty/otwarty.
  * Sprawdza: poziomy scroll, roślinkę szerszą niż scena, elementy pod panelem Asystenta, nachodzące przyciski, ucięte zakładki.
  * Uruchom: node narzedzia/sprawdz-nakladanie.js [folder-na-zrzuty]   (zrzuty komputerowe tylko gdy podasz folder)
  */
@@ -7,7 +7,7 @@ const { chromium } = require('playwright'); const D = process.argv[2];
 const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/aplikacja.html');
 (async () => {
   const b = await chromium.launch(); const out = [];
-  for (const w of [375, 820, 1024, 1280, 1440]) for (const scheme of ['light', 'dark']) {
+  for (const w of [375, 720, 820, 1024, 1280, 1440]) for (const scheme of ['light', 'dark']) {
     const p = await b.newPage({ viewport: { width: w, height: w < 700 ? 812 : 860 }, colorScheme: scheme });
     const errs = []; p.on('pageerror', e => errs.push(e.message));
     for (const tab of ['dom', 'skrytka', 'tracker', 'blog']) for (const open of [false, true]) {
@@ -31,6 +31,7 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
         const pairs = [['.app-top .top-actions', '.stage-greet'], ['.app-top .logo-ph', '.stage-greet'], ['#as-fab', '.tabbar'], ['#as-fab', '.fab'], ['#as-fab', '.app-top .top-actions'], ['.as-top .sos', '.as-who']];
         for (const [a, b] of pairs) { const x = q(a), y = q(b); if (vis(x) && vis(y) && hit(x, y) && getComputedStyle(y).opacity > .05) bad.push(`${a} nachodzi na ${b}`); }
         if (wide && !open) for (const s of ['.view:not([hidden])', '.fab', '.tabbar']) { const el = q(s); if (vis(el) && vis(q('#as-fab')) && hit(q('#as-fab'), el)) bad.push('#as-fab nachodzi na ' + s); }
+        if (wide) { const f = q('.fab'), v = q('.view:not([hidden])'); if (vis(f) && vis(v) && hit(f, v)) bad.push('.fab (Napisz) nachodzi na kartę'); }
         if (!open && !vis(q('#as-fab'))) bad.push('brak przycisku Asystenta');
         // podpisy w pasku zakładek nie mogą być ucięte
         document.querySelectorAll('.tab').forEach(t => { if (vis(t) && t.scrollWidth > t.clientWidth + 1) bad.push('ucięta zakładka: ' + t.textContent.trim()); });

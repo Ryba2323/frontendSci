@@ -740,6 +740,16 @@
     glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, CW, stageH);
+    // niebo i blask wygaszamy przy dolnej krawędzi sceny — inaczej widać ostrą linię tam, gdzie zaczyna się treść
+    if (!wide) {
+      const fade = ctx.createLinearGradient(0, stageH * .72, 0, stageH);
+      fade.addColorStop(0, 'rgba(0,0,0,0)');
+      fade.addColorStop(1, 'rgba(0,0,0,1)');
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = fade;
+      ctx.fillRect(0, stageH * .72, CW, stageH * .28);
+      ctx.globalCompositeOperation = 'source-over';
+    }
 
     drawGround();
     if (h < 1) return;

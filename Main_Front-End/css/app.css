@@ -44,7 +44,7 @@ body.ci-open { overflow: hidden; }
 @media (max-width: 1023px) {
   /* roślinka „bliżej”: wyższa scena niż na stronie-glowna-2 */
   :root { --stage-max: clamp(340px, 54vh, 540px); }
-  .stage { z-index: 0; will-change: transform, opacity; }
+  .stage { z-index: 0; will-change: transform, opacity; background: transparent; }   /* tło i światła z body — bez szwu */
   /* pełny ekran roślinki (pociągnięcie w dół): kafel zjeżdża, widać tylko jego brzeg */
   body.plant-full { overflow: hidden; touch-action: none; }
   body.plant-full .view#view-dom { cursor: pointer; }
