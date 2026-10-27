@@ -11,6 +11,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 body {
   --page-bg:
+    radial-gradient(900px 620px at 50% 0%, var(--bg-tint), transparent 70%),
     radial-gradient(1000px 640px at 50% 18%, rgba(var(--mint-rgb), .55), transparent 62%),
     radial-gradient(900px 600px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);

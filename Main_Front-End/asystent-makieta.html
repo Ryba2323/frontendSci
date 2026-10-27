@@ -27,7 +27,7 @@
     /* ---------- Asystent: pełny ekran wyrastający kołem (jak podlewanie) ---------- */
     .as {
       position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column;
-      background: var(--bg); clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
+      background: var(--page-bg); clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
       transition: clip-path .7s var(--ease-in-out); visibility: hidden;
     }
     .as.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); visibility: visible; }

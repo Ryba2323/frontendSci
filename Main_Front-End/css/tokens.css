@@ -45,6 +45,7 @@
 /* Pochodne — liczone osobno na każdym elemencie z motywem, żeby podglądy (data-palette) też je miały */
 :root, [data-palette] {
   --ring: rgba(var(--primary-rgb), .18);
+  --bg-tint: rgba(var(--primary-rgb), 0);   /* poświata motywu na tle strony — w jasnym trybie niepotrzebna */
 }
 
 /* ================================================================
@@ -244,6 +245,7 @@
     --mint: #1A3832;   --mint-rgb: 26, 56, 50;
     --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
     --ring: rgba(var(--primary-rgb), .45);
+  --bg-tint: rgba(var(--primary-rgb), .24);   /* w nocy tło jest wspólne, więc motyw widać po poświacie */
     color-scheme: dark;
   }
 }
@@ -266,5 +268,6 @@
   --mint: #1A3832;   --mint-rgb: 26, 56, 50;
   --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
   --ring: rgba(var(--primary-rgb), .45);
+  --bg-tint: rgba(var(--primary-rgb), .24);   /* w nocy tło jest wspólne, więc motyw widać po poświacie */
   color-scheme: dark;
 }
