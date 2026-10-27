@@ -1,0 +1,8 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Wyniki renderu nie trafiają do gita — poza finalnym plikiem
+out/*
+!out/releaf-hidden-logo-loop.mp4

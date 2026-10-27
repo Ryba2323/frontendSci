@@ -27,6 +27,10 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
   - `?widok=statyczny` renders a page without animation and with demo data (for screenshots and team previews).
 - Canvas scenes only animate while the tab is visible. When the browser tab is in the background (e.g. during automated testing), call `HomeScene.debugAdvance(sec)` / `Home2Scene.debugAdvance(sec)` in the console to step the scene forward manually.
 
+## Brand animation (`releaf-motion/`)
+
+A separate Remotion project with the 11 s looping logo animation ("Hidden Logo Loop", `out/releaf-hidden-logo-loop.mp4`). It uses the official ReLeaf logo from `public/releaf-logo.png`; see `releaf-motion/README.md`.
+
 ## Structure (`Main_Front-End/`)
 
 | Screen | Files |
