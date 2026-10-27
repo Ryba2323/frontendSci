@@ -31,7 +31,7 @@ body.ci-open .as-fab, body.as-open .as-fab, body.plant-full .as-fab { display: n
 }
 .as.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); }
 body.as-open { overflow: hidden; }
-body.as-open .tabbar { transform: translateY(120%); }
+@media (max-width: 1023px) { body.as-open .tabbar { transform: translateY(120%); } }
 
 .as-top {
   display: flex; align-items: center; gap: 12px;
@@ -99,10 +99,24 @@ body.as-open .tabbar { transform: translateY(120%); }
   .as-msg, .as-quote, .as-quick, .as-crisis, .as-dots i, .as-fab, .as-sprout * { animation: none !important; }
 }
 
-/* Komputer: rozmowa to panel po prawej, roślinka zostaje widoczna */
+/* Komputer: rozmowa to panel po prawej, a cała strona (roślinka, treść, pasek zakładek) rozsuwa się w lewo,
+   żeby nic nie było pod panelem. --as-w to szerokość panelu, --page-w to to, co zostaje dla strony. */
 @media (min-width: 1024px) {
-  .as { left: auto; width: 460px; border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
-  body.as-open { overflow: auto; }
+  :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; }
+  body.as-open { --page-w: calc(100vw - var(--as-w)); overflow: auto; }
+  .as { left: auto; width: var(--as-w); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
+  body.as-open .tabbar { transform: translateX(-50%); }
+  /* przy otwartym panelu pasek jest węższy: podpis tylko przy bieżącej zakładce, reszta to ikony */
+  body.as-open .tab:not([aria-current="page"]) { gap: 0; padding: 0 4px; font-size: 0; }
+  .stage { width: calc(var(--page-w) / 2); }
+  .content { margin-left: calc(var(--page-w) / 2); margin-right: calc(100vw - var(--page-w)); }
+  .app-top { right: calc(100vw - var(--page-w) / 2); }
+  .tabbar, .toast { left: calc(var(--page-w) * .75); }
+  .ci-overlay { left: calc(var(--page-w) / 2); right: calc(100vw - var(--page-w)); }
+  .content, .tabbar, .toast, .app-top { transition: margin .6s var(--ease-in-out), left .6s var(--ease-in-out), right .6s var(--ease-in-out), transform .4s var(--ease-out); }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .content, .tabbar, .toast, .app-top { transition: none; }
 }
 
 /* Skrót „Porozmawiaj z Asystentem” na Dom: szeroki, ikona obok tekstu */
