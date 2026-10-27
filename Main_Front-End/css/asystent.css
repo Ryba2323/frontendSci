@@ -4,23 +4,29 @@
  * Kolory tylko z tokenów. Warstwy: rozmowa 26 (nad podlewaniem 25, pod arkuszami 30 — SOS otwiera się nad nią), liść 45.
  */
 
-/* ---------- Przycisk-kiełek (Dom i Skrytka) ---------- */
+/* ---------- Przycisk-kiełek (na każdej zakładce; na Blogu nad przyciskiem „Napisz”) ---------- */
 .as-fab {
   position: fixed; z-index: 19; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom));
-  width: 56px; height: 56px; display: none; place-items: center; padding: 0;
+  width: 56px; height: 56px; display: grid; place-items: center; padding: 0;
   border: 1.5px solid rgba(var(--primary-rgb), .3); border-radius: 50%;
   background: var(--surface); box-shadow: 0 12px 26px -14px rgba(var(--primary-rgb), .8);
   cursor: pointer; animation: fade-in .8s ease .4s both; transition: transform .2s var(--ease-spring);
 }
-body[data-tab="dom"] .as-fab, body[data-tab="skrytka"] .as-fab { display: grid; }
-body.ci-open .as-fab, body.as-open .as-fab, body.plant-full .as-fab { display: none; }
+body.ci-open .as-fab, body.as-open .as-fab, body.plant-full .as-fab, body.sheet-open .as-fab { display: none; }
+body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)); }
 .as-fab .as-sprout { width: 30px; height: 30px; }
 .as-fab:hover .lf-l, .as-fab:hover .lf-r { animation: sway-l 1.6s ease-in-out infinite; }
 .as-fab:active { transform: scale(.92); }
 .as-fab:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
 .as-fab.is-catch { animation: as-catch .7s var(--ease-spring); }
-@media (min-width: 700px) and (max-width: 1023px) { .as-fab { bottom: calc(104px + env(safe-area-inset-bottom)); } }
-@media (min-width: 1024px) { .as-fab { right: 28px; bottom: 120px; } }
+@media (min-width: 700px) and (max-width: 1023px) {
+  .as-fab { right: 24px; bottom: calc(104px + env(safe-area-inset-bottom)); }
+  body[data-tab="blog"] .as-fab { bottom: calc(158px + env(safe-area-inset-bottom)); }
+}
+/* komputer: kiełek stoi w prawym dolnym rogu sceny, przy roślince (nie zasłania karty z treścią) */
+@media (min-width: 1024px) {
+  .as-fab, body[data-tab="blog"] .as-fab { right: auto; left: calc(var(--page-w, 100vw) / 2 - 92px); bottom: 36px; transition: left .7s var(--ease-in-out), transform .2s var(--ease-spring); }
+}
 
 /* ---------- Ekran rozmowy: wyrasta kołem z miejsca otwarcia ---------- */
 .as {
@@ -104,7 +110,7 @@ body.as-open { overflow: hidden; }
 @media (min-width: 1024px) {
   :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; }
   body.as-open { --page-w: calc(100vw - var(--as-w)); overflow: auto; }
-  .as { left: auto; width: var(--as-w); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
+  .as { left: auto; width: var(--as-w); background: var(--sheet); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
   body.as-open .tabbar { transform: translateX(-50%); }
   /* przy otwartym panelu pasek jest węższy: podpis tylko przy bieżącej zakładce, reszta to ikony */
   body.as-open .tab:not([aria-current="page"]) { gap: 0; padding: 0 4px; font-size: 0; }
@@ -113,10 +119,11 @@ body.as-open { overflow: hidden; }
   .app-top { right: calc(100vw - var(--page-w) / 2); }
   .tabbar, .toast { left: calc(var(--page-w) * .75); }
   .ci-overlay { left: calc(var(--page-w) / 2); right: calc(100vw - var(--page-w)); }
-  .content, .tabbar, .toast, .app-top { transition: margin .6s var(--ease-in-out), left .6s var(--ease-in-out), right .6s var(--ease-in-out), transform .4s var(--ease-out); }
+  /* wszystko (też scena z roślinką) przesuwa się razem, w tym samym tempie co otwieranie panelu */
+  .stage, .content, .tabbar, .toast, .app-top { transition: width .7s var(--ease-in-out), margin .7s var(--ease-in-out), left .7s var(--ease-in-out), right .7s var(--ease-in-out), transform .4s var(--ease-out); }
 }
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
-  .content, .tabbar, .toast, .app-top { transition: none; }
+  .stage, .content, .tabbar, .toast, .app-top { transition: none; }
 }
 
 /* Skrót „Porozmawiaj z Asystentem” na Dom: szeroki, ikona obok tekstu */

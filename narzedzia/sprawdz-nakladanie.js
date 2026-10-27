@@ -1,5 +1,5 @@
 /*
- * Test nakładania elementów (Playwright): 5 szerokości × jasny/ciemny × Dom/Skrytka × Asystent zamknięty/otwarty.
+ * Test nakładania elementów (Playwright): 5 szerokości × jasny/ciemny × 4 zakładki × Asystent zamknięty/otwarty.
  * Sprawdza: poziomy scroll, roślinkę szerszą niż scena, elementy pod panelem Asystenta, nachodzące przyciski, ucięte zakładki.
  * Uruchom: node narzedzia/sprawdz-nakladanie.js [folder-na-zrzuty]   (zrzuty komputerowe tylko gdy podasz folder)
  */
@@ -10,7 +10,7 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
   for (const w of [375, 820, 1024, 1280, 1440]) for (const scheme of ['light', 'dark']) {
     const p = await b.newPage({ viewport: { width: w, height: w < 700 ? 812 : 860 }, colorScheme: scheme });
     const errs = []; p.on('pageerror', e => errs.push(e.message));
-    for (const tab of ['dom', 'skrytka']) for (const open of [false, true]) {
+    for (const tab of ['dom', 'skrytka', 'tracker', 'blog']) for (const open of [false, true]) {
       await p.goto(`${URL}?motyw=lawenda&r=${Math.random()}#/${tab}`); await p.waitForTimeout(1300);
       if (open) { await p.click('#as-fab'); await p.waitForTimeout(1600); }
       const r = await p.evaluate(({ open }) => {
@@ -28,14 +28,26 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
           for (const s of ['.app-top .top-actions', '.stage-greet', '#stage', '#plant', '.view:not([hidden])', '.tabbar', '.toast'])
             { const el = q(s); if (vis(el) && R(el).right > L + 1 && R(el).width) bad.push(`${s} wchodzi pod panel (${R(el).right|0} > ${L|0})`); }
         }
-        const pairs = [['.app-top .top-actions', '.stage-greet'], ['.app-top .logo-ph', '.stage-greet'], ['#as-fab', '.tabbar'], ['#as-fab', '.app-top .top-actions'], ['.as-top .sos', '.as-who']];
+        const pairs = [['.app-top .top-actions', '.stage-greet'], ['.app-top .logo-ph', '.stage-greet'], ['#as-fab', '.tabbar'], ['#as-fab', '.fab'], ['#as-fab', '.app-top .top-actions'], ['.as-top .sos', '.as-who']];
         for (const [a, b] of pairs) { const x = q(a), y = q(b); if (vis(x) && vis(y) && hit(x, y) && getComputedStyle(y).opacity > .05) bad.push(`${a} nachodzi na ${b}`); }
+        if (wide && !open) for (const s of ['.view:not([hidden])', '.fab', '.tabbar']) { const el = q(s); if (vis(el) && vis(q('#as-fab')) && hit(q('#as-fab'), el)) bad.push('#as-fab nachodzi na ' + s); }
+        if (!open && !vis(q('#as-fab'))) bad.push('brak przycisku Asystenta');
         // podpisy w pasku zakładek nie mogą być ucięte
         document.querySelectorAll('.tab').forEach(t => { if (vis(t) && t.scrollWidth > t.clientWidth + 1) bad.push('ucięta zakładka: ' + t.textContent.trim()); });
         return bad;
       }, { open });
       const tag = `${w} ${scheme} ${tab} ${open ? 'otwarty' : 'zamknięty'}`;
-      if (r.length) out.push(`✗ ${tag}: ${r.join('; ')}`);
+      // komputer: w trakcie otwierania roślinka ma cały czas szerokość swojej sceny (bez rozjeżdżania)
+      if (open && w >= 1024) {
+        await p.click('[data-as-close]'); await p.waitForTimeout(900); await p.click('#as-fab');
+        for (const t of [120, 250, 400]) {
+          await p.waitForTimeout(t === 120 ? 120 : 140);
+          const d = await p.evaluate(() => Math.abs(document.getElementById('plant').getBoundingClientRect().width - document.getElementById('stage').getBoundingClientRect().width));
+          if (d > 3) r.push(`w trakcie otwierania roślinka nie pasuje do sceny o ${d | 0}px (${t} ms)`);
+        }
+        await p.waitForTimeout(800);
+      }
+      if (r.length && !out.includes(`✗ ${tag}: ${r.join('; ')}`)) out.push(`✗ ${tag}: ${r.join('; ')}`);
       if (D && w >= 1024 && tab === 'dom') await p.screenshot({ path: `${D}/ov-${w}-${scheme}-${open ? 1 : 0}.png` });
     }
     if (errs.length) out.push(`✗ ${w} ${scheme}: błędy JS ${errs.join(' | ')}`);

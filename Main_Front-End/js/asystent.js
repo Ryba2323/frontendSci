@@ -2,7 +2,7 @@
  * Asystent Wsparcia — rozmowa z roślinką-towarzyszem (aplikacja.html).
  *
  * Wejścia:
- *   • przycisk-kiełek w rogu (zakładki Dom i Skrytka) i skrót „Porozmawiaj” na Dom,
+ *   • przycisk-kiełek w rogu (na każdej zakładce) i skrót „Porozmawiaj” na Dom,
  *   • Skrytka: „Zapytaj Asystenta” → zgoda → myśl zwija się w liść, liść leci do kiełka i z liścia wyrasta ekran rozmowy,
  *   • podlewanie: „Porozmawiaj z Asystentem Wsparcia” przy niskim nastroju.
  * Ekran wyrasta kołem z miejsca, z którego go otwarto (jak podlewanie). SOS jest zawsze widoczny.
@@ -95,12 +95,6 @@
     return [innerWidth - 40, innerHeight - 120];
   }
 
-  // Na komputerze strona rozsuwa się pod panel — roślinka (canvas) musi przeliczyć swój rozmiar
-  function relayout() {
-    if (!window.matchMedia('(min-width: 1024px)').matches) return;
-    [0, 320, 650].forEach(t => setTimeout(() => window.dispatchEvent(new Event('resize')), reduceMotion ? 0 : t));
-  }
-
   async function open({ from = fab, zrodlo = 'dom', tekst = '', kiedy = '' } = {}) {
     run++;
     const my = run;
@@ -111,7 +105,6 @@
     log.innerHTML = '<p class="as-note">Asystent to program, nie terapeuta. Gdy jest naprawdę ciężko, zadzwoń pod 116 111.</p>';
     as.hidden = false;
     document.body.classList.add('as-open');
-    relayout();
     void as.offsetWidth;
     as.classList.add('is-open');
     ava.classList.remove('is-catch'); void ava.offsetWidth; ava.classList.add('is-catch');
@@ -128,7 +121,6 @@
     run++;
     as.classList.remove('is-open');
     document.body.classList.remove('as-open');
-    relayout();
     setTimeout(() => { if (!as.classList.contains('is-open')) as.hidden = true; }, reduceMotion ? 0 : 700);
     if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
   }

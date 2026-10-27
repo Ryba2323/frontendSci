@@ -358,31 +358,36 @@ button, a { touch-action: manipulation; }
    Tło całej aplikacji: miękkie światła w kolorach roślinki, które bardzo powoli dryfują
    (jak blask wokół roślinki, tylko na całym ekranie). Dwie warstwy za treścią; siła z tokenu --aura.
    ================================================================ */
-body::before, body::after {
+body::before {
   content: ""; position: fixed; z-index: -1; inset: -25%; pointer-events: none;
   opacity: var(--aura); will-change: transform;
-}
-body::before {
   background:
     radial-gradient(32% 28% at 22% 30%, color-mix(in srgb, var(--plant-glow) 70%, transparent), transparent 70%),
     radial-gradient(28% 24% at 78% 22%, color-mix(in srgb, var(--accent-light) 45%, transparent), transparent 70%),
-    radial-gradient(30% 26% at 62% 78%, color-mix(in srgb, var(--plant-leaf-2) 40%, transparent), transparent 70%);
-  animation: aura-a 46s ease-in-out infinite alternate;
-}
-body::after {
-  background:
+    radial-gradient(30% 26% at 62% 78%, color-mix(in srgb, var(--plant-leaf-2) 40%, transparent), transparent 70%),
     radial-gradient(22% 20% at 35% 70%, color-mix(in srgb, var(--plant-flower) 32%, transparent), transparent 70%),
-    radial-gradient(20% 18% at 85% 60%, color-mix(in srgb, var(--plant-core) 22%, transparent), transparent 70%),
-    radial-gradient(18% 16% at 55% 12%, color-mix(in srgb, var(--plant-flower-tip) 30%, transparent), transparent 70%);
-  animation: aura-b 62s ease-in-out infinite alternate;
+    radial-gradient(20% 18% at 85% 60%, color-mix(in srgb, var(--plant-core) 22%, transparent), transparent 70%);
+  animation: aura-a 50s ease-in-out infinite alternate;
 }
+/* Komputer: duże, miękkie światło od roślinki sięga środka ekranu — to ono ma przyciągać wzrok.
+   Warstwa ma szerokość strony (--page-w, mniejsza przy otwartym Asystencie), więc światło jedzie razem z roślinką. */
+@media (min-width: 1024px) {
+  body::after {
+    content: ""; position: fixed; z-index: 0; top: 0; bottom: 0; left: 0; width: var(--page-w, 100vw); pointer-events: none;
+    background:
+      radial-gradient(48% 72% at 25% 60%, color-mix(in srgb, var(--plant-glow) 50%, transparent), transparent 72%),
+      radial-gradient(26% 40% at 25% 42%, color-mix(in srgb, var(--plant-flower) 16%, transparent), transparent 70%);
+    transition: width .7s var(--ease-in-out);
+    animation: plant-light 9s ease-in-out infinite alternate;
+  }
+}
+@keyframes plant-light { from { opacity: .75; } to { opacity: 1; } }
 @keyframes aura-a { to { transform: translate(6%, -4%) rotate(8deg) scale(1.08); } }
-@keyframes aura-b { to { transform: translate(-7%, 5%) rotate(-10deg) scale(1.12); } }
 .is-static body::before, .is-static body::after { animation: none !important; }
 
 /* Podgląd (?widok=…) i ograniczony ruch: bez animacji */
 .is-static *, .is-static *::before, .is-static *::after { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  body::before, body::after { animation: none; }
+  body::before, body::after { animation: none; transition: none; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; }
 }

@@ -1091,6 +1091,8 @@
   });
   let resizeTimer;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(layout, 80); });
+  // komputer: scena płynnie zwęża się, gdy obok otwiera się panel Asystenta — przeliczamy rozmiar w każdej klatce zmiany
+  if (window.ResizeObserver) new ResizeObserver(() => { if (wide && Math.abs(stage.getBoundingClientRect().width - CW) > .5) layout(); }).observe(stage);
 
   paintBokeh();
 

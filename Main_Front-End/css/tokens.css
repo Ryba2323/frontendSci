@@ -46,7 +46,7 @@
 :root, [data-palette] {
   --ring: rgba(var(--primary-rgb), .18);
   --bg-tint: rgba(var(--primary-rgb), 0);   /* poświata motywu na tle strony — w jasnym trybie niepotrzebna */
-  --aura: 1;   /* siła kolorowych świateł tła (css/home2.css, body::before/::after) */
+  --aura: .7;   /* siła kolorowych świateł tła (css/home2.css, body::before/::after) */
 }
 
 /* ================================================================
@@ -247,7 +247,7 @@
     --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
     --ring: rgba(var(--primary-rgb), .45);
   --bg-tint: rgba(var(--primary-rgb), .24);   /* w nocy tło jest wspólne, więc motyw widać po poświacie */
-  --aura: .9;
+  --aura: .55;
     color-scheme: dark;
   }
 }
@@ -271,6 +271,6 @@
   --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
   --ring: rgba(var(--primary-rgb), .45);
   --bg-tint: rgba(var(--primary-rgb), .24);   /* w nocy tło jest wspólne, więc motyw widać po poświacie */
-  --aura: .9;
+  --aura: .55;
   color-scheme: dark;
 }
