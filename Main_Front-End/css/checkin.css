@@ -128,7 +128,7 @@ button, a { touch-action: manipulation; }
 .ci-actions {
   position: sticky; bottom: 0; z-index: 2;
   margin: 20px -20px 0; padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--bg-2) 72%, rgba(var(--mist-rgb), 0));
+  background: linear-gradient(to top, color-mix(in srgb, var(--bg-2) 82%, transparent) 60%, transparent);
 }
 .btn-primary {
   width: 100%; height: 56px;

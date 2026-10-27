@@ -37,7 +37,7 @@ body.ci-open { overflow: hidden; }
   background: rgba(var(--mist-rgb), 0); box-shadow: 0 1px 0 rgba(var(--primary-rgb), 0);
   transition: background .5s ease, box-shadow .5s ease;
 }
-.app-top.is-solid { background: var(--sheet); box-shadow: 0 10px 24px -22px rgba(30, 42, 50, .5); }
+.app-top.is-solid { background: color-mix(in srgb, var(--sheet) 86%, transparent); box-shadow: 0 10px 24px -22px rgba(30, 42, 50, .5); }
 .app-top .logo-ph { animation: fade-in 1s ease both; }
 
 /* Telefon: przy przewijaniu kafel z treścią wjeżdża NA roślinkę (scena zostaje pod spodem i lekko odpływa w górę) */
@@ -89,7 +89,8 @@ body.ci-open { overflow: hidden; }
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   display: grid; grid-template-columns: repeat(5, 1fr);
   padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-  background: var(--sheet); border-top: 1px solid var(--line);
+  /* lekko przezroczysty, żeby nie ucinał świateł tła */
+  background: color-mix(in srgb, var(--sheet) 86%, transparent); border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   box-shadow: 0 -10px 30px -22px rgba(30, 42, 50, .45);
   transition: transform .4s var(--ease-out);
 }
@@ -243,10 +244,8 @@ body, .sheet { transition: background-color .5s ease, color .5s ease; }
    ================================================================ */
 .ci-overlay {
   position: fixed; inset: 0; z-index: 25; overflow-y: auto; overscroll-behavior: contain;
-  background:
-    radial-gradient(900px 560px at 50% 30%, rgba(var(--mint-rgb), .55), transparent 62%),
-    radial-gradient(800px 520px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  background: var(--glow), linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  background-attachment: fixed;
   clip-path: circle(0 at var(--ox, 50%) var(--oy, 100%));
   transition: clip-path .62s var(--ease-in-out);
 }
@@ -689,7 +688,7 @@ body.sheet-open .fab, body.ci-open .fab { display: none; }
   .toast { left: 75vw; }
   .ci-overlay { left: 50vw; }
   .ci-overlay .ci { max-width: 600px; }
-  .ci-overlay .ci-actions { position: sticky; bottom: 0; background: linear-gradient(to top, var(--bg-2) 72%, rgba(var(--mist-rgb), 0)); }
+  .ci-overlay .ci-actions { position: sticky; bottom: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-2) 82%, transparent) 60%, transparent); }
 }
 
 /* ================================================================

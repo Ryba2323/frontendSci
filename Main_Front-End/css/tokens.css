@@ -49,6 +49,16 @@
   --aura: .7;   /* siła kolorowych świateł tła (css/home2.css, body::before/::after) */
 }
 
+/* Światła tła jako jedna warstwa do użycia wszędzie, gdzie ekran ma własne tło (Asystent, podlewanie, arkusze):
+   background: var(--glow), var(--bg). Siła z --aura (w nocy słabsza). Liczone na :root, więc idą za motywem i trybem. */
+:root {
+  --glow:
+    radial-gradient(70% 45% at 50% -5%, color-mix(in srgb, var(--plant-glow) calc(100% * var(--aura)), transparent), transparent 72%),
+    radial-gradient(55% 40% at 0% 40%, color-mix(in srgb, var(--accent-light) calc(65% * var(--aura)), transparent), transparent 70%),
+    radial-gradient(55% 45% at 100% 72%, color-mix(in srgb, var(--plant-leaf-2) calc(55% * var(--aura)), transparent), transparent 70%),
+    radial-gradient(45% 30% at 30% 105%, color-mix(in srgb, var(--plant-flower) calc(40% * var(--aura)), transparent), transparent 70%);
+}
+
 /* ================================================================
    Motywy
    ================================================================ */

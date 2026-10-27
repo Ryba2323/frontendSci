@@ -35,18 +35,25 @@ body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)
 /* ---------- Ekran rozmowy: wyrasta kołem z miejsca otwarcia ---------- */
 .as {
   position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column;
-  background: var(--page-bg); background-color: var(--bg);
+  background: var(--bg); overflow: hidden;
   clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
   transition: clip-path .7s var(--ease-in-out);
 }
 .as.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); }
+/* światła tła rozmowy: te same co w aplikacji, powoli dryfują; nagłówek i pole są przezroczyste, więc ich nie ucinają */
+.as::before {
+  content: ""; position: absolute; z-index: 0; inset: -20%; pointer-events: none;
+  background: var(--glow); will-change: transform;
+  animation: aura-a 50s ease-in-out infinite alternate;
+}
+.as > * { position: relative; z-index: 1; }
 body.as-open { overflow: hidden; }
 @media (max-width: 1023px) { body.as-open .tabbar { transform: translateY(120%); } }
 
 .as-top {
   display: flex; align-items: center; gap: 12px;
   padding: calc(env(safe-area-inset-top) + 12px) 16px 12px;
-  background: var(--sheet); box-shadow: 0 10px 24px -22px rgba(30, 42, 50, .5);
+  background: none;
 }
 .as-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .as-who b { display: block; font-size: 1rem; font-weight: 800; }
@@ -84,7 +91,7 @@ body.as-open { overflow: hidden; }
 .as-crisis { display: grid; gap: 8px; animation: soft-in .6s var(--ease-out) both; }
 .as-crisis .support-call { display: flex; }
 
-.as-compose { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--sheet); border-top: 1px solid var(--line); }
+.as-compose { display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: none; }
 .as-compose textarea {
   flex: 1; min-width: 0; min-height: 46px; max-height: 120px; padding: 12px 16px; resize: none;
   border: 1.5px solid var(--line); border-radius: 23px; background: var(--surface);
@@ -106,6 +113,7 @@ body.as-open { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .as, .vault-item.is-folding { transition: none; }
+  .as::before { animation: none; }
   .as-msg, .as-quote, .as-quick, .as-crisis, .as-dots i, .as-fab, .as-sprout * { animation: none !important; }
 }
 
@@ -114,7 +122,7 @@ body.as-open { overflow: hidden; }
 @media (min-width: 1024px) {
   :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; --gutter: 112px; }
   body.as-open { --page-w: calc(100vw - var(--as-w)); --gutter: 48px; overflow: auto; }
-  .as { left: auto; width: var(--as-w); background: var(--sheet); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
+  .as { left: auto; width: var(--as-w); border-left: 1px solid var(--line); box-shadow: -20px 0 40px -30px rgba(30, 42, 50, .4); }
   body.as-open .tabbar { transform: translateX(-50%); }
   /* przy otwartym panelu pasek jest węższy: podpis tylko przy bieżącej zakładce, reszta to ikony */
   body.as-open .tab:not([aria-current="page"]) { gap: 0; padding: 0 4px; font-size: 0; }

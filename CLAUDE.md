@@ -76,6 +76,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - The colour can be changed again on the home page (v2) with the round button next to SOS.
 - `js/theme.js` is loaded **without `defer`** in `<head>`, right after the stylesheets, so the theme is set before first paint. It sets `<html data-theme>`, saves the choice in `localStorage` (`sci.theme`), and fires a `themechange` event on `window`.
 - Canvas scenes read the `--plant-*` tokens (always written as `#RRGGBB`) and recolour smoothly on `themechange`.
+- Background lights: `body::before` (drifting, `css/home2.css`) and the shared `--glow` token in `tokens.css` (strength `--aura`, weaker in dark). Any full-screen layer with its own background (assistant, check-in) uses `var(--glow)` too, and bars over it (headers, tab bar, sticky footers) are transparent or semi-transparent (`color-mix(in srgb, var(--sheet) 86%, transparent)`) so they never cut the light with a hard edge.
 - `[data-palette="<id>"]` gives any element the tokens of a given theme. The colour swatches use this.
 - To add a theme, add one block to `tokens.css` and one entry to the `LIST` in `theme.js`.
 
