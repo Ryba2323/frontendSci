@@ -4,17 +4,24 @@
  * Kolory tylko z tokenów. Warstwy: rozmowa 26 (nad podlewaniem 25, pod arkuszami 30 — SOS otwiera się nad nią), liść 45.
  */
 
-/* ---------- Przycisk-kiełek (na każdej zakładce; na Blogu nad przyciskiem „Napisz”) ---------- */
+/* ---------- Przycisk: dymek czatu w kolorze motywu, w nim kiełek (na każdej zakładce; na Blogu nad „Napisz”) ---------- */
 .as-fab {
   position: fixed; z-index: 19; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom));
   width: 56px; height: 56px; display: grid; place-items: center; padding: 0;
-  border: 1.5px solid rgba(var(--primary-rgb), .3); border-radius: 50%;
-  background: var(--surface); box-shadow: 0 12px 26px -14px rgba(var(--primary-rgb), .8);
+  border: 0; border-radius: 50%; background: none;
   cursor: pointer; animation: fade-in .8s ease .4s both; transition: transform .2s var(--ease-spring);
 }
 body.ci-open .as-fab, body.as-open .as-fab, body.plant-full .as-fab, body.sheet-open .as-fab { display: none; }
 body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)); }
-.as-fab .as-sprout { width: 30px; height: 30px; }
+.as-bubble {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  filter: drop-shadow(0 8px 12px rgba(var(--primary-rgb), .45));
+}
+/* kiełek na środku dymka (bez ogonka), jasny na kolorze motywu */
+.as-fab .as-sprout { position: relative; width: 28px; height: 28px; margin: -6px 0 0 -2px; }
+.as-fab .as-sprout path:first-child { stroke: #fff; }
+.as-fab .as-sprout .lf-l { fill: #fff; }
+.as-fab .as-sprout .lf-r { fill: #fff; fill-opacity: .68; }
 .as-fab:hover .lf-l, .as-fab:hover .lf-r { animation: sway-l 1.6s ease-in-out infinite; }
 .as-fab:active { transform: scale(.92); }
 .as-fab:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
@@ -47,6 +54,13 @@ body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)
   animation: aura-a 50s ease-in-out infinite alternate;
 }
 .as > * { position: relative; z-index: 1; }
+
+/* Strumienie kolorów roślinki (js/asystent.js, Flow): wstęgi na canvasie w niskiej rozdzielczości, rozmycie robi z nich
+   miękkie smugi. Canvas wystaje poza ekran rozmowy, żeby rozmycie nie wygaszało brzegów. */
+.as > .as-flow {
+  position: absolute; z-index: 0; top: -40px; left: -40px;
+  width: calc(100% + 80px); height: calc(100% + 80px); pointer-events: none; filter: blur(11px);
+}
 body.as-open { overflow: hidden; }
 @media (max-width: 1023px) { body.as-open .tabbar { transform: translateY(120%); } }
 
@@ -74,7 +88,12 @@ body.as-open { overflow: hidden; }
 .as-log { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
 .as-note { margin: 14px auto 4px; max-width: 300px; text-align: center; font-size: .74rem; line-height: 1.5; color: var(--text-muted); }
 .as-msg { max-width: 82%; padding: 11px 14px; border-radius: 20px; font-size: .94rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; animation: soft-in .6s var(--ease-out) both; }
-.as-msg.is-bot { align-self: flex-start; background: var(--surface); border: 1.5px solid var(--line); border-bottom-left-radius: 6px; }
+/* Asystent: wiersz z kiełkiem po lewej, dymek pełny (bez obramowania, z cieniem) — inny niż propozycje pod nim */
+.as-row { align-self: flex-start; display: flex; align-items: flex-end; gap: 8px; max-width: 90%; }
+.as-row > .as-msg { max-width: none; }
+.as-mini { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 1.5px rgba(var(--primary-rgb), .25); animation: soft-in .6s var(--ease-out) both; }
+.as-mini .as-sprout { width: 18px; height: 18px; }
+.as-msg.is-bot { background: var(--surface); border-bottom-left-radius: 6px; box-shadow: 0 10px 26px -16px rgba(var(--primary-rgb), .6); }
 /* odpowiedź użytkownika: jasne tło z akcentem + zwykły tekst (czytelne w każdym motywie) */
 .as-msg.is-me { align-self: flex-end; background: rgba(var(--primary-rgb), .14); border-bottom-right-radius: 6px; }
 .as-quote { align-self: flex-end; max-width: 82%; padding: 10px 14px 12px; border-radius: 20px 20px 6px 20px; background: var(--glass); border: 1.5px dashed rgba(var(--primary-rgb), .4); animation: as-quote-in .8s var(--ease-spring) both; }
@@ -82,12 +101,15 @@ body.as-open { overflow: hidden; }
 .as-quote span { display: flex; align-items: center; gap: 5px; font-size: .72rem; font-weight: 700; color: var(--primary-dark); }
 .as-quote span svg { width: 14px; height: 14px; color: var(--plant-leaf-1); }
 .as-quote p { margin: 4px 0 0; font-size: .92rem; line-height: 1.5; font-style: italic; color: var(--text-muted); white-space: pre-wrap; overflow-wrap: anywhere; }
-.as-dots { align-self: flex-start; display: flex; gap: 5px; padding: 14px 16px; border-radius: 20px 20px 20px 6px; background: var(--surface); border: 1.5px solid var(--line); }
+.as-dots { display: flex; gap: 5px; padding: 14px 16px; border-radius: 20px 20px 20px 6px; background: var(--surface); box-shadow: 0 10px 26px -16px rgba(var(--primary-rgb), .6); }
 .as-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); opacity: .35; animation: as-dot 1.2s ease-in-out infinite; }
 .as-dots i:nth-child(2) { animation-delay: .15s; }
 .as-dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes as-dot { 30% { opacity: 1; transform: translateY(-3px); } }
-.as-quick { display: flex; flex-wrap: wrap; gap: 8px; animation: soft-in .6s var(--ease-out) .2s both; }
+/* Propozycje odpowiedzi: po stronie użytkownika (prawo), obrys w kolorze motywu, półprzezroczyste */
+.as-quick { align-self: flex-end; max-width: 92%; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; animation: soft-in .6s var(--ease-out) .2s both; }
+.as-quick .chip { height: 36px; padding: 0 14px; background: var(--glass); border-color: rgba(var(--primary-rgb), .5); color: var(--primary-dark); font-weight: 600; }
+.as-quick .chip:hover { background: rgba(var(--primary-rgb), .12); border-color: var(--primary); }
 .as-crisis { display: grid; gap: 8px; animation: soft-in .6s var(--ease-out) both; }
 .as-crisis .support-call { display: flex; }
 
@@ -114,7 +136,7 @@ body.as-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .as, .vault-item.is-folding { transition: none; }
   .as::before { animation: none; }
-  .as-msg, .as-quote, .as-quick, .as-crisis, .as-dots i, .as-fab, .as-sprout * { animation: none !important; }
+  .as-msg, .as-quote, .as-quick, .as-crisis, .as-dots i, .as-fab, .as-mini, .as-sprout * { animation: none !important; }
 }
 
 /* Komputer: rozmowa to panel po prawej, a cała strona (roślinka, treść, pasek zakładek) rozsuwa się w lewo,
