@@ -1101,8 +1101,14 @@
   });
   let resizeTimer;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(layout, 80); });
-  // komputer: scena płynnie zwęża się, gdy obok otwiera się panel Asystenta — przeliczamy rozmiar w każdej klatce zmiany
-  if (window.ResizeObserver) new ResizeObserver(() => { if (wide && Math.abs(stage.getBoundingClientRect().width - CW) > .5) layout(); }).observe(stage);
+  // komputer: scena płynnie zwęża się, gdy obok otwiera się panel Asystenta — przeliczamy rozmiar w każdej klatce zmiany.
+  // ResizeObserver działa już po narysowaniu klatki, a zmiana rozmiaru czyści canvas — rysujemy od razu, inaczej
+  // roślinka znika na czas całego otwierania i zamykania panelu.
+  if (window.ResizeObserver) new ResizeObserver(() => {
+    if (!wide || Math.abs(stage.getBoundingClientRect().width - CW) <= .5) return;
+    layout();
+    if (started) { frameLayout(); draw(); }
+  }).observe(stage);
 
   paintBokeh();
 

@@ -63,6 +63,10 @@ body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)
 }
 body.as-open { overflow: hidden; }
 @media (max-width: 1023px) { body.as-open .tabbar { transform: translateY(120%); } }
+/* tablet: pasek pływa na środku (translateX(-50%)) — chowa się w dół bez odskakiwania w bok */
+@media (min-width: 700px) and (max-width: 1023px) { body.as-open .tabbar { transform: translate(-50%, 160%); } }
+/* „Napisz” na Blogu chowa się razem z przyciskiem Asystenta, gdy rozmowa jest otwarta (na komputerze był pod okienkiem) */
+body.as-open .fab { display: none; }
 
 .as-top {
   display: flex; align-items: center; gap: 12px;

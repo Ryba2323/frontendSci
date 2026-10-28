@@ -71,6 +71,13 @@ body.ci-open { overflow: hidden; }
 }
 
 @media (min-width: 1024px) { .plant-zoom { display: none; } }
+/* niski ekran (telefon poziomo): scena kończy się nad pływającym paskiem zakładek, żeby nie zasłaniał doniczki */
+@media (max-width: 1023px) and (max-height: 520px) {
+  :root { --stage-max: calc(100vh - 96px); }
+  @supports (height: 1svh) { :root { --stage-max: calc(100svh - 96px); } }
+  /* niższa scena: w prawym rogu byłby pod dymkiem Asystenta — „powiększ” przechodzi na lewo */
+  .plant-zoom { right: auto; left: 16px; }
+}
 
 /* Telefon: roślinka tylko na zakładce Dom, inne zakładki to zwykłe strony */
 @media (max-width: 1023px) {
@@ -89,8 +96,9 @@ body.ci-open { overflow: hidden; }
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   display: grid; grid-template-columns: repeat(5, 1fr);
   padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
-  /* lekko przezroczysty, żeby nie ucinał świateł tła */
-  background: color-mix(in srgb, var(--sheet) 86%, transparent); border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  /* u góry lekko przezroczysty, żeby nie ucinał świateł tła; niżej prawie pełny — tekst przewijany pod spodem
+     (np. „Podlej roślinkę” na małym telefonie) nie prześwituje przez podpisy zakładek */
+  background: linear-gradient(color-mix(in srgb, var(--sheet) 86%, transparent), color-mix(in srgb, var(--sheet) 97%, transparent) 40%); border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   box-shadow: 0 -10px 30px -22px rgba(30, 42, 50, .45);
   transition: transform .4s var(--ease-out);
 }
@@ -110,7 +118,8 @@ body.ci-open .tabbar { transform: translateY(120%); }
 .tab[aria-current="page"] .tab-ico { background: rgba(var(--primary-rgb), .15); }
 .tab:active .tab-ico { transform: scale(.92); }
 
-.toast { bottom: calc(92px + env(safe-area-inset-bottom)); }
+/* komunikaty nad pływającymi przyciskami (dymek Asystenta, „Napisz”), a nie na nich */
+.toast { bottom: calc(152px + env(safe-area-inset-bottom)); }
 
 /* ================================================================
    Wspólne drobne komponenty
@@ -169,7 +178,8 @@ body.ci-open .tabbar { transform: translateY(120%); }
 .seg, .ci-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--track); }
 .seg button, .ci-seg button {
   height: 34px; padding: 0 13px; border: 0; border-radius: 999px; background: transparent;
-  font: inherit; font-size: .84rem; font-weight: 700; color: var(--text-muted); cursor: pointer;
+  /* nieaktywna opcja: ciemniej niż --text-muted (na szarym torze miała kontrast 4,2) */
+  font: inherit; font-size: .84rem; font-weight: 700; color: color-mix(in srgb, var(--text-muted) 60%, var(--text)); cursor: pointer;
   transition: background .2s, color .2s, box-shadow .2s;
 }
 .seg button[aria-pressed="true"], .ci-seg button[aria-pressed="true"] { background: var(--surface); color: var(--primary-dark); box-shadow: 0 4px 10px -6px rgba(30, 42, 50, .4); }
@@ -568,6 +578,8 @@ body, .sheet { transition: background-color .5s ease, color .5s ease; }
 .fab:focus-visible { outline: 3px solid rgba(var(--primary-rgb), .45); outline-offset: 3px; }
 body[data-tab="blog"] .fab { display: inline-flex; animation: soft-in .6s var(--ease-out) .3s both; }
 body.sheet-open .fab, body.ci-open .fab { display: none; }
+/* telefon: komunikat (np. „Opublikowano”) nad „Napisz” i dymkiem Asystenta, a nie na nich */
+@media (max-width: 699px) { body[data-tab="blog"] .toast { bottom: calc(214px + env(safe-area-inset-bottom)); } }
 
 /* zaznaczone fragmenty (moderacja) */
 .mod-mark { padding: 0 2px; border-radius: 4px; background: rgba(var(--primary-rgb), .14); color: inherit; text-decoration: underline wavy var(--warning); text-decoration-thickness: 1.5px; text-underline-offset: 3px; }
@@ -671,7 +683,8 @@ body.sheet-open .fab, body.ci-open .fab { display: none; }
   .tab-ico { width: 38px; height: 38px; }
   .tab[aria-current="page"] { background: rgba(var(--primary-rgb), .12); }
   .tab[aria-current="page"] .tab-ico { background: none; }
-  .toast { bottom: calc(96px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(172px + env(safe-area-inset-bottom)); }
+  body[data-tab="blog"] .toast { bottom: calc(226px + env(safe-area-inset-bottom)); }
 }
 
 /* ================================================================
@@ -685,7 +698,8 @@ body.sheet-open .fab, body.ci-open .fab { display: none; }
   .view { padding-bottom: 48px; }
   .content { padding-bottom: 110px; }
   .tabbar { left: 75vw; }
-  .toast { left: 75vw; }
+  /* komputer: przyciski są w prawym pasie (--gutter), więc komunikat zostaje w kolumnie treści, tuż nad paskiem zakładek */
+  .toast, body[data-tab="blog"] .toast { left: 75vw; bottom: 96px; max-width: calc(var(--page-w, 100vw) / 2 - 2 * var(--gutter, 112px)); }
   .ci-overlay { left: 50vw; }
   .ci-overlay .ci { max-width: 600px; }
   .ci-overlay .ci-actions { position: sticky; bottom: 0; background: linear-gradient(to top, color-mix(in srgb, var(--bg-2) 82%, transparent) 60%, transparent); }

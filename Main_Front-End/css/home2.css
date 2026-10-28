@@ -131,7 +131,8 @@ button, a { touch-action: manipulation; }
 }
 
 .sec + .sec { margin-top: 36px; padding-top: 32px; border-top: 1px solid var(--line); }
-.kicker { margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary); }
+/* drobny tekst: ciemniejszy odcień motywu (--primary miał za mały kontrast na białej karcie) */
+.kicker { margin: 0; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary-dark); }
 .sec h2 { margin: 6px 0 8px; font-size: 1.55rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; }
 .lead { margin: 0; font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
 
@@ -198,7 +199,8 @@ button, a { touch-action: manipulation; }
 .how summary { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; list-style: none; }
 .how summary::-webkit-details-marker { display: none; }
 .how summary svg { flex: 0 0 20px; width: 20px; height: 20px; color: var(--primary); }
-.how summary u { color: var(--primary-dark); font-weight: 700; text-underline-offset: 2px; }
+/* tekst w kolorze treści (na miętowym tle odcień motywu był za blady), podkreślenie w kolorze motywu */
+.how summary u { color: var(--text); font-weight: 700; text-decoration-color: var(--primary); text-underline-offset: 2px; }
 .how[open] summary u { text-decoration: none; }
 .how summary:focus-visible { outline: 3px solid var(--ring); outline-offset: 4px; border-radius: 8px; }
 .how ul { margin: 10px 0 2px; padding-left: 30px; display: grid; gap: 8px; }
@@ -306,9 +308,10 @@ button, a { touch-action: manipulation; }
 .sos-close { width: 100%; height: 52px; margin-top: 14px; border: 0; border-radius: 16px; background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer; }
 .sos-close:focus-visible { outline: 3px solid var(--ring); }
 
+/* width: max-content — przy left: 50% przeglądarka dawała komunikatowi tylko połowę ekranu (wąska kolumna) */
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 40;
-  max-width: calc(100% - 32px); padding: 12px 18px; border-radius: var(--radius-md);
+  width: max-content; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: var(--radius-md);
   background: var(--toast-bg); color: var(--toast-fg); font-size: .88rem; font-weight: 600; text-align: center;
   box-shadow: 0 16px 30px -12px rgba(30, 42, 50, .5);
   transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;

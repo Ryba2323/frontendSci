@@ -13,7 +13,7 @@
   /* Stałe (niezależne od motywu) */
   --text: #1E2A32;
   --text-muted: #5E6F78;
-  --text-soft: #8A9BA4;
+  --text-soft: #687983;   /* najjaśniejszy tekst, który nadal ma kontrast 4,5:1 na białej karcie (podpisy, daty) */
   --surface: #FFFFFF;
   --error: #C4553C;
   --glass: rgba(255, 255, 255, .6);      /* półprzezroczyste tło na scenie i listach */
@@ -240,7 +240,7 @@
   :root:not([data-mode="light"]) {
     --text: #E4EDEF;
     --text-muted: #A2B4BA;
-    --text-soft: #75898F;
+    --text-soft: #80949A;   /* kontrast 4,5:1 na ciemnej karcie */
     --surface: #1A2B30;
     --glass: rgba(255, 255, 255, .06);
     --toast-bg: #E4EDEF;
@@ -264,7 +264,7 @@
 :root[data-mode="dark"] {
   --text: #E4EDEF;
   --text-muted: #A2B4BA;
-  --text-soft: #75898F;
+  --text-soft: #80949A;
   --surface: #1A2B30;
   --glass: rgba(255, 255, 255, .06);
   --toast-bg: #E4EDEF;

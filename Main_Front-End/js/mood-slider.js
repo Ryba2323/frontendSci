@@ -183,7 +183,7 @@
     const ticks = [...root.querySelectorAll('.ms-scale span')];
 
     // ---------- Stan ----------
-    let W = 0, H = 0, U = 1, left = 0, right = 0, stemY = 0;
+    let W = 0, H = 0, U = 1, left = 0, right = 0, stemY = 0, bleedL = BLEED_X, bleedR = BLEED_X;
     let value = valid(opts.value) ? opts.value : null;   // ostatnia zatwierdzona wartość
     let touched = value != null;                          // czy ktoś już wybrał
     let pos = value != null ? value : 1, posV = 0, target = pos;
@@ -635,7 +635,7 @@
     // ---------- Rysowanie: całość ----------
     function draw() {
       if (!W) return;
-      ctx.clearRect(-BLEED_X, -BLEED_TOP, W + BLEED_X * 2, H + BLEED_TOP);
+      ctx.clearRect(-bleedL, -BLEED_TOP, W + bleedL + bleedR, H + BLEED_TOP);
       const gd = clamp(g);
       const vivid = lerp(.32, 1, smooth(0, .75, gd));
       const tipX = xOf(clamp(pos, 1, 10));
@@ -722,12 +722,15 @@
       W = r.width;
       H = r.height;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const cw = W + BLEED_X * 2, ch = H + BLEED_TOP;
-      Object.assign(canvas.style, { left: `${-BLEED_X}px`, top: `${-BLEED_TOP}px`, width: `${cw}px`, height: `${ch}px` });
+      // canvas wystaje poza pole tylko tyle, ile zostało do krawędzi ekranu — inaczej na telefonie strona przewija się w bok
+      bleedL = clamp(Math.floor(r.left), 0, BLEED_X);
+      bleedR = clamp(Math.floor(document.documentElement.clientWidth - r.right), 0, BLEED_X);
+      const cw = W + bleedL + bleedR, ch = H + BLEED_TOP;
+      Object.assign(canvas.style, { left: `${-bleedL}px`, top: `${-BLEED_TOP}px`, width: `${cw}px`, height: `${ch}px` });
       canvas.width = Math.round(cw * dpr);
       canvas.height = Math.round(ch * dpr);
       // rysujemy we współrzędnych pola suwaka (0,0 = jego lewy górny róg)
-      ctx.setTransform(dpr, 0, 0, dpr, BLEED_X * dpr, BLEED_TOP * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, bleedL * dpr, BLEED_TOP * dpr);
       U = clamp(W / 340, .9, 1.3);
       // z lewej miejsce na odcinek, na którym łodyga wyłania się z tła
       left = clamp(W * .12, 44, 60);
@@ -803,7 +806,8 @@
     // ---------- Start ----------
     showValue(touched ? value : null);
     if ('ResizeObserver' in window) new ResizeObserver(layout).observe(slider);
-    else window.addEventListener('resize', layout);
+    // okno też: przy stałej szerokości pola zmienia się tylko miejsce do krawędzi ekranu (wystawanie canvasu)
+    window.addEventListener('resize', layout);
     layout();
     redrawAll.add(draw);
     if (!reduceMotion) requestAnimationFrame(frame);
