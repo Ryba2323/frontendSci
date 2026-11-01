@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL = 'https://mdheeokbtvwuricvzpyc.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_TSzn_Xildnh16dTSIpPtAw_0TMcK6wY';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY); // Supabase do zaimportowania przed użyciem bazy w innym pliku
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function pobierzDane(nazwaTabeli, kolumnaZWlasciwymId, id){
     const { data, error } = await supabase
