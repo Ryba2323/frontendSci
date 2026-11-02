@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#F4FAFB">
-  <title>SCI++</title>
+  <title>ReLeaf</title>
 
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="apple-touch-icon" href="img/ikona-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -63,9 +65,13 @@
 
 </div>
 
-<!-- Górny pasek: logo, kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę -->
+<!-- Górny pasek: logo ReLeaf (postać + napis, osobny napis na tryb nocny), kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę -->
 <header class="app-top" id="app-top">
-  <span class="logo-ph" aria-label="Logo aplikacji (miejsce na logo)">logo</span>
+  <span class="brand" role="img" aria-label="ReLeaf">
+    <img class="brand-mascot" src="img/listek.webp" alt="" width="40" height="28">
+    <img class="brand-word is-light" src="img/releaf-wordmark.webp" alt="" width="70" height="33">
+    <img class="brand-word is-dark" src="img/releaf-wordmark-dark.webp" alt="" width="70" height="33">
+  </span>
   <div class="top-actions">
     <!-- Kolor roślinki (ten sam wybór co w rejestracji); kółko pokazuje aktualny motyw -->
     <button type="button" class="color-btn" id="color-open" aria-haspopup="dialog" aria-label="Zmień kolor roślinki">
@@ -139,7 +145,7 @@
       <p class="kicker" id="short-title">Na skróty</p>
       <div class="shortcuts">
         <button type="button" class="shortcut is-wide" data-asystent="dom">
-          <span class="insight-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 15c-5 0-7-3-7-7 4 0 7 2 7 7z"/><path d="M12 13c0-5 3-8 7-8 0 4-2 8-7 8z"/></svg></span>
+          <span class="insight-ico is-mascot"><img src="img/listek.webp" alt=""></span>
           <b>Porozmawiaj z Asystentem</b><small>posłucha, gdy chcesz coś z siebie wyrzucić</small>
         </button>
         <button type="button" class="shortcut" data-go="skrytka">

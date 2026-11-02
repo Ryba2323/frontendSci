@@ -46,7 +46,7 @@
       if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
-    document.title = `${TABS.find(t => t.id === tab).title} · SCI++`;
+    document.title = `${TABS.find(t => t.id === tab).title} · ReLeaf`;
     window.scrollTo(0, scrollPos[tab] || 0);
 
     const v = views[tab];

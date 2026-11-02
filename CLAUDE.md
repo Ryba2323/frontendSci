@@ -63,6 +63,16 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
 - **Tryb nocny**: `Theme.setMode('auto'|'light'|'dark')` in `js/theme.js` sets `<html data-mode>` (saved in `sci.mode`); `css/tokens.css` redefines only the neutral tokens for dark (also follows the system setting in auto). The switch is in the "Kolor roślinki" sheet. The plant scene shows a night sky with stars and the moon in dark mode. Use `--glass`, `--toast-bg` / `--toast-fg` instead of hard-coded white or dark colours.
 
+### Logo and mascot (`Main_Front-End/img/`)
+
+- The app is called **ReLeaf**. `releaf-logo.webp` is the full logo (mascot + wordmark), `releaf-wordmark.webp` is the wordmark alone, and each has a `-dark` variant with the dark lettering lightened for night mode.
+- The mascot, a round sprout with a leaf, is the face of the Assistant: `listek.webp` (peeking over an edge, like in the logo) and `listek-hop.webp` (jumping).
+  - It peeks over the chat bubble in the Assistant button.
+  - It sits in the avatar and next to each reply, and sways while "typing".
+  - It jumps above the first message when the chat is opened from Dom.
+- The top bar shows `.brand` (mascot + wordmark; CSS in `css/home2.css` swaps the wordmark for night mode). Favicon: `favicon-64.png`; home-screen icon: `ikona-180.png`.
+- The images were cut out of the originals the team sent (background removed). Replace them with clean exports from the designer when available.
+
 ### Colours and themes
 
 - Tokens live in `css/tokens.css`. **Never hard-code theme colours**; use `var(--primary)`, `rgba(var(--primary-rgb), .1)`, `var(--plant-leaf-1)` and so on.

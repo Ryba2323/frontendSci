@@ -61,6 +61,18 @@ button, a { touch-action: manipulation; }
   border: 1.5px dashed rgba(var(--primary-rgb), .5); background: var(--glass);
   font-size: .56rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--primary-dark);
 }
+/* Logo ReLeaf: postać wyglądająca zza krawędzi + napis (osobny napis na tryb nocny) */
+.brand { display: inline-flex; align-items: flex-end; gap: 5px; height: 36px; animation: fade-in 1s ease both; }
+.brand img { display: block; height: auto; pointer-events: none; user-select: none; }
+.brand-mascot { width: 38px; margin-bottom: 2px; }
+.brand-word { width: 70px; }
+.brand-word.is-dark { display: none; }
+:root[data-mode="dark"] .brand-word.is-light { display: none; }
+:root[data-mode="dark"] .brand-word.is-dark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="light"]) .brand-word.is-light { display: none; }
+  :root:not([data-mode="light"]) .brand-word.is-dark { display: block; }
+}
 .top-actions { display: flex; align-items: center; gap: 8px; }
 /* Kolor roślinki: kółko w barwach aktualnego motywu */
 .color-btn {

@@ -1,9 +1,11 @@
 /*
  * Asystent Wsparcia — rozmowa z roślinką-towarzyszem (aplikacja.html).
+ * Twarzą Asystenta jest postać z logo ReLeaf (img/listek.webp — wygląda zza krawędzi, img/listek-hop.webp — podskok):
+ * wychyla się zza dymka w przycisku, jest w awatarze i przy każdej odpowiedzi; podskakuje na powitanie z Dom.
  *
  * Wejścia:
  *   • przycisk-kiełek w rogu (na każdej zakładce) i skrót „Porozmawiaj” na Dom,
- *   • Skrytka: „Zapytaj Asystenta” → zgoda → myśl zwija się w liść, liść leci do kiełka i z liścia wyrasta ekran rozmowy,
+ *   • Skrytka: „Zapytaj Asystenta” → zgoda → myśl zwija się w liść, liść leci do postaci w przycisku i z liścia wyrasta ekran rozmowy,
  *   • podlewanie: „Porozmawiaj z Asystentem Wsparcia” przy niskim nastroju.
  * Ekran wyrasta kołem z miejsca, z którego go otwarto (jak podlewanie). SOS jest zawsze widoczny.
  * Wiadomości użytkownika sprawdza js/moderacja.js: słowa kryzysowe → od razu 116 111 / 112 / oddech.
@@ -22,12 +24,10 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 
-  // Kiełek (awatar i przycisk): łodyżka + dwa listki w kolorach roślinki
-  const SPROUT = `<svg class="as-sprout" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M12 21V12" stroke="var(--plant-stem)" stroke-width="2" stroke-linecap="round"/>
-    <path class="lf-l" d="M12 15C7 15 5 12 5 8c4 0 7 2 7 7z" fill="var(--plant-leaf-1)"/>
-    <path class="lf-r" d="M12 13c0-5 3-8 7-8 0 4-2 8-7 8z" fill="var(--plant-leaf-2)"/></svg>`;
-  // Dymek czatu pod kiełkiem w przycisku (kolor motywu, ogonek w prawo w dół — w stronę rogu ekranu)
+  // Postać z logo (awatar, przycisk, wiersze odpowiedzi). Grafika jest ozdobna — nazwę podaje tekst obok.
+  const MASCOT = '<img class="as-mascot" src="img/listek.webp" alt="" draggable="false">';
+  const HOP = '<img class="as-hop" src="img/listek-hop.webp" alt="" draggable="false">';
+  // Dymek czatu w przycisku, zza którego wygląda postać (kolor motywu, ogonek w prawo w dół — w stronę rogu ekranu)
   const BUBBLE = `<svg class="as-bubble" viewBox="0 0 56 56" aria-hidden="true">
     <defs><linearGradient id="as-bubble-g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" style="stop-color: var(--primary)"/><stop offset="1" style="stop-color: var(--primary-dark)"/></linearGradient></defs>
@@ -37,8 +37,10 @@
   // ================================================================
   //  Znaczniki (komponenty)
   // ================================================================
-  // Wypowiedzi Asystenta mają po lewej mały kiełek — odróżniają się od propozycji odpowiedzi (te są po stronie użytkownika)
-  const BotRow = inner => `<div class="as-row"><span class="as-mini">${SPROUT}</span>${inner}</div>`;
+  // Wypowiedzi Asystenta mają po lewej małą postać — odróżniają się od propozycji odpowiedzi (te są po stronie użytkownika)
+  const BotRow = inner => `<div class="as-row"><span class="as-mini">${MASCOT}</span>${inner}</div>`;
+  // Powitanie z Dom: postać podskakuje nad pierwszą wiadomością (przy trudnym dniu — spokojniej, bez podskoku)
+  const Hello = zrodlo => (zrodlo === 'dom' ? `<div class="as-hello">${HOP}</div>` : '');
   const Bubble = (who, text) => {
     const msg = `<div class="as-msg is-${who}">${esc(text)}</div>`;
     return who === 'bot' ? BotRow(msg) : msg;
@@ -55,13 +57,13 @@
     </section>`;
 
   document.body.insertAdjacentHTML('beforeend', `
-    <button type="button" class="as-fab" id="as-fab" aria-label="Porozmawiaj z Asystentem">${BUBBLE}${SPROUT}</button>
+    <button type="button" class="as-fab" id="as-fab" aria-label="Porozmawiaj z Asystentem">${BUBBLE}<span class="as-fab-peek">${MASCOT}</span></button>
     <section class="as" id="as" role="dialog" aria-modal="true" aria-labelledby="as-title" hidden>
       <canvas class="as-flow" id="as-flow" aria-hidden="true"></canvas>
       <header class="as-top">
         <button type="button" class="ci-back" data-as-close aria-label="Wróć">${svg('<path d="M15 6l-6 6 6 6"/>')}</button>
         <div class="as-who">
-          <span class="as-ava" id="as-ava">${SPROUT}</span>
+          <span class="as-ava" id="as-ava">${MASCOT}</span>
           <div><b id="as-title">Asystent</b><small id="as-status">Jest tu dla Ciebie</small></div>
         </div>
         <button type="button" class="sos" data-sos aria-haspopup="dialog">${svg('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>')}<span>SOS</span></button>
@@ -219,7 +221,7 @@
     const [x, y] = origin(from);
     as.style.setProperty('--ox', `${x}px`);
     as.style.setProperty('--oy', `${y}px`);
-    log.innerHTML = '<p class="as-note">Asystent to program, nie terapeuta. Gdy jest naprawdę ciężko, zadzwoń pod 116 111.</p>';
+    log.innerHTML = `${Hello(zrodlo)}<p class="as-note">Asystent to program, nie terapeuta. Gdy jest naprawdę ciężko, zadzwoń pod 116 111.</p>`;
     as.hidden = false;
     document.body.classList.add('as-open');
     void as.offsetWidth;
@@ -244,7 +246,7 @@
   }
 
   // ================================================================
-  //  Przekazanie ze Skrytki: element zwija się w liść, liść leci do kiełka, z liścia wyrasta rozmowa
+  //  Przekazanie ze Skrytki: element zwija się w liść, liść leci do postaci w przycisku, z liścia wyrasta rozmowa
   // ================================================================
   async function send(el, { tekst, kiedy = '' }) {
     const r = el.getBoundingClientRect(), f = fab.getBoundingClientRect();
@@ -259,7 +261,7 @@
     leaf.className = 'as-leaf';
     leaf.innerHTML = LEAF;
     document.body.appendChild(leaf);
-    // łuk Béziera przez punkt nad trasą; liść kręci się jak na wietrze i maleje przy kiełku
+    // łuk Béziera przez punkt nad trasą; liść kręci się jak na wietrze i maleje przy postaci
     const cx = (sx + tx) / 2 - 60, cy = Math.min(sy, ty) - 120, frames = [];
     for (let i = 0; i <= 24; i++) {
       const t = i / 24, u = 1 - t;

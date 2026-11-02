@@ -38,7 +38,6 @@ body.ci-open { overflow: hidden; }
   transition: background .5s ease, box-shadow .5s ease;
 }
 .app-top.is-solid { background: color-mix(in srgb, var(--sheet) 86%, transparent); box-shadow: 0 10px 24px -22px rgba(30, 42, 50, .5); }
-.app-top .logo-ph { animation: fade-in 1s ease both; }
 
 /* Telefon: przy przewijaniu kafel z treścią wjeżdża NA roślinkę (scena zostaje pod spodem i lekko odpływa w górę) */
 @media (max-width: 1023px) {
@@ -233,6 +232,9 @@ body.ci-open .tabbar { transform: translateY(120%); }
 
 .insight-ico { flex: 0 0 42px; height: 42px; display: grid; place-items: center; border-radius: 14px; background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); }
 .insight-ico svg { width: 21px; height: 21px; }
+.insight-ico.is-mascot { align-items: end; overflow: hidden; background: rgba(var(--mint-rgb), .7); }
+.insight-ico.is-mascot img { width: 38px; height: auto; margin-bottom: 1px; transform-origin: 50% 100%; transition: transform .3s var(--ease-spring); }
+.shortcut:hover .insight-ico.is-mascot img { transform: translateY(-2px) rotate(-3deg); }
 
 /* Arkusz koloru: tryb nocny */
 .sheet-label { margin: 18px 0 8px; font-size: .85rem; font-weight: 800; }
