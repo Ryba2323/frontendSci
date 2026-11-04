@@ -1,6 +1,7 @@
 /*
- * Trzy wersje strony głównej (Dom) do porównania — /redesign-ui. Wersję wybiera adres: ?uklad=a | b | c
- * (porownanie.html pokazuje wszystkie trzy obok siebie). Bez parametru Dom wygląda jak dotąd.
+ * Strona główna (Dom) — układ A „Dziś jednym dotknięciem” (wybrany przez zespół 4.11.2026, opis w CLAUDE.md).
+ * B i C zostają tylko do podglądu i porównania: ?uklad=b | c (porownanie.html pokazuje wszystkie trzy obok siebie;
+ * przełącznik wersji widać tylko z parametrem ?uklad). ?uklad=stary — dawna strona główna z przyciskiem „Podlej roślinkę”.
  * Logika podlewania zostaje jedna: window.Podlewanie (js/home2.js) i window.Checkin (js/checkin.js).
  *
  *  A „Dziś jednym dotknięciem” (Daylio + Gentler Streak + cofanie zamiast potwierdzeń)
@@ -25,7 +26,7 @@
 
   const params = new URLSearchParams(location.search);
   // window.UKLAD_DOMYSLNY: wersja wpisana na stałe (np. w pliku podglądu bez adresu z parametrem)
-  const U = (params.get('uklad') || window.UKLAD_DOMYSLNY || '').toLowerCase();
+  const U = (params.get('uklad') || window.UKLAD_DOMYSLNY || 'a').toLowerCase();   // domyślnie A
   if (!['a', 'b', 'c'].includes(U) || !window.Podlewanie) return;
   document.documentElement.dataset.uklad = U;
 
@@ -444,8 +445,9 @@
   // ================================================================
   //  Start
   // ================================================================
+  // przełącznik wersji tylko w podglądzie (?uklad=…) — zwykły użytkownik widzi po prostu stronę główną A
   const hint = $('#scroll-hint');
-  (hint || view).insertAdjacentHTML(hint ? 'afterend' : 'afterbegin', Switch());
+  if (params.has('uklad') || window.UKLAD_DOMYSLNY) (hint || view).insertAdjacentHTML(hint ? 'afterend' : 'afterbegin', Switch());
   ({ a: buildA, b: buildB, c: buildC })[U]();
   if (reduceMotion) document.documentElement.classList.add('du-still');
 })();

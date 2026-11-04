@@ -68,6 +68,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
   - Najstarszy liść codziennie opada (widać to przy wejściu na stronę); dłuższą historię pokaże zakładka Tracker.
   - Bilans tygodnia = średnia tylko z dni z wpisem.
 - Mobile-first: telefon to główny cel.
+- **Strona główna: układ A „Dziś jednym dotknięciem”** (wybór zespołu, 4.11.2026): nastrój 1–10 jako przyciski na samej stronie, jedno stuknięcie = podlanie; sen, „co było ważne” i notatka opcjonalnie („+”); jedna podpowiedź dopasowana do nastroju; dzień bez wpisu nazywamy „odpoczynkiem”. To realizuje punkt 1 propozycji strony głównej niżej (suwak/nastrój widoczny od razu). Na tym układzie budujemy pozostałe ekrany (zasady w CLAUDE.md).
 
 ## Do rozstrzygnięcia (ważne dla ekranów)
 - Nazwa aplikacji; grupa wiekowa; zgody rodziców.
