@@ -13,6 +13,14 @@
  * „Podlewanie” to codzienny wpis o samopoczuciu. W aplikacji (aplikacja.html) przycisk otwiera pytania
  * (js/checkin.js, window.Checkin), a po ostatnim roślinka dostaje deszcz. Bez pytań (strona-glowna-2.html) — sama animacja.
  * Roślinka: js/home2-scene.js (window.Home2Scene). Motyw: js/theme.js (window.Theme). Arkusze: js/sheets.js (window.Sheets).
+ *
+ * window.Podlewanie — dla wersji strony głównej, które podlewają bez nakładki (js/dom-uklad.js):
+ *   entry                dzisiejszy wpis albo null
+ *   save(patch, opts)    dopisuje odpowiedzi do dzisiejszego wpisu; nowy nastrój = deszcz na roślince (opts.rain: false — bez deszczu)
+ *   open({ from, step }) otwiera pełne pytania (js/checkin.js), np. od snu, z tym, co już jest we wpisie
+ *   week                 { days, names, labels, missed } — ostatnie 7 dni (ten sam zestaw co roślinka)
+ *   MOOD_WORDS           słowny opis nastroju 1–10
+ * Każda zmiana wpisu wysyła zdarzenie `entrychange` (detail: wpis).
  */
 (function () {
   'use strict';
@@ -183,11 +191,28 @@
     $('#water-label').textContent = 'Zmień dzisiejszy wpis';
   }
 
+  const changed = () => window.dispatchEvent(new CustomEvent('entrychange', { detail: entry }));
+  function openCheckin(from, step) {
+    window.Checkin.open({ from, entry, step, onDone(e) { entry = e; pour(e); changed(); } });
+  }
+  window.Podlewanie = {
+    get entry() { return entry; },
+    save(patch, opts = {}) {
+      const blank = window.Checkin ? window.Checkin.DATA.blank() : { mood: null, areas: {}, note: '' };
+      const moodChanged = 'mood' in patch && patch.mood !== (entry && entry.mood);
+      entry = Object.assign(blank, entry, patch, { areas: Object.assign({}, entry && entry.areas, patch.areas) });
+      if (moodChanged && opts.rain !== false) pour(entry);
+      else if (watered) showWatered(entry);
+      changed();
+      return entry;
+    },
+    open({ from, step } = {}) { if (window.Checkin) openCheckin(from || waterBtn, step); },
+    week: { days, names, labels, missed },
+    MOOD_WORDS,
+  };
+
   waterBtn.addEventListener('click', () => {
-    if (window.Checkin) {
-      window.Checkin.open({ from: waterBtn, entry, onDone(e) { entry = e; pour(e); } });
-      return;
-    }
+    if (window.Checkin) { openCheckin(waterBtn); return; }
     // bez pytań (strona-glowna-2.html): sama animacja
     pour(null);
     clearTimeout(toastTimer);

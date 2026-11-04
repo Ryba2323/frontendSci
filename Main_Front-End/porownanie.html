@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Porównanie stron głównych · ReLeaf</title>
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <script src="js/theme.js"></script>
+  <style>
+    /* Strona robocza dla zespołu: trzy wersje strony głównej obok siebie, każda w ramce telefonu (aplikacja.html?uklad=…) */
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: var(--font); color: var(--text); background: var(--bg); }
+    header { max-width: 1240px; margin: 0 auto; padding: var(--sp-10) var(--sp-4) var(--sp-6); }
+    h1 { margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: 2.2rem; letter-spacing: -.01em; }
+    header p { max-width: 62ch; margin: var(--sp-3) 0 0; line-height: 1.6; color: var(--text-muted); }
+    .grid { display: flex; gap: var(--sp-8); max-width: 1240px; margin: 0 auto; padding: 0 var(--sp-4) var(--sp-16); overflow-x: auto; scroll-snap-type: x mandatory; }
+    figure { flex: 0 0 auto; margin: 0; scroll-snap-align: center; }
+    figcaption { margin-bottom: var(--sp-3); }
+    figcaption b { display: block; font-family: var(--font-serif); font-weight: 500; font-size: 1.3rem; }
+    figcaption small { display: block; max-width: 390px; margin-top: var(--sp-1); font-size: .86rem; line-height: 1.5; color: var(--text-muted); }
+    figcaption a { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; color: var(--primary-dark); }
+    .phone { width: 390px; height: 844px; border: 10px solid var(--toast-bg); border-radius: 48px; overflow: hidden; background: var(--bg); box-shadow: var(--shadow-float); }
+    iframe { display: block; width: 100%; height: 100%; border: 0; }
+    @media (max-width: 460px) { .phone { width: calc(100vw - 32px); height: 760px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Strona główna — trzy wersje</h1>
+    <p>Wszystkie działają naprawdę: można podlać roślinkę, przełączać zakładki i otworzyć Asystenta. Wybierzcie jedną — na niej zbudujemy resztę aplikacji. Na telefonie przesuwaj w bok.</p>
+  </header>
+  <main class="grid">
+    <figure>
+      <figcaption><b>A · Dziś jednym dotknięciem</b><small>Nastrój jako 10 dużych przycisków — jedno stuknięcie podlewa roślinkę. Reszta pytań opcjonalnie, pod spodem jedna podpowiedź.</small><a href="aplikacja.html?uklad=a#/dom">Otwórz na pełnym ekranie →</a></figcaption>
+      <div class="phone"><iframe src="aplikacja.html?uklad=a#/dom" title="Wersja A: Dziś jednym dotknięciem"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption><b>B · Strona dnia</b><small>Cały dzień na jednej stronie: 7 dni u góry, wszystkie pytania bez nakładki, zapis po każdej odpowiedzi, słowa emocji i jedna linijka.</small><a href="aplikacja.html?uklad=b#/dom">Otwórz na pełnym ekranie →</a></figcaption>
+      <div class="phone"><iframe src="aplikacja.html?uklad=b#/dom" title="Wersja B: Strona dnia"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption><b>C · Wszystko pod kciukiem</b><small>Środkowy „+” w pasku: stuknięcie podlewa, przytrzymanie dodaje myśl, chwilę albo wpis. Status dnia zmienia podpowiedź.</small><a href="aplikacja.html?uklad=c#/dom">Otwórz na pełnym ekranie →</a></figcaption>
+      <div class="phone"><iframe src="aplikacja.html?uklad=c#/dom" title="Wersja C: Wszystko pod kciukiem"></iframe></div>
+    </figure>
+  </main>
+</body>
+</html>

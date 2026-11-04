@@ -4,9 +4,10 @@
  * Dla każdego widocznego tekstu liczy kontrast z tłem (półprzezroczyste tła są składane warstwa po warstwie,
  * aż do tła strony --bg). Próg WCAG AA: 4,5:1, duży tekst (od 24 px albo od 18,7 px pogrubiony) 3:1.
  * Gradienty tła pomija (liczy kolor pod nimi). Uruchom: node narzedzia/sprawdz-kontrast.js
+ * Wersja strony głównej: UKLAD=a|b|c node narzedzia/sprawdz-kontrast.js
  */
 const { chromium } = require('playwright');
-const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/aplikacja.html');
+const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/aplikacja.html') + (process.env.UKLAD ? `?uklad=${process.env.UKLAD}&` : '?');
 const THEMES = ['morski', 'zielony', 'niebieski', 'lawenda', 'rozowy', 'morelowy'];
 
 function audit() {
@@ -51,19 +52,19 @@ function audit() {
     const p = await b.newPage({ viewport: { width: 375, height: 812 }, colorScheme: scheme, reducedMotion: 'reduce' });
     const note = (where, list) => list.forEach(l => { const k = `${where}: ${l.replace(/ [\d.]+ < .*/, '')}`; const v = found.get(k) || { min: 99, at: [] }; const r = +l.match(/ ([\d.]+) </)[1]; v.min = Math.min(v.min, r); v.at.push(`${theme}/${scheme}`); found.set(k, v); });
     for (const tab of ['dom', 'skrytka', 'tracker', 'testy', 'blog']) {
-      await p.goto(`${URL}?motyw=${theme}&r=${Math.random()}#/${tab}`); await p.waitForTimeout(500);
+      await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/${tab}`); await p.waitForTimeout(500);
       note(tab, await p.evaluate(audit));
       if (tab === 'blog') { await p.click('.post-open'); await p.waitForTimeout(200); note('blog rozwinięty', await p.evaluate(audit)); }
       if (tab === 'skrytka') { await p.click('[data-pane="sloik"]'); await p.waitForTimeout(200); note('słoik', await p.evaluate(audit)); }
     }
-    await p.goto(`${URL}?motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
+    await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
     await p.click('#sos-open'); await p.waitForTimeout(300); note('SOS', await p.evaluate(audit));
-    await p.goto(`${URL}?motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
+    await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
     await p.click('#color-open'); await p.waitForTimeout(300); note('kolor', await p.evaluate(audit));
-    await p.goto(`${URL}?motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
+    await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
     await p.click('#as-fab'); await p.waitForTimeout(1500); note('Asystent', await p.evaluate(audit));
-    await p.goto(`${URL}?motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
-    await p.click('#water-btn'); await p.waitForTimeout(800); note('podlewanie', await p.evaluate(audit));
+    await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
+    await p.evaluate(() => window.Podlewanie.open()); await p.waitForTimeout(800); note('podlewanie', await p.evaluate(audit));
     await p.keyboard.press('Tab').catch(() => {});
     await p.evaluate(() => { const s = document.querySelector('.ms-slider'); if (s) { s.focus(); } });
     for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowRight');

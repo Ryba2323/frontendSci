@@ -46,6 +46,7 @@ The rules below still apply on top of this direction:
   - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
   - `?widok=statyczny` renders a page without animation and with demo data (for screenshots and team previews).
   - `?pora=rano|dzien|wieczor|noc` previews the sky at a given time of day.
+  - `?uklad=a|b|c` shows one of three home-page variants to choose from (`js/dom-uklad.js`, `css/dom-uklad.css`; side by side in `porownanie.html`): **A** one-tap mood on Dom (10 buttons) + optional "+ Sen / Co było ważne / Notatka" + one suggestion; **B** "Strona dnia" with a 7-day strip and every question inline (autosave, emotion words, one line); **C** a centre "+" in the tab bar (tap = check-in, hold / drag up / ArrowUp = new thought, good moment or blog post) and a day status. Without the parameter Dom is unchanged. The variants use `window.Podlewanie` (`js/home2.js`) and `Checkin.open({ step })`; `UKLAD=a|b|c` also works with `sprawdz-nakladanie.js` and `sprawdz-kontrast.js`.
 - Canvas scenes only animate while the tab is visible. When the browser tab is in the background (e.g. during automated testing), call `HomeScene.debugAdvance(sec)` / `Home2Scene.debugAdvance(sec)` in the console to step the scene forward manually.
 
 ## Structure (`Main_Front-End/`)

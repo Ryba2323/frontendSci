@@ -1,0 +1,189 @@
+/*
+ * Trzy wersje strony głównej (js/dom-uklad.js, ?uklad=a|b|c). Ładowany po css/planeta.css.
+ * Tokeny jak w całej aplikacji (css/tokens.css): odstępy --sp-*, prędkości --dur-*, kolory motywu.
+ * Każdy przycisk ma co najmniej 44 px (--tap) — wygodny cel dla kciuka.
+ */
+:root { --tap: 44px; }
+
+/* W wersjach A–C stary blok „Podlej roślinkę” jest zastąpiony; w A skróty są wyżej, w B dni są na górze strony */
+:root[data-uklad] #sec-water { display: none; }
+:root[data-uklad="a"] .sec-short { display: none; }
+:root[data-uklad="b"] #days, :root[data-uklad="b"] #day-detail, :root[data-uklad="b"] .how { display: none; }
+/* pierwsza sekcja po przełączniku nie ma linii nad sobą */
+:root[data-uklad] .du-switch + .sec, :root[data-uklad] .scroll-hint + .du-switch + .sec { margin-top: 0; padding-top: 0; border-top: 0; }
+
+/* ---------- Przełącznik wersji (tylko podgląd) ---------- */
+.du-switch {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-1); margin: 0 0 var(--sp-8);
+  padding: var(--sp-1); border-radius: 18px; background: var(--track);
+}
+.du-switch a {
+  display: grid; gap: 2px; min-height: var(--tap); padding: var(--sp-2); border-radius: 14px;
+  color: var(--text-muted); text-decoration: none; font-size: .72rem; line-height: 1.25;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.du-switch b { font-size: .95rem; color: var(--text); }
+.du-switch a[aria-current="page"] { background: var(--surface); color: var(--text); box-shadow: 0 0 0 1px var(--line); }
+.du-switch a:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* ---------- Wspólne ---------- */
+.du-chip {
+  display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--tap); padding: 0 var(--sp-4);
+  border: 1.5px solid var(--line); border-radius: 999px; background: var(--surface);
+  font: inherit; font-size: .9rem; font-weight: 700; color: var(--text); cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast);
+}
+.du-chip svg { width: 17px; height: 17px; color: var(--primary-dark); }
+.du-chip:hover { border-color: var(--line-hover); }
+.du-chip:active { transform: scale(.97); }
+.du-chip.is-done { border-color: var(--primary); background: rgba(var(--primary-rgb), .08); }
+:is(.du-chip, .du-mood, .du-suggest, .du-row-btn, .du-dayb, .du-area, .du-plus, .du-target):focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+.du-suggest, .du-row-btn {
+  width: 100%; min-height: 64px; display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line); border-radius: 20px; background: var(--surface);
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.du-suggest:hover, .du-row-btn:hover { border-color: var(--line-hover); background: rgba(var(--primary-rgb), .04); }
+.du-suggest > span:nth-child(2), .du-row-btn > span { flex: 1; min-width: 0; }
+.du-suggest b, .du-row-btn b { display: block; font-size: 1rem; }
+.du-suggest small, .du-row-btn small { display: block; margin-top: 2px; font-size: .84rem; line-height: 1.4; color: var(--text-muted); }
+.du-suggest > svg:last-child, .du-row-btn > svg:last-child { flex: 0 0 18px; width: 18px; height: 18px; color: var(--text-soft); }
+.du-row-btn > svg:first-child { flex: 0 0 22px; width: 22px; height: 22px; color: var(--primary-dark); }
+.du-ico { flex: 0 0 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); }
+.du-ico svg { width: 21px; height: 21px; }
+
+.du-support {
+  display: grid; gap: var(--sp-3); margin-top: var(--sp-4); padding: var(--sp-4); border-radius: 22px;
+  background: rgba(var(--mist-rgb), .45); border: 1px solid rgba(var(--primary-rgb), .18);
+  animation: soft-in var(--dur-base) var(--ease-out) both;
+}
+.du-support .support-title, .du-support .support-text { margin: 0; }
+.du-support .support-call { display: flex; min-height: var(--tap); }
+.du-support .du-row-btn { min-height: 56px; border-color: var(--primary); }
+.du-more-title { margin: var(--sp-5) 0 var(--sp-2); font-size: .86rem; font-weight: 700; color: var(--text-muted); }
+
+/* ================================================================
+   A — Dziś jednym dotknięciem
+   ================================================================ */
+.du-moods { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-2); margin-top: var(--sp-5); }
+.du-mood {
+  position: relative; min-height: 56px; display: grid; place-items: center; padding: 0;
+  border: 1.5px solid var(--line); border-radius: 18px;
+  /* im lepszy dzień, tym mocniejszy odcień motywu (kolor = nastrój) */
+  background: color-mix(in srgb, var(--primary) calc(var(--v) * 2.2%), var(--surface));
+  font: inherit; font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; color: var(--text); cursor: pointer;
+  transition: border-color var(--dur-fast), background var(--dur-fast), transform var(--dur-fast), color var(--dur-fast);
+}
+.du-mood:hover { border-color: var(--primary); }
+.du-mood:active { transform: scale(.94); }
+.du-mood[aria-checked="true"] { border-color: var(--primary); background: var(--primary); color: #fff; animation: du-pop var(--dur-base) var(--ease-spring); }
+@keyframes du-pop { 40% { transform: scale(1.1); } }
+.du-mood-word { min-height: 3em; margin: var(--sp-3) 0 0; font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
+.du-mood-word b { color: var(--text); }
+.du-add { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.du-foryou .kicker { margin-bottom: var(--sp-3); }
+.du-quick { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-3); }
+
+/* ================================================================
+   B — Strona dnia
+   ================================================================ */
+.du-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--sp-1); margin: 0 0 var(--sp-6); }
+.du-dayb {
+  display: grid; justify-items: center; gap: 2px; min-height: 64px; padding: var(--sp-2) 0;
+  border: 1.5px solid transparent; border-radius: 16px; background: none;
+  font: inherit; color: var(--text); cursor: pointer; transition: background var(--dur-fast), border-color var(--dur-fast);
+}
+.du-dayb small { font-size: .72rem; font-weight: 700; color: var(--text-muted); }
+.du-dayb b { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 500; }
+/* kropka: im lepszy dzień, tym większa; odpoczynek = pusty krążek */
+.du-dayb i { width: calc(6px + var(--v) * 8px); height: calc(6px + var(--v) * 8px); border-radius: 50%; background: var(--primary); opacity: calc(.35 + var(--v) * .65); }
+.du-dayb.is-rest i { width: 8px; height: 8px; background: none; border: 1.5px solid var(--text-soft); opacity: 1; }
+.du-dayb.is-today i { background: none; border: 1.5px dashed var(--primary); }
+.du-dayb[aria-pressed="true"] { border-color: var(--primary); background: rgba(var(--primary-rgb), .08); }
+.du-dayb:hover { background: rgba(var(--primary-rgb), .05); }
+.du-saved { margin: var(--sp-1) 0 0; font-size: .86rem; color: var(--text-muted); }
+.du-field { margin-top: var(--sp-6); }
+.du-label { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2); margin: 0 0 var(--sp-3); font-size: .95rem; font-weight: 800; }
+.du-label small { font-size: .78rem; font-weight: 600; color: var(--text-muted); }
+.du-moodslider { margin: 0 -12px; }
+.chip-row .chip { min-height: var(--tap); }
+.du-areas { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
+.du-area {
+  display: grid; justify-items: center; gap: 2px; min-height: 72px; padding: var(--sp-2) var(--sp-1);
+  border: 1.5px solid var(--line); border-radius: 18px; background: var(--surface);
+  font: inherit; color: var(--text); cursor: pointer; transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.du-area svg { width: 22px; height: 22px; color: var(--text-muted); }
+.du-area span { font-size: .84rem; font-weight: 700; }
+.du-area em { min-height: 1.2em; font-size: .72rem; font-style: normal; font-weight: 700; color: var(--text-muted); }
+.du-area[data-state="good"] { border-color: var(--primary); background: rgba(var(--primary-rgb), .08); }
+.du-area[data-state="good"] svg, .du-area[data-state="good"] em { color: var(--primary-dark); }
+.du-area[data-state="hard"] { border-style: dashed; border-color: var(--text-soft); background: var(--bg-2); }
+.du-line-row { display: flex; gap: var(--sp-2); }
+.du-line-row input {
+  flex: 1; min-width: 0; height: 52px; padding: 0 var(--sp-4); border: 1.5px solid var(--line); border-radius: 16px;
+  background: var(--surface); color: var(--text); font: inherit; font-family: var(--font-serif); font-size: 1.05rem;
+}
+.du-line-row input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); }
+.du-line-row .icon-btn { width: 52px; height: 52px; border-radius: 16px; }
+.du-past { animation: soft-in var(--dur-base) var(--ease-out) both; }
+.du-past h2 { margin-top: 0; }
+.du-past-big { margin: var(--sp-2) 0 0; font-family: var(--font-serif); font-size: 3rem; line-height: 1; }
+.du-past-big small { font-size: 1.1rem; color: var(--text-muted); }
+.du-past .lead { margin: var(--sp-2) 0 var(--sp-4); }
+
+/* ================================================================
+   C — Wszystko pod kciukiem
+   ================================================================ */
+.du-statuses { margin-top: var(--sp-4); }
+.du-statuses .chip[aria-checked="true"] { border-color: var(--primary); background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); }
+.du-status-text { margin-top: var(--sp-4); }
+.du-done { margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); animation: soft-in var(--dur-base) var(--ease-out) both; }
+.du-done-head { display: flex; align-items: center; gap: var(--sp-3); margin: 0; }
+.du-done-head b { display: block; font-family: var(--font-serif); font-size: 1.25rem; font-weight: 500; }
+.du-done-head small { display: block; font-size: .86rem; color: var(--text-muted); }
+.du-ico.is-drop svg { fill: currentColor; }
+.du-hint { display: flex; gap: var(--sp-3); align-items: flex-start; margin: var(--sp-6) 0 0; font-size: .88rem; line-height: 1.5; color: var(--text-muted); }
+.du-hint b { color: var(--text); }
+.du-plus-mini { flex: 0 0 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--primary); color: #fff; }
+.du-plus-mini svg { width: 16px; height: 16px; }
+
+/* pasek zakładek z „+” na środku */
+.tabbar.has-plus { grid-template-columns: repeat(2, 1fr) auto repeat(3, 1fr); }
+.du-plus-wrap { position: relative; display: grid; place-items: center; padding: 0 var(--sp-1); }
+.du-plus {
+  width: 56px; height: 56px; margin-top: -20px; display: grid; place-items: center; padding: 0;
+  border: 4px solid var(--sheet); border-radius: 50%; background: var(--primary); color: #fff; cursor: pointer;
+  box-shadow: var(--shadow-float); touch-action: none; transition: transform var(--dur-fast) var(--ease-spring), background var(--dur-fast);
+}
+.du-plus svg { width: 24px; height: 24px; stroke-width: 2.4; transition: transform var(--dur-base) var(--ease-out); }
+.du-plus:hover { background: var(--primary-hover); }
+.du-plus:active { transform: scale(.94); }
+.du-plus[aria-expanded="true"] svg { transform: rotate(45deg); }
+@media (min-width: 700px) { .du-plus { margin: 0 var(--sp-1); width: 48px; height: 48px; border-width: 0; box-shadow: none; } }
+/* cele nad „+”: wachlarz trzech przycisków */
+.du-radial { position: absolute; left: 50%; bottom: calc(100% + 12px); width: 0; height: 0; }
+.du-target {
+  position: absolute; left: 0; bottom: 0; width: 76px; min-height: 64px; margin-left: -38px;
+  display: grid; justify-items: center; gap: 2px; padding: var(--sp-2) var(--sp-1);
+  border: 1px solid var(--line); border-radius: 20px; background: var(--sheet); box-shadow: var(--shadow-float);
+  font: inherit; font-size: .8rem; font-weight: 700; color: var(--text); cursor: pointer;
+  transform: translate(calc(var(--a) * 86px), calc((1 - var(--a) * var(--a)) * -18px));
+  animation: du-fan var(--dur-base) var(--ease-spring) both; animation-delay: calc((var(--a) + 1) * 40ms);
+}
+.du-target svg { width: 22px; height: 22px; color: var(--primary-dark); }
+.du-target.is-over, .du-target:hover { border-color: var(--primary); background: rgba(var(--primary-rgb), .1); }
+@keyframes du-fan { from { opacity: 0; transform: translate(0, 20px) scale(.6); } }
+body.du-radial-open .as-fab, body.du-radial-open .fab { visibility: hidden; }
+
+/* ograniczony ruch: bez podskoków i wachlarza */
+@media (prefers-reduced-motion: reduce) { .du-mood[aria-checked="true"], .du-target { animation: none; } }
+.du-still .du-mood[aria-checked="true"], .du-still .du-target { animation: none; }
+
+/* wąski komputer z otwartym Asystentem: pasek jest ciasny — „+” mniejszy, żeby pasek nie wchodził pod okienko */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  body.as-open .du-plus { width: 44px; height: 44px; margin: 0; }
+  body.as-open .du-plus-wrap { padding: 0; }
+}

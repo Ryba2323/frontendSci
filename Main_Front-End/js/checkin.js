@@ -12,9 +12,11 @@
  * a strona główna odpala deszcz (js/home2.js → Home2Scene.water(mood)).
  * Przy słowach kryzysowych w notatce (js/moderacja.js) od razu pokazujemy 116 111 i 112.
  *
- * window.Checkin.open({ from, entry, onDone(entry) })
+ * window.Checkin.open({ from, entry, step, onDone(entry) })
  *   from     element, z którego wychodzi animacja (przycisk)
  *   entry    poprzedni dzisiejszy wpis do edycji albo null
+ *   step     od którego pytania zacząć: 'mood' (domyślnie), 'sleep', 'areas', 'note' — np. gdy nastrój jest już z Dom
+ * window.Checkin.DATA — skale pytań (sen, jakość snu, obszary dnia), żeby strona główna mogła pokazać te same odpowiedzi
  *   onDone   dostaje { mood, sleepHours, sleepQuality, areas: { food: 1, … }, note, toVault }
  * W React Native: osobny ekran Expo Router (modal) + Reanimated do przejść.
  */
@@ -320,6 +322,8 @@
     steps.forEach((s, i) => { s.hidden = i !== 0; s.classList.remove('from-left', 'from-right'); });
     idx = 0;
     syncFooter();
+    const start = STEPS.findIndex(s => s.id === opts.step);
+    if (start > 0) go(start, 1);
     setTimeout(() => $('[data-ci-close]').focus({ preventScroll: true }), reduceMotion ? 0 : 320);
   }
 
@@ -363,5 +367,8 @@
     else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
   });
 
-  window.Checkin = { open, close: () => close(false), get isOpen() { return isOpen; } };
+  window.Checkin = {
+    open, close: () => close(false), get isOpen() { return isOpen; },
+    DATA: { SLEEP_HOURS, SLEEP_QUALITY, AREAS, AREA_SCALE, LOW, blank },
+  };
 })();
