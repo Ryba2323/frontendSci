@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="img/ikona-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/home2.css">
@@ -65,10 +65,10 @@
 
 </div>
 
-<!-- Górny pasek: logo ReLeaf (postać + napis, osobny napis na tryb nocny), kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę -->
+<!-- Górny pasek: napis ReLeaf (osobny na tryb nocny), kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę.
+     Postać z logo jest tu celowo pominięta: pojawia się tylko jako twarz Asystenta i na pustych ekranach. -->
 <header class="app-top" id="app-top">
-  <span class="brand" role="img" aria-label="ReLeaf">
-    <img class="brand-mascot" src="img/listek.webp" alt="" width="40" height="28">
+  <span class="brand is-word" role="img" aria-label="ReLeaf">
     <img class="brand-word is-light" src="img/releaf-wordmark.webp" alt="" width="70" height="33">
     <img class="brand-word is-dark" src="img/releaf-wordmark-dark.webp" alt="" width="70" height="33">
   </span>
@@ -145,7 +145,7 @@
       <p class="kicker" id="short-title">Na skróty</p>
       <div class="shortcuts">
         <button type="button" class="shortcut is-wide" data-asystent="dom">
-          <span class="insight-ico is-mascot"><img src="img/listek.webp" alt=""></span>
+          <span class="insight-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg></span>
           <b>Porozmawiaj z Asystentem</b><small>posłucha, gdy chcesz coś z siebie wyrzucić</small>
         </button>
         <button type="button" class="shortcut" data-go="skrytka">

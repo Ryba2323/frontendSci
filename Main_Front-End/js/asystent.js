@@ -27,11 +27,12 @@
   // Postać z logo (awatar, przycisk, wiersze odpowiedzi). Grafika jest ozdobna — nazwę podaje tekst obok.
   const MASCOT = '<img class="as-mascot" src="img/listek.webp" alt="" draggable="false">';
   const HOP = '<img class="as-hop" src="img/listek-hop.webp" alt="" draggable="false">';
-  // Dymek czatu w przycisku, zza którego wygląda postać (kolor motywu, ogonek w prawo w dół — w stronę rogu ekranu)
+  // Dymek czatu w przycisku, zza którego wygląda postać (jasny, z obwódką w kolorze motywu — pełny kolor zostaje
+  // dla najważniejszego przycisku na ekranie; ogonek w prawo w dół — w stronę rogu ekranu)
   const BUBBLE = `<svg class="as-bubble" viewBox="0 0 56 56" aria-hidden="true">
-    <defs><linearGradient id="as-bubble-g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" style="stop-color: var(--primary)"/><stop offset="1" style="stop-color: var(--primary-dark)"/></linearGradient></defs>
-    <path d="M20 4h16a16 16 0 0 1 16 16v10c0 5-2 9.5-5.5 12l2.5 8.5c.3 1.1-.8 1.9-1.8 1.3l-8.7-6.2c-.8.3-1.6.4-2.5.4H20A16 16 0 0 1 4 30V20A16 16 0 0 1 20 4z" fill="url(#as-bubble-g)"/></svg>`;
+    <path d="M20 4h16a16 16 0 0 1 16 16v10c0 5-2 9.5-5.5 12l2.5 8.5c.3 1.1-.8 1.9-1.8 1.3l-8.7-6.2c-.8.3-1.6.4-2.5.4H20A16 16 0 0 1 4 30V20A16 16 0 0 1 20 4z"
+      style="fill: var(--surface); stroke: var(--primary); stroke-width: 1.8"/>
+    <path d="M19 27.5h.01M28 27.5h.01M37 27.5h.01" style="stroke: var(--primary-dark); stroke-width: 3.6; stroke-linecap: round"/></svg>`;
   const LEAF ='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 11 4 20 4c0 9-6 15-15 15z" fill="currentColor"/><path d="M5 19L14 10" stroke="var(--surface)" stroke-width="1.4" stroke-linecap="round"/></svg>';
 
   // ================================================================
@@ -112,7 +113,7 @@
       pal = RIBBONS.map(R => R.c.map(n => parse(s.getPropertyValue(n))));
       // pastele na jasnym tle ledwo widać, a na ciemnym świecą — stąd osobna siła dla trybu nocnego
       dark = !!(window.Theme && Theme.isDark());
-      amp = dark ? .4 : .8;
+      amp = dark ? .3 : .6;   // trochę słabiej niż kiedyś — kolory mają tło, nie krzyczą
     }
     function size() {
       W = Math.max(1, Math.round(cv.clientWidth * RES));

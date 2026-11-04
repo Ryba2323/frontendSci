@@ -132,7 +132,7 @@
         <ol class="comments">${p.comments.map(commentView).join('') || '<li class="comments-empty">Nikt jeszcze nie odpisał.</li>'}</ol>
         <form class="comment-form" novalidate>
           <input type="text" maxlength="400" placeholder="Napisz coś życzliwego…" aria-label="Twój komentarz">
-          <button type="submit" class="icon-btn is-primary" aria-label="Wyślij komentarz">${svg(ICON.send)}</button>
+          <button type="submit" class="icon-btn is-soft" aria-label="Wyślij komentarz">${svg(ICON.send)}</button>
         </form>
         <div class="comment-msg" aria-live="polite"></div>
         <button type="button" class="quiet-btn post-report" data-act="report">${svg(ICON.flag)}<span>Zgłoś wpis</span></button>

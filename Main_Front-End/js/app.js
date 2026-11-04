@@ -118,7 +118,7 @@
 
   function moveSheet(px, animate) {
     shift = px;
-    content.style.transition = animate && !reduceMotion ? 'transform .8s cubic-bezier(.2, .8, .2, 1)' : 'none';
+    content.style.transition = animate && !reduceMotion ? 'transform var(--dur-slow) var(--ease-out)' : 'none';
     content.style.transform = px ? `translate3d(0, ${px.toFixed(1)}px, 0)` : '';
   }
   const hint = $('#scroll-hint');

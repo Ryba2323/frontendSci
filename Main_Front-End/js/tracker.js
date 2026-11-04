@@ -10,6 +10,8 @@
  *  3. Co Ci pomaga: 3 odpowiedzi z podlewania, przy których nastrój był najwyżej ponad średnią.
  *  4. Zielnik: za każdy tydzień z co najmniej 3 podlaniami roślinka zostawia zasuszony kwiat (bez kar za przerwę —
  *     tydzień bez kwiatu po prostu się nie pokazuje). Bieżący tydzień: ile podlań już jest.
+ * Wygląd: bez białych kart — sekcje i wiersze oddziela linia. Tracker to JEDYNE miejsce z kolorami kategorii
+ * (--cat-* w css/tokens.css): kolor kategorii ma kropka przy nazwie i wyróżniony słupek. Nastrój = kolor motywu.
  * DANE PRZYKŁADOWE (stałe), w kształcie `daily_checkins` + godzina wpisu. Docelowo: Edge Function `generate-insights`.
  */
 (function () {
@@ -23,12 +25,13 @@
   // ================================================================
   let seed = 90210;
   const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  // cat: kolor kategorii (tylko w Trackerze)
   const AREAS = [
-    { id: 'friends', name: 'Czas z przyjaciółmi', w: 1.1 },
-    { id: 'nature', name: 'Wyjście na dwór', w: .8 },
-    { id: 'family', name: 'Rodzina', w: .4 },
-    { id: 'food', name: 'Dobre jedzenie', w: .3 },
-    { id: 'study', name: 'Nauka', w: .7 },
+    { id: 'friends', name: 'Czas z przyjaciółmi', w: 1.1, cat: '--cat-friends' },
+    { id: 'nature', name: 'Wyjście na dwór', w: .8, cat: '--cat-nature' },
+    { id: 'family', name: 'Rodzina', w: .4, cat: '--cat-family' },
+    { id: 'food', name: 'Dobre jedzenie', w: .3, cat: '--cat-food' },
+    { id: 'study', name: 'Nauka', w: .7, cat: '--cat-study' },
   ];
   const today = new Date(); today.setHours(12, 0, 0, 0);
   const DAYS = 56;
@@ -64,7 +67,6 @@
   const DOW_ADJ = ['niedzielne', 'poniedziałkowe', 'wtorkowe', 'środowe', 'czwartkowe', 'piątkowe', 'sobotnie'];
   const DOW_ON = ['w niedziele', 'w poniedziałki', 'we wtorki', 'w środy', 'w czwartki', 'w piątki', 'w soboty'];
   const LETTER = ['N', 'P', 'W', 'Ś', 'C', 'P', 'S'];
-  const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
   const cap = s => s[0].toUpperCase() + s.slice(1);
   const share = (list, f) => list.length ? list.filter(f).length / list.length : 0;
 
@@ -109,7 +111,7 @@
   // ================================================================
   //  3. Co pomaga
   // ================================================================
-  const helps = AREAS.map(a => { const l = last30.filter(d => d.areas[a.id] === 1).map(d => d.mood); return { name: a.name, n: l.length, diff: avg(l) - base }; })
+  const helps = AREAS.map(a => { const l = last30.filter(d => d.areas[a.id] === 1).map(d => d.mood); return { name: a.name, cat: a.cat, n: l.length, diff: avg(l) - base }; })
     .filter(h => h.n >= 3 && h.diff > .2).sort((a, b) => b.diff - a.diff).slice(0, 3);
   const maxDiff = Math.max(...helps.map(h => h.diff), 1);
 
@@ -150,16 +152,17 @@
   const thisCount = thisWeek.days.filter(d => d.mood != null).length;
 
   root.innerHTML = `
-    <section class="card week-sum">
-      <p class="kicker">Twój tydzień w skrócie</p>
-      <div class="sum-strip" aria-hidden="true">${strip}</div>
+    <section class="tr-sec week-sum" aria-labelledby="tr-week-title">
+      <p class="kicker" id="tr-week-title">Twój tydzień w skrócie</p>
       <p class="sum-head"><b>${fmt(wAvg)}</b><span>/10 · ${Math.abs(diff) < .2 ? 'podobnie jak tydzień wcześniej' : `o ${fmt(Math.abs(diff))} ${diff > 0 ? 'lepiej' : 'mniej'} niż tydzień wcześniej`}</span></p>
+      <div class="sum-strip" aria-hidden="true">${strip}</div>
       ${best ? `<p class="sum-sub">Najlepszy dzień: ${best === data[DAYS - 1] ? 'dziś' : DOW_NAME[best.dow]}${bestHelp ? ` · pomogło: ${bestHelp.name.toLowerCase()}` : ''}</p>` : ''}
     </section>
 
     <h2 class="sub-title">Co zauważyliśmy</h2>
-    <article class="card insight-card" style="--i:1">
-      <p class="insight-tag">${svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 2.5"/>')}Dzień tygodnia</p>
+    <ol class="tr-list">
+    <li class="insight" style="--i:1;--cat:var(--primary)">
+      <p class="insight-tag"><i class="cat-dot" aria-hidden="true"></i>Nastrój w tygodniu</p>
       <h3>${cap(DOW_ADJ[worst.k])} ${evening ? 'wieczory' : 'dni'} bywają trudniejsze</h3>
       <div class="mini-bars" aria-hidden="true">${dowBars}</div>
       <p>Średnio o <b>${fmt(othersAvg - worst.v)}</b> niżej niż w inne dni.</p>
@@ -170,10 +173,10 @@
           <p class="try"><b>Spróbuj:</b> ${why[0] ? why[0].tip : 'zaplanować na ten dzień coś przyjemnego'}.</p>
         </div>
       </details>
-    </article>
+    </li>
 
-    <article class="card insight-card" style="--i:2">
-      <p class="insight-tag">${svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>')}Sen</p>
+    <li class="insight" style="--i:2;--cat:var(--cat-sleep)">
+      <p class="insight-tag"><i class="cat-dot" aria-hidden="true"></i>Sen</p>
       <h3>Sen poprawia Ci dzień</h3>
       <div class="compare" aria-hidden="true">
         <span style="--v:${bs / 10}"><small>mniej niż 7 h</small><i></i><b>${fmt(bs)}</b></span>
@@ -187,12 +190,14 @@
           <p class="try"><b>Spróbuj:</b> odłożyć telefon pół godziny przed snem.</p>
         </div>
       </details>
-    </article>
+    </li>
+    </ol>
 
     <h2 class="sub-title">Co Ci pomaga</h2>
-    <p class="helps-note herb-note">O tyle lepszy bywa Twój nastrój w takie dni.</p>
+    <p class="helps-note">O tyle lepszy bywa Twój nastrój w takie dni.</p>
     <ul class="helps">${helps.map((h, i) => `
-      <li class="help" style="--i:${i + 1};--w:${(h.diff / maxDiff * 100).toFixed(0)}%">
+      <li class="help" style="--i:${i + 1};--w:${(h.diff / maxDiff * 100).toFixed(0)}%;--cat:var(${h.cat})">
+        <i class="cat-dot" aria-hidden="true"></i>
         <span class="help-name">${h.name}</span>
         <span class="help-val">+${fmt(h.diff)}</span>
         <span class="help-bar" aria-hidden="true"><i></i></span>
@@ -200,7 +205,7 @@
     </ul>
 
     <h2 class="sub-title">Zielnik</h2>
-    <p class="helps-note herb-note">Kwiat za każdy tydzień z 3 podlaniami.</p>
+    <p class="helps-note">Kwiat za każdy tydzień z 3 podlaniami.</p>
     <ul class="herbarium">
       <li class="herb is-now"><span class="herb-seed">${Array.from({ length: 3 }, (_, k) => `<i class="${k < thisCount ? 'on' : ''}"></i>`).join('')}</span><small>Ten tydzień</small><b>${thisCount >= 3 ? 'kwiat w niedzielę' : `${thisCount} z 3 podlań`}</b></li>
       ${pressed.map((w, i) => `<li class="herb" style="--i:${i + 1}">${flower(w, i)}<small>${range(w)}</small></li>`).join('')}

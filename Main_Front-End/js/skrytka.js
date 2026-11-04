@@ -115,7 +115,7 @@
       <div class="vault-confirm vault-ask" hidden>
         <span>Asystent zobaczy tylko tę myśl.</span>
         <button type="button" class="quiet-btn" data-act="keep">Nie</button>
-        <button type="button" class="btn-primary is-small" data-act="really-ai">Przekaż</button>
+        <button type="button" class="btn-soft" data-act="really-ai">Przekaż</button>
       </div>
       <div class="vault-confirm vault-del" hidden>
         <span>Usunąć na zawsze?</span>
@@ -130,7 +130,7 @@
     list.innerHTML = items.length
       ? items.map((it, i) => itemView(it, i, it.id === freshId)).join('')
       : `<li class="empty-state is-small">
-          <span class="empty-leaf">${svg(ICON.leaf)}</span>
+          <span class="empty-mascot" aria-hidden="true"><img src="img/listek.webp" alt="" width="60" height="42"></span>
           <p>Tu zamieszkają Twoje myśli.</p>
         </li>`;
   }

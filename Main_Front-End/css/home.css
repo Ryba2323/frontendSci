@@ -29,7 +29,7 @@ button, a { touch-action: manipulation; }
 #bg {
   position: fixed; inset: 0; width: 100%; height: 100%;
   z-index: 0; pointer-events: none;
-  animation: fade-in 1.4s ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 #fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 15; pointer-events: none; }
 @keyframes fade-in { from { opacity: 0; } }
@@ -43,7 +43,7 @@ button, a { touch-action: manipulation; }
   --strip: 46px;
   position: relative; z-index: 1;
   max-width: 640px; margin: 0 auto;
-  padding: calc(env(safe-area-inset-top) + 12px) 8px calc(env(safe-area-inset-bottom) + 40px) 14px;
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-2) calc(env(safe-area-inset-bottom) + var(--sp-10)) var(--sp-4);
 }
 
 .top { height: 44px; display: flex; align-items: center; margin-left: var(--strip); }
@@ -57,13 +57,13 @@ button, a { touch-action: manipulation; }
 .sos {
   position: fixed; z-index: 20;
   top: calc(env(safe-area-inset-top) + 14px); right: 14px;
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 40px; padding: 0 15px 0 12px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  height: 40px; padding: 0 var(--sp-4) 0 var(--sp-3); border-radius: 999px;
   border: 1.5px solid rgba(var(--primary-rgb), .3); background: var(--surface);
   box-shadow: 0 8px 22px -12px rgba(30, 42, 50, .45);
   font: inherit; font-size: .82rem; font-weight: 800; letter-spacing: .05em; color: var(--primary-dark);
-  cursor: pointer; transition: border-color .2s, transform .15s;
-  animation: rise .8s var(--ease-out) .3s both;
+  cursor: pointer; transition: border-color var(--dur-fast), transform var(--dur-fast);
+  animation: rise var(--dur-slow) var(--ease-out) .3s both;
 }
 .sos svg { width: 17px; height: 17px; }
 .sos:hover { border-color: var(--primary); }
@@ -73,12 +73,12 @@ button, a { touch-action: manipulation; }
 /* ================================================================
    Powitanie
    ================================================================ */
-.greet { margin: 22px 0 30px var(--strip); padding-right: 8px; }
-.greet > * { animation: rise .9s var(--ease-out) both; }
+.greet { margin: var(--sp-6) 0 var(--sp-8) var(--strip); padding-right: var(--sp-2); }
+.greet > * { animation: rise var(--dur-slow) var(--ease-out) both; }
 .greet > :nth-child(2) { animation-delay: .08s; }
 .greet > :nth-child(3) { animation-delay: .16s; }
 .greet-date { margin: 0; font-size: .86rem; font-weight: 600; color: var(--text-muted); }
-.greet h1 { margin: 4px 0 8px; font-size: 2rem; line-height: 1.15; font-weight: 800; letter-spacing: -.03em; }
+.greet h1 { margin: var(--sp-1) 0 var(--sp-2); font-size: 2rem; line-height: 1.15; font-weight: 800; letter-spacing: -.03em; }
 .greet-sub { margin: 0; font-size: .98rem; line-height: 1.5; color: var(--text-muted); }
 .greet-sub b { color: var(--primary-dark); font-weight: 700; }
 
@@ -93,7 +93,7 @@ button, a { touch-action: manipulation; }
   opacity: 0;
   transform: scale(.3) rotate(-16deg);
   transform-origin: 0% 55%;
-  transition: opacity .5s ease, transform 1.15s var(--ease-spring);
+  transition: opacity var(--dur-base) ease, transform var(--dur-slow) var(--ease-spring);
 }
 .leaf-card.is-open { opacity: 1; transform: none; }
 .leaf-card + .leaf-card { margin-top: 86px; }
@@ -103,7 +103,7 @@ button, a { touch-action: manipulation; }
 .leaf-card--stat .leaf-bg { filter: drop-shadow(0 18px 24px rgba(var(--primary-rgb), .2)); }
 
 /* Treść w bezpiecznym prostokącie kształtu (x 12–76%) */
-.leaf-in { position: relative; padding: 34px 24% 34px 12%; }
+.leaf-in { position: relative; padding: var(--sp-8) 24% var(--sp-8) 12%; }
 
 .leaf-kicker {
   margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
@@ -113,19 +113,19 @@ button, a { touch-action: manipulation; }
 .leaf-card--hero { color: #fff; }
 .leaf-card--hero .leaf-kicker { color: rgba(255, 255, 255, .78); }
 .leaf-card--hero h2 {
-  margin: 6px 0 16px; font-size: 1.5rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em;
+  margin: var(--sp-2) 0 var(--sp-4); font-size: 1.5rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, .12);
 }
 
 .water-btn {
   position: relative;
-  display: inline-flex; align-items: center; gap: 10px;
-  height: 54px; padding: 0 20px 0 7px; border: 0; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: var(--sp-3);
+  height: 54px; padding: 0 var(--sp-5) 0 var(--sp-2); border: 0; border-radius: 999px;
   background: #fff; color: var(--primary-dark);
   font: inherit; font-size: 1rem; font-weight: 800; white-space: nowrap;
   box-shadow: 0 12px 24px -12px rgba(0, 0, 0, .45);
   cursor: pointer;
-  transition: transform .2s var(--ease-spring), box-shadow .2s;
+  transition: transform var(--dur-fast) var(--ease-spring), box-shadow var(--dur-fast);
 }
 .water-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 28px -12px rgba(0, 0, 0, .5); }
 .water-btn:active { transform: scale(.96); }
@@ -148,7 +148,7 @@ button, a { touch-action: manipulation; }
 @keyframes drop-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
 
 /* Po kliknięciu: kropla „wylewa się” */
-.water-btn.is-pouring .drop svg { animation: pour .7s var(--ease-spring); }
+.water-btn.is-pouring .drop svg { animation: pour var(--dur-slow) var(--ease-spring); }
 @keyframes pour {
   0% { transform: translateY(0) scale(1); }
   30% { transform: translateY(5px) scale(.7, 1.2); }
@@ -158,22 +158,22 @@ button, a { touch-action: manipulation; }
 
 /* ---------- Liść 2: bilans ---------- */
 .leaf-card--stat .leaf-kicker { color: var(--primary-dark); }
-.score { display: flex; align-items: flex-end; gap: 12px; margin-top: 8px; }
+.score { display: flex; align-items: flex-end; gap: var(--sp-3); margin-top: var(--sp-2); }
 .score-num { display: flex; align-items: baseline; gap: 3px; margin: 0; }
 .score-num strong { font-size: 2.7rem; line-height: .95; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .score-num span { font-size: 1rem; font-weight: 700; color: var(--text-muted); }
-.score-word { margin: 0 0 4px; font-size: .88rem; line-height: 1.3; font-weight: 700; color: var(--text); }
+.score-word { margin: 0 0 var(--sp-1); font-size: .88rem; line-height: 1.3; font-weight: 700; color: var(--text); }
 
 /* Główny słupek: ogólny wynik tygodnia (+ znacznik zeszłego tygodnia) */
 .meter {
-  position: relative; height: 14px; margin-top: 14px; border-radius: 14px;
+  position: relative; height: 14px; margin-top: var(--sp-4); border-radius: 14px;
   background: rgba(255, 255, 255, .75);
   box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), .15);
 }
 .meter-fill {
   position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: inherit;
   background: linear-gradient(90deg, var(--accent-light), var(--primary));
-  transition: width 1.4s var(--ease-out) .25s;
+  transition: width var(--dur-slow) var(--ease-out) .25s;
 }
 .meter-fill::after {
   content: ""; position: absolute; right: -3px; top: 50%; width: 20px; height: 20px; margin-top: -10px;
@@ -182,21 +182,21 @@ button, a { touch-action: manipulation; }
 }
 .meter-prev {
   position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; border-radius: 2px;
-  background: var(--text-soft); opacity: 0; transition: opacity .6s ease 1.2s;
+  background: var(--text-soft); opacity: 0; transition: opacity var(--dur-slow) ease 1.2s;
 }
 .is-open .meter-prev { opacity: .7; }
-.trend { margin: 10px 0 0; font-size: .8rem; line-height: 1.4; color: var(--text-muted); }
+.trend { margin: var(--sp-3) 0 0; font-size: .8rem; line-height: 1.4; color: var(--text-muted); }
 .trend b { color: var(--primary-dark); }
 
 /* Mini-słupki: 7 dni */
-.cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; align-items: end; height: 58px; margin-top: 14px; }
-.col { display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+.cols { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--sp-2); align-items: end; height: 58px; margin-top: var(--sp-4); }
+.col { display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); height: 100%; justify-content: flex-end; }
 .col i {
   display: block; width: 100%; max-width: 20px; height: calc(var(--v) * 100% - 16px); min-height: 4px;
   border-radius: 7px 7px 4px 4px;
   background: rgba(var(--primary-rgb), .35);
   transform: scaleY(0); transform-origin: 50% 100%;
-  transition: transform .9s var(--ease-spring);
+  transition: transform var(--dur-slow) var(--ease-spring);
   transition-delay: calc(.5s + var(--k) * 70ms);
 }
 .col.is-today i { background: var(--primary); }
@@ -207,39 +207,39 @@ button, a { touch-action: manipulation; }
 /* ================================================================
    Koniec gałęzi: kwiat i myśl na dziś
    ================================================================ */
-.bloom { position: relative; margin: 60px 0 0 var(--strip); padding: 150px 12px 0; text-align: center; }
+.bloom { position: relative; margin: var(--sp-16) 0 0 var(--strip); padding: 150px var(--sp-3) 0; text-align: center; }
 .flower-anchor { position: absolute; left: 50%; top: 66px; width: 1px; height: 1px; }
 .bloom-kicker { margin: 0; font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--primary); }
 .bloom-quote {
-  max-width: 300px; margin: 8px auto 0;
+  max-width: 300px; margin: var(--sp-2) auto 0;
   font-size: 1.12rem; line-height: 1.5; font-weight: 700; letter-spacing: -.01em; color: var(--text);
 }
-.bloom > :not(.flower-anchor) { opacity: 0; transform: translateY(12px); transition: opacity .8s ease .5s, transform .8s var(--ease-out) .5s; }
+.bloom > :not(.flower-anchor) { opacity: 0; transform: translateY(12px); transition: opacity var(--dur-slow) ease .5s, transform var(--dur-slow) var(--ease-out) .5s; }
 .bloom.is-open > :not(.flower-anchor) { opacity: 1; transform: none; }
 
-.plant-foot { margin: 48px 0 0 var(--strip); text-align: center; font-size: .84rem; line-height: 1.5; color: var(--text-muted); }
+.plant-foot { margin: var(--sp-12) 0 0 var(--strip); text-align: center; font-size: .84rem; line-height: 1.5; color: var(--text-muted); }
 .plant-foot b { display: block; font-size: 1rem; color: var(--text); }
 
 /* ================================================================
    Arkusz SOS
    ================================================================ */
-.sheet-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(30, 42, 50, .38); opacity: 0; transition: opacity .3s ease; }
+.sheet-backdrop { position: fixed; inset: 0; z-index: 30; background: rgba(30, 42, 50, .38); opacity: 0; transition: opacity var(--dur-base) ease; }
 .sheet-backdrop.is-open { opacity: 1; }
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 31;
   max-width: 520px; margin: 0 auto; max-height: calc(100% - 40px); overflow-y: auto;
-  padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom));
   background: var(--sheet); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: 0 -20px 50px -20px rgba(30, 42, 50, .4);
-  transform: translateY(105%); transition: transform .45s var(--ease-out);
+  transform: translateY(105%); transition: transform var(--dur-base) var(--ease-out);
 }
 .sheet.is-open { transform: none; }
-.sheet-grabber { display: block; width: 44px; height: 5px; margin: 0 auto 16px; border-radius: 5px; background: var(--track); }
-.sheet-title { margin: 0 0 4px; font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
-.sheet-sub { margin: 0 0 18px; font-size: .92rem; line-height: 1.5; color: var(--text-muted); }
-.sos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.sheet-grabber { display: block; width: 44px; height: 5px; margin: 0 auto var(--sp-4); border-radius: 5px; background: var(--track); }
+.sheet-title { margin: 0 0 var(--sp-1); font-size: 1.35rem; font-weight: 800; letter-spacing: -.02em; }
+.sheet-sub { margin: 0 0 var(--sp-5); font-size: .92rem; line-height: 1.5; color: var(--text-muted); }
+.sos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
 .sos-item {
-  display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px;
+  display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--sp-4); border-radius: 18px;
   border: 1.5px solid var(--line); background: var(--surface); color: var(--text); text-decoration: none;
 }
 .sos-item:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
@@ -250,7 +250,7 @@ button, a { touch-action: manipulation; }
 .sos-item.is-main { border-color: var(--primary); background: rgba(var(--primary-rgb), .07); }
 .sos-item.is-main .sos-ico { background: var(--primary); color: #fff; }
 .sheet-close {
-  width: 100%; height: 52px; margin-top: 14px; border: 0; border-radius: 16px;
+  width: 100%; height: 52px; margin-top: var(--sp-4); border: 0; border-radius: 16px;
   background: rgba(var(--primary-rgb), .1); color: var(--primary-dark);
   font: inherit; font-size: 1rem; font-weight: 700; cursor: pointer;
 }
@@ -259,10 +259,10 @@ button, a { touch-action: manipulation; }
 /* width: max-content — przy left: 50% przeglądarka dawała komunikatowi tylko połowę ekranu (wąska kolumna) */
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 40;
-  width: max-content; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: var(--radius-md);
+  width: max-content; max-width: calc(100% - 32px); padding: var(--sp-3) var(--sp-5); border-radius: var(--radius-md);
   background: var(--text); color: #fff; font-size: .88rem; font-weight: 600; text-align: center;
   box-shadow: 0 16px 30px -12px rgba(30, 42, 50, .5);
-  transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;
+  transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: opacity var(--dur-base), transform var(--dur-base);
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -270,11 +270,11 @@ button, a { touch-action: manipulation; }
    Tablet (od 700 px)
    ================================================================ */
 @media (min-width: 700px) {
-  .page { --strip: 64px; padding-left: 24px; padding-right: 24px; }
-  .greet { margin-top: 40px; }
+  .page { --strip: 64px; padding-left: var(--sp-6); padding-right: var(--sp-6); }
+  .greet { margin-top: var(--sp-10); }
   .greet h1 { font-size: 2.5rem; }
   .greet-sub { font-size: 1.05rem; }
-  .leaf-in { padding: 40px 24% 40px 12%; }
+  .leaf-in { padding: var(--sp-10) 24% var(--sp-10) 12%; }
   .leaf-card--hero h2 { font-size: 1.85rem; }
   .leaf-card + .leaf-card { margin-top: 100px; }
   .sos { top: 20px; right: 22px; }
@@ -284,12 +284,12 @@ button, a { touch-action: manipulation; }
    Komputer (od 1024 px): kolumna na środku, gałąź biegnie tuż obok, a jej odnogi zajmują boki
    ================================================================ */
 @media (min-width: 1024px) {
-  .page { --strip: 0px; max-width: 580px; padding-top: 28px; }
-  .greet { margin-top: 56px; }
+  .page { --strip: 0px; max-width: 580px; padding-top: var(--sp-8); }
+  .greet { margin-top: var(--sp-16); }
   .greet h1 { font-size: 2.8rem; }
   .sheet {
     bottom: 50%; max-width: 460px; border-radius: var(--radius-lg);
-    transform: translateY(calc(50% + 30px)); opacity: 0; transition: transform .4s var(--ease-out), opacity .3s;
+    transform: translateY(calc(50% + 30px)); opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base);
   }
   .sheet.is-open { transform: translateY(50%); opacity: 1; }
   .sos { top: 24px; right: 32px; }

@@ -337,7 +337,7 @@
     root.classList.add('is-closing');
     root.classList.remove('is-open');
     document.body.classList.remove('ci-open');
-    setTimeout(() => { if (!isOpen) { root.hidden = true; root.classList.remove('is-closing'); } }, reduceMotion ? 0 : 620);
+    setTimeout(() => { if (!isOpen) { root.hidden = true; root.classList.remove('is-closing'); } }, reduceMotion ? 0 : 720);   // = --dur-slow (css/tokens.css)
     if (!toPlant && lastFocus) lastFocus.focus({ preventScroll: true });
   }
 

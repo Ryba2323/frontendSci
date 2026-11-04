@@ -12,7 +12,7 @@
 
   root.innerHTML = `
     <div class="empty-state">
-      <span class="empty-leaf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg></span>
+      <span class="empty-mascot" aria-hidden="true"><img src="img/listek.webp" alt="" width="76" height="53"></span>
       <p class="empty-title">Wkrótce</p>
       <p>Tu pojawią się krótkie testy samopoczucia.</p>
     </div>`;

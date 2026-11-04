@@ -155,7 +155,7 @@
     running = false;
     flower.classList.remove('is-open');
     flower.style.setProperty('--dur', '.6s');
-    fill.style.transition = 'stroke-dashoffset .4s ease';
+    fill.style.transition = 'stroke-dashoffset var(--dur-base) ease';
     fill.style.strokeDashoffset = C;
   }
 

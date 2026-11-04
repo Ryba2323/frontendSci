@@ -12,8 +12,8 @@
 :root {
   /* Stałe (niezależne od motywu) */
   --text: #1E2A32;
-  --text-muted: #5E6F78;
-  --text-soft: #687983;   /* najjaśniejszy tekst, który nadal ma kontrast 4,5:1 na białej karcie (podpisy, daty) */
+  --text-muted: #53636C;   /* 4,5:1 także na przyciemnionych tłach (--bg-2, odcienie motywu) we wszystkich motywach */
+  --text-soft: #5E6E77;    /* najjaśniejszy tekst (podpisy, daty): 4,5:1 na --bg-2 każdego motywu — narzedzia/sprawdz-kontrast.js */
   --surface: #FFFFFF;
   --error: #C4553C;
   --glass: rgba(255, 255, 255, .6);      /* półprzezroczyste tło na scenie i listach */
@@ -21,15 +21,51 @@
   --toast-fg: #FFFFFF;
   --warning: #B7792F;
 
-  /* Kolory kategorii (wykresy / suwaki) — znaczą to samo w każdym motywie */
+  /* Kolory kategorii — TYLKO w Trackerze (wykresy), znaczą to samo w każdym motywie.
+     Nigdy jako tło pod tekstem: tylko słupki i kropki obok tekstu w kolorze --text.
+     Nastrój nie ma własnego koloru — to zawsze kolor motywu (--primary). */
+  --cat-sleep: #7F8FC6;     /* sen: przygaszony błękit nocy */
+  --cat-friends: #D69A6E;   /* przyjaciele: ciepła morela */
+  --cat-nature: #74A883;    /* wyjście na dwór: szałwia */
+  --cat-family: #C48CA6;    /* rodzina: przygaszony róż */
+  --cat-food: #CDAE62;      /* jedzenie: musztarda */
+  --cat-study: #6F9FB6;     /* nauka: stalowy błękit */
+  /* Stare nazwy (rejestracja — wybór tematów) */
   --mood: #3A8D9E;
   --energy: #F6B86A;
   --stress: #7CC9D4;
   --sleep: #78C9B7;
   --peach: #F6B89E;
 
-  /* Typografia */
+  /* Typografia: interfejs bezszeryfowy, osobiste treści (myśli w Skrytce, Myśl na dziś, cytaty w czacie) szeryfowe —
+     wyglądają jak zapisane ręką, a nie jak komunikat systemu. Klasa .is-personal albo var(--font-serif). */
   --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Literata", Georgia, "Times New Roman", serif;
+
+  /* Odstępy: JEDNA skala dla całej aplikacji (krok 4 px, nazwy jak w Tailwind/NativeWind: sp-4 = p-4 = 16 px).
+     Marginesy, paddingi i gap biorą tylko te wartości; 1–3 px zostają jako korekty optyczne. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+
+  /* Ruch: TRZY prędkości dla całej aplikacji. Szybka — reakcja na dotyk (hover, wciśnięcie, kolor),
+     zwykła — zmiana stanu (rozwinięcie, arkusz, komunikat), wolna — wejście ekranu i duże przejścia (koło podlewania, Asystent).
+     Pętle w tle (kołysanie, oddech, światła) mają własne, długie czasy. */
+  --dur-fast: .2s;
+  --dur-base: .4s;
+  --dur-slow: .7s;
+
+  /* Cienie: tylko to, co naprawdę pływa nad treścią (pasek zakładek, arkusze, pływające przyciski, okienko Asystenta).
+     Karty w treści nie mają cienia — oddziela je linia albo odstęp. */
+  --shadow-float: 0 18px 40px -22px rgba(20, 32, 38, .42);
+  --shadow-lift: 0 8px 20px -16px rgba(20, 32, 38, .4);
 
   /* Zaokrąglenia */
   --radius-sm: 10px;
@@ -46,7 +82,7 @@
 :root, [data-palette] {
   --ring: rgba(var(--primary-rgb), .18);
   --bg-tint: rgba(var(--primary-rgb), 0);   /* poświata motywu na tle strony — w jasnym trybie niepotrzebna */
-  --aura: .7;   /* siła kolorowych świateł tła (css/home2.css, body::before/::after) */
+  --aura: .42;  /* siła kolorowych świateł tła (css/home2.css, body::before/::after) — tylko Dom i Asystent */
 }
 
 /* Światła tła jako jedna warstwa do użycia wszędzie, gdzie ekran ma własne tło (Asystent, podlewanie, arkusze):
@@ -65,10 +101,11 @@
 
 /* Morski (domyślny) — turkus, miętowe liście, brzoskwiniowe kwiaty */
 :root, [data-palette="morski"] {
-  --primary: #3A8D9E;
-  --primary-hover: #337F8F;
-  --primary-dark: #2F7F8F;
-  --primary-rgb: 58, 141, 158;
+  /* --primary ciemniejszy niż w „Clean Teal” (#3A8D9E): biały tekst na przycisku miał 3,8:1, teraz 4,6:1 */
+  --primary: #347E8D;
+  --primary-hover: #2F7280;
+  --primary-dark: #266775;
+  --primary-rgb: 52, 126, 141;
   --accent-light: #7CC9D4;
   --mist: #B7DCE5;   --mist-rgb: 183, 220, 229;
   --mint: #B8E3D3;   --mint-rgb: 184, 227, 211;
@@ -93,10 +130,10 @@
 
 /* Zielony — szałwia, jasnozielone liście, maślane kwiaty */
 :root[data-theme="zielony"], [data-palette="zielony"] {
-  --primary: #4F8A63;
-  --primary-hover: #467B58;
-  --primary-dark: #3F7050;
-  --primary-rgb: 79, 138, 99;
+  --primary: #49805C;
+  --primary-hover: #427453;
+  --primary-dark: #3B684A;
+  --primary-rgb: 73, 128, 92;
   --accent-light: #9CCFA8;
   --mist: #CFE5D3;   --mist-rgb: 207, 229, 211;
   --mint: #DCEBC9;   --mint-rgb: 220, 235, 201;
@@ -121,10 +158,10 @@
 
 /* Niebieski — spokojny błękit, lila kwiaty */
 :root[data-theme="niebieski"], [data-palette="niebieski"] {
-  --primary: #4A7DB0;
-  --primary-hover: #42709E;
-  --primary-dark: #3A6590;
-  --primary-rgb: 74, 125, 176;
+  --primary: #4778AA;
+  --primary-hover: #406D99;
+  --primary-dark: #376089;
+  --primary-rgb: 71, 120, 170;
   --accent-light: #93BCE3;
   --mist: #C7DCF1;   --mist-rgb: 199, 220, 241;
   --mint: #CFE3EE;   --mint-rgb: 207, 227, 238;
@@ -150,8 +187,8 @@
 /* Lawenda — fiolet lawendy, różowe kwiaty */
 :root[data-theme="lawenda"], [data-palette="lawenda"] {
   --primary: #7A6BB0;
-  --primary-hover: #6D5F9F;
-  --primary-dark: #615490;
+  --primary-hover: #6E5EA9;
+  --primary-dark: #60538F;
   --primary-rgb: 122, 107, 176;
   --accent-light: #B7A9E0;
   --mist: #DAD2F1;   --mist-rgb: 218, 210, 241;
@@ -177,10 +214,10 @@
 
 /* Różowy — przygaszony róż, kremowe kwiaty */
 :root[data-theme="rozowy"], [data-palette="rozowy"] {
-  --primary: #B5677F;
-  --primary-hover: #A55C73;
-  --primary-dark: #945167;
-  --primary-rgb: 181, 103, 127;
+  --primary: #AF5B75;
+  --primary-hover: #A24F69;
+  --primary-dark: #884B5F;
+  --primary-rgb: 175, 91, 117;
   --accent-light: #E9AFC0;
   --mist: #F3D4DD;   --mist-rgb: 243, 212, 221;
   --mint: #F6E0E4;   --mint-rgb: 246, 224, 228;
@@ -205,10 +242,10 @@
 
 /* Morelowy — ciepła, przygaszona morela, piaskowe liście */
 :root[data-theme="morelowy"], [data-palette="morelowy"] {
-  --primary: #AD6B4F;
-  --primary-hover: #9E6048;
-  --primary-dark: #8F5640;
-  --primary-rgb: 173, 107, 79;
+  --primary: #A4654B;
+  --primary-hover: #945B43;
+  --primary-dark: #85503C;
+  --primary-rgb: 164, 101, 75;
   --accent-light: #F2BFA3;
   --mist: #F7DCCB;   --mist-rgb: 247, 220, 203;
   --mint: #F9E6D6;   --mint-rgb: 249, 230, 214;
@@ -257,7 +294,7 @@
     --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
     --ring: rgba(var(--primary-rgb), .45);
   --bg-tint: rgba(var(--primary-rgb), .24);   /* w nocy tło jest wspólne, więc motyw widać po poświacie */
-  --aura: .55;
+  --aura: .3;
     color-scheme: dark;
   }
 }
@@ -281,6 +318,6 @@
   --primary-dark: var(--accent-light);   /* akcent jako tekst musi być jasny na ciemnym tle */
   --ring: rgba(var(--primary-rgb), .45);
   --bg-tint: rgba(var(--primary-rgb), .24);   /* w nocy tło jest wspólne, więc motyw widać po poświacie */
-  --aura: .55;
+  --aura: .3;
   color-scheme: dark;
 }

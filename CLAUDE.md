@@ -17,11 +17,22 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - Keep an **SOS button visible** on in-app screens. For now it lists 116 111 (the free, 24/7 helpline for children and young people in Poland) and 112. The team still has to confirm the numbers.
 - Accessibility: use real text rather than text drawn on canvas for anything important, keep visible focus styles, add `aria-*` where it's needed, support `prefers-reduced-motion`, and keep white text on `--primary` at least as readable as the default theme.
 
+## Visual rules ("mniej efektów, więcej charakteru")
+
+1. **Colourful background lights only where they mean something**: on Dom (around the plant) and in the Assistant. Skrytka, Tracker, Testy and Blog get a calm, solid `var(--bg)` (`body[data-tab]:not([data-tab="dom"])` in `css/home2.css`). Light strength comes from `--aura` (weaker than before).
+2. **Serif for personal content**: thoughts in Skrytka (list and writing field), "Myśl na dziś", saved thoughts, good moments in the jar, the check-in note and Skrytka quotes in the chat use `var(--font-serif)` (Literata, Google Fonts). Everything else stays in Plus Jakarta Sans.
+3. **Fewer white cards**: lists in Tracker and Blog are separated by spacing and a 1 px `--line`. Only things you can tap or expand get a card (`.card`: surface + 1 px line, **no shadow**); an expanded blog post turns into a card. Shadows (`--shadow-float`) only for things that float: tab bar, sheets, toast, floating buttons, the desktop Assistant window.
+4. **Colour has to mean something**: one filled `--primary` button per screen, the most important action ("Podlej roślinkę", "Schowaj", "Napisz", "Dalej"). Other actions use `.btn-soft` / `.icon-btn.is-soft` / outlines; the Assistant button is a light bubble with a coloured outline. Section labels (`.kicker`) are grey. Category colours (`--cat-sleep`, `--cat-friends`, …) are used **only in Tracker**, as bars and dots next to `--text` text, never as a background under text. Mood has no category colour, it's always the theme colour.
+5. **Readable text**: `--primary` in every theme is dark enough for white text (≥ 4.5:1), `--text-muted` / `--text-soft` pass 4.5:1 on `--bg-2`. Check with `narzedzia/sprawdz-kontrast.js`.
+6. **Mascot in moderation**: it's the face of the Assistant (button, avatar, replies, hello jump) and appears on empty screens (`.empty-mascot`: peeking over a line). Nowhere else — the top bar shows only the wordmark.
+7. **One spacing scale and three speeds** (`css/tokens.css`): margins, paddings and gaps use only `--sp-1 … --sp-16` (4 px steps, same names as Tailwind/NativeWind: `--sp-4` = `p-4` = 16 px; 1–3 px optical tweaks and negative offsets stay as numbers). Transitions and entrance animations use only `--dur-fast` (.2 s, touch feedback), `--dur-base` (.4 s, state changes) and `--dur-slow` (.7 s, screen entrances and big transitions). Background loops (sway, breathing, lights) keep their own long durations. JS timers that wait for a CSS transition must match these values.
+
 ## Running it
 
 - There's no build step. Each page also works opened straight from disk (`file://`), so use classic `<script defer>` files and never ES modules.
 - For a local server, serve the `Main_Front-End/` folder with any static server, e.g. `npx serve Main_Front-End` or `python3 -m http.server -d Main_Front-End`, and open `index.html`, which lists all screens.
 - After layout changes run `node narzedzia/sprawdz-nakladanie.js` (Playwright): it checks 6 widths × light/dark × Dom/Skrytka/Tracker/Blog × assistant closed/open (also mid-opening) for overlapping elements, elements under the assistant panel, a plant canvas wider than its stage, horizontal scroll and clipped tab labels.
+- After colour or text changes run `node narzedzia/sprawdz-kontrast.js` (Playwright, ~2 min): it checks the contrast of every visible text in all 6 themes × light/dark (tabs, expanded blog post, jar, SOS, colour sheet, Assistant, check-in incl. low mood). Target: 4.5:1, large text 3:1.
 - **Test in a phone viewport first**, e.g. 375×812, then tablet (~820) and desktop (≥1024).
 - URL helpers:
   - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
@@ -53,11 +64,11 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - **Asystent Wsparcia** (`js/asystent.js`, `css/asystent.css`, `window.Asystent`): chat screen that grows as a circle from where it was opened (on desktop a separate floating window on the right with its own solid background, not the page lights). Entry points: the sprout button (`#as-fab`, every tab, bottom-right; on desktop the content keeps a right gutter `--gutter` for it and the round „Napisz” button on Blog sits under it), the "Porozmawiaj z Asystentem" shortcut on Dom (`[data-asystent]`), the low-mood support button in the check-in, and Skrytka. Replies are demo text; user messages go through `js/moderacja.js` and `kryzys` shows 116 111 / 112 / breathing. `asystent-makieta.html` is the earlier standalone mockup.
 - **Skrytka thoughts** (`js/skrytka.js`): one text field and two buttons. "Schowaj" saves (prototype: `localStorage` `sci.skrytka`, unencrypted), "Puść z wiatrem" lets a thought fly away as a leaf and saves nothing. Saved thoughts sit in a two-column grid (three on tablet), collapsed; a tap expands one to full width with "Zapytaj Asystenta" and "Usuń". "Zapytaj Asystenta" asks for consent first, then the card folds into a leaf that flies to the sprout button and the chat grows out of it (AI only on explicit request). On first open Skrytka is seeded with a few demo thoughts (prototype only).
 - **Blog** (`js/blog.js`): a calm list (title + 2 lines), Popularne/Nowe and a floating "Napisz" button. A tap expands a post (full text, comments, report). Anonymous plant pseudonyms, votes. Every post and comment goes through **`js/moderacja.js`**, a word-list DEMO with the API the real AI moderation will have: `kryzys` (self-harm → not published, 116 111 / 112 / breathing / "schowaj w Skrytce"), `obrazliwe` (insults, threats → highlighted, "popraw"), `dane` (phone, e-mail, @nick), `ok`. Crisis words in the check-in note and in Skrytka don't block anything but show 116 111 right away.
-- **Tracker** (`js/tracker.js`), insight-first (fixed demo data, 8 weeks):
+- **Tracker** (`js/tracker.js`), insight-first (fixed demo data, 8 weeks). No cards: sections and rows are split by a thin line; the only place with category colours (dot + highlighted bar per insight / per "Co Ci pomaga" row):
   - "Twój tydzień w skrócie": 7 small bars and 3 sentences (average vs last week, best day and what helped, one thing to try);
   - "Co zauważyliśmy": personalised insights, each showing only a title, a small chart and one short sentence; the possible causes computed from the data and the suggestion are folded under "Skąd to może się brać?" (keep the screen calm) ("Może to wynikać z tego, że…": shorter sleep the night before, study stress, fewer outings…) and one suggestion. Example: "Niedzielne wieczory bywają trudniejsze". Wording is a hint, never a diagnosis;
   - "Co Ci pomaga": the 3 check-in answers with the highest mood above average;
-  - "Zielnik": one pressed flower per week with at least 3 waterings; weeks without one simply don't appear. **Testy** (`js/testy.js`): empty "coming soon" screen for now.
+  - "Zielnik": one pressed flower per week with at least 3 waterings; weeks without one simply don't appear. **Testy** (`js/testy.js`): empty "coming soon" screen with the mascot for now.
 - **Oddychaj z roślinką** (`js/oddech.js`, `window.Oddech`): one minute of breathing (4 s in, 2 s hold, 6 s out) with a flower that opens and closes, plus optional nature sounds generated with Web Audio (rain, waves that follow the breath, forest). Reachable from SOS, from a shortcut on Dom and from the blog's crisis screen.
 - **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
@@ -67,10 +78,11 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 
 - The app is called **ReLeaf**. `releaf-logo.webp` is the full logo (mascot + wordmark), `releaf-wordmark.webp` is the wordmark alone, and each has a `-dark` variant with the dark lettering lightened for night mode.
 - The mascot, a round sprout with a leaf, is the face of the Assistant: `listek.webp` (peeking over an edge, like in the logo) and `listek-hop.webp` (jumping).
-  - It peeks over the chat bubble in the Assistant button.
+  - It peeks over the chat bubble in the Assistant button (a light bubble with a coloured outline, not a filled button).
   - It sits in the avatar and next to each reply, and sways while "typing".
   - It jumps above the first message when the chat is opened from Dom.
-- The top bar shows `.brand` (mascot + wordmark; CSS in `css/home2.css` swaps the wordmark for night mode). Favicon: `favicon-64.png`; home-screen icon: `ikona-180.png`.
+- The top bar shows `.brand.is-word` (wordmark only, no mascot; CSS in `css/home2.css` swaps the wordmark for night mode). Favicon: `favicon-64.png`; home-screen icon: `ikona-180.png`.
+- Empty screens (Testy, empty Skrytka list) show the mascot peeking over a line (`.empty-mascot` in `css/app.css`).
 - The images were cut out of the originals the team sent (background removed). Replace them with clean exports from the designer when available.
 
 ### Colours and themes

@@ -32,7 +32,7 @@
   }
 
   root.innerHTML = `
-    <section class="card jar-card">
+    <section class="jar-card">
       <button type="button" class="jar" id="jar" aria-label="Wylosuj dobrą chwilę">
         <svg viewBox="0 0 160 190" aria-hidden="true">
           <rect class="jar-lid" x="46" y="8" width="68" height="18" rx="6"/>
