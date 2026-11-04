@@ -66,7 +66,6 @@ body.ci-open { overflow: hidden; }
   .stage::after { display: none; }
   .content { z-index: 2; pointer-events: none; }         /* przez pusty pas u góry stuka się w liście roślinki */
   .content > * { pointer-events: auto; }
-  body:not([data-tab="dom"]) .app-top { display: none; }
 }
 
 @media (min-width: 1024px) { .plant-zoom { display: none; } }
@@ -78,14 +77,14 @@ body.ci-open { overflow: hidden; }
   .plant-zoom { right: auto; left: 16px; }
 }
 
-/* Telefon: roślinka tylko na zakładce Dom, inne zakładki to zwykłe strony */
+/* Telefon: planeta jest na każdej zakładce — poza Dom scena jest niższa (--stage-compact, ustawia js/home2-scene.js)
+   i widać na niej miejsce danej zakładki. Karta z treścią wjeżdża na scenę tak samo jak na Dom.
+   SOS jest stale w górnym pasku, więc w nagłówku zakładki go nie powtarzamy. */
+:root { --stage-compact: clamp(210px, 31vh, 260px); }
 @media (max-width: 1023px) {
-  body:not([data-tab="dom"]) .stage { display: none; }
-  body:not([data-tab="dom"]) .content { padding-top: 0; }
-  .view:not(#view-dom) {
-    min-height: 100vh; border-radius: 0; box-shadow: none; background: transparent;
-    padding-top: calc(env(safe-area-inset-top) + var(--sp-5));
-  }
+  body:not([data-tab="dom"]) .content { padding-top: calc(var(--stage-compact) - 4px); }
+  body:not([data-tab="dom"]) .stage-greet, body:not([data-tab="dom"]) .plant-zoom { visibility: hidden; }
+  .view-sos { display: none; }
 }
 
 /* ================================================================
@@ -691,7 +690,6 @@ body.sheet-open .fab, body.ci-open .fab { display: none; }
   .app-top { padding: var(--sp-5) var(--sp-6) var(--sp-3); }
   .fab { right: 24px; bottom: calc(92px + env(safe-area-inset-bottom)); }
   .view-head h1 { font-size: 2.2rem; }
-  .view:not(#view-dom) { padding-top: var(--sp-8); }
   .shortcuts { gap: var(--sp-4); }
 
   /* pływający pasek na dole */

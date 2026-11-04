@@ -18,6 +18,8 @@
   <link rel="stylesheet" href="css/mood-slider.css">
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/asystent.css">
+  <!-- Mała planeta: wygląd po redesignie (ładowany ostatni) -->
+  <link rel="stylesheet" href="css/planeta.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
 
@@ -43,8 +45,9 @@
 
 <!--
   CAŁA APLIKACJA NA JEDNEJ STRONIE: zakładki Dom · Skrytka · Tracker · Testy · Blog (js/app.js, adres #/zakładka).
-  Telefon: pasek zakładek na dole; roślinka (scena) tylko na zakładce Dom.
-  Komputer: roślinka zawsze w lewej połowie, zakładki zmieniają treść po prawej, pasek pływa na dole.
+  MAŁA PLANETA: roślinka stoi na małej planecie, a każda zakładka to miejsce na niej. Zmiana zakładki obraca planetę (js/home2-scene.js).
+  Telefon: pasek zakładek na dole; scena z planetą na każdej zakładce (poza Dom niższa).
+  Komputer: planeta zawsze w lewej połowie, zakładki zmieniają treść po prawej, pasek pływa na dole.
   „Podlej roślinkę” → pytania (js/checkin.js) wylewają się z przycisku → po ostatnim zwijają się do roślinki i pada deszcz.
 -->
 
@@ -231,12 +234,13 @@
 </main>
 
 <!-- Menu aplikacji: telefon — pasek na dole, tablet/komputer — pływający pasek -->
+<!-- ikony zakładek to miejsca na planecie: roślinka, słoik, kamienie tygodnia, drogowskaz, kiełki innych -->
 <nav class="tabbar" id="tabbar" aria-label="Menu aplikacji">
-  <a class="tab" href="#/dom" data-tab="dom"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg></span><span class="tab-label">Dom</span></a>
-  <a class="tab" href="#/skrytka" data-tab="skrytka"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="3"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v2"/></svg></span><span class="tab-label">Skrytka</span></a>
-  <a class="tab" href="#/tracker" data-tab="tracker"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5h16"/><path d="M5 15.5l4-5 4 3 6-7.5"/></svg></span><span class="tab-label">Tracker</span></a>
-  <a class="tab" href="#/testy" data-tab="testy"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4.5h6"/><path d="M9 12.5l2 2 4-4"/></svg></span><span class="tab-label">Testy</span></a>
-  <a class="tab" href="#/blog" data-tab="blog"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h8A2.5 2.5 0 0 1 17 6.5v5a2.5 2.5 0 0 1-2.5 2.5H9l-4 3v-3.3A2.5 2.5 0 0 1 4 11.5z"/><path d="M17 9h.5A2.5 2.5 0 0 1 20 11.5v8l-3-2.5h-4.5A2.5 2.5 0 0 1 10 14.5"/></svg></span><span class="tab-label">Blog</span></a>
+  <a class="tab" href="#/dom" data-tab="dom"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20.5a11.5 11.5 0 0 1 16 0"/><path d="M12 17.5v-6"/><path d="M12 11.5c0-3 2-4.7 5-4.7 0 3-2 4.7-5 4.7z"/><path d="M12 13.5c0-2.3-1.6-3.7-4-3.7 0 2.3 1.6 3.7 4 3.7z"/></svg></span><span class="tab-label">Dom</span></a>
+  <a class="tab" href="#/skrytka" data-tab="skrytka"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 3.5h7"/><path d="M9.2 3.5v2.3C7.1 6.6 5.6 8.2 5.6 10.6v6.6a2.8 2.8 0 0 0 2.8 2.8h7.2a2.8 2.8 0 0 0 2.8-2.8v-6.6c0-2.4-1.5-4-3.6-4.8V3.5"/><path d="M10.3 13.2h.01M13.8 16h.01M14.2 11.6h.01"/></svg></span><span class="tab-label">Skrytka</span></a>
+  <a class="tab" href="#/tracker" data-tab="tracker"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5h17"/><rect x="5" y="13.5" width="3" height="7" rx="1.5"/><rect x="10.5" y="8.5" width="3" height="12" rx="1.5"/><rect x="16" y="15" width="3" height="5.5" rx="1.5"/></svg></span><span class="tab-label">Tracker</span></a>
+  <a class="tab" href="#/testy" data-tab="testy"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V3.5"/><path d="M12 5h6.3l2.2 2.3-2.2 2.3H12"/><path d="M12 12H5.7l-2.2 2.3 2.2 2.3H12"/></svg></span><span class="tab-label">Testy</span></a>
+  <a class="tab" href="#/blog" data-tab="blog"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 20.5h17"/><path d="M7.5 20.5v-5"/><path d="M7.5 15.5c-1.9 0-3.1-1.1-3.1-2.8 1.9 0 3.1 1.1 3.1 2.8zM7.5 15.5c1.9 0 3.1-1.1 3.1-2.8-1.9 0-3.1 1.1-3.1 2.8z"/><path d="M16 20.5v-7.5"/><path d="M16 13c-2.1 0-3.5-1.3-3.5-3.1 2.1 0 3.5 1.3 3.5 3.1zM16 13c2.1 0 3.5-1.3 3.5-3.1-2.1 0-3.5 1.3-3.5 3.1z"/></svg></span><span class="tab-label">Blog</span></a>
 </nav>
 
 <!-- Pytania codziennego podlewania (treść wstawia js/checkin.js) -->

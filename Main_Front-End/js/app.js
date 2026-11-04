@@ -72,7 +72,7 @@
   });
 
   // ================================================================
-  //  Telefon: kafel wjeżdża na roślinkę. Scena lekko odpływa w górę i przygasa,
+  //  Telefon: kafel wjeżdża na scenę z planetą (na każdej zakładce). Scena lekko odpływa w górę i przygasa,
   //  a górny pasek dostaje tło, gdy kafel do niego dojedzie.
   // ================================================================
   const stage = $('#stage'), top = $('#app-top'), homeSheet = views.dom;
@@ -81,7 +81,7 @@
     ticking = false;
     const phone = window.innerWidth < 1024;
     const sy = window.scrollY;
-    if (phone && current === 'dom') {
+    if (phone) {
       const h = stage.offsetHeight || 1;
       const p = Math.min(1, sy / h);
       stage.style.transform = reduceMotion ? '' : `translate3d(0, ${(-sy * .35).toFixed(1)}px, 0)`;
@@ -92,8 +92,8 @@
     }
     // iPhone: „gumka” przy górnej krawędzi (scrollY < 0) też otwiera pełny ekran
     if (sy < -45 && !isFull && pullY == null && canPull()) setFull(true);
-    const sheetTop = homeSheet.getBoundingClientRect().top;
-    top.classList.toggle('is-solid', phone && current === 'dom' && sheetTop < top.offsetHeight + 4);
+    const sheetTop = (views[current] || homeSheet).getBoundingClientRect().top;
+    top.classList.toggle('is-solid', phone && sheetTop < top.offsetHeight + 4);
   }
   const queue = () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } };
   window.addEventListener('scroll', queue, { passive: true });

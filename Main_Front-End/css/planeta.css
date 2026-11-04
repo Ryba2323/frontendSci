@@ -1,0 +1,90 @@
+/*
+ * MAŁA PLANETA — wygląd aplikacji (aplikacja.html) po redesignie wokół roślinki.
+ * Ładowany OSTATNI (po app.css i asystent.css). Mechanika (pozycje, nakładki, okienko Asystenta) zostaje w starych plikach;
+ * tu jest tożsamość: typografia, rytm, nawigacja jako miejsca na planecie, wejście przez mgłę, pory dnia.
+ *
+ *  • Świat: scena na każdej zakładce to mała planeta z roślinką (js/home2-scene.js). Zakładki = miejsca na planecie:
+ *    Dom — roślinka, Skrytka — słoik ze świetlikami, Tracker — 7 kamieni tygodnia, Testy — drogowskaz, Blog — kiełki innych.
+ *  • Typografia: dużo powietrza, nagłówki i duże liczby szeryfowe (Literata 500), reszta bezszeryfowa. Jeden kolor (motyw).
+ *  • Ruch: zmiana zakładki = obrót planety + mgła, treść wyłania się z mgły.
+ *  • Pora dnia: <html data-pora="rano|dzien|wieczor|noc"> ustawia scena. Nocą napisy na scenie są jasne,
+ *    a SOS świeci jak latarnia (ciepłe światło z koloru serca kwiatu, --plant-core).
+ * Kolory tylko z tokenów (wyjątek: jasny tekst na nocnym niebie, które zawsze jest ciemnogranatowe).
+ */
+
+/* ================================================================
+   Typografia i rytm
+   ================================================================ */
+.view-head h1, .stage-greet h1, .sec h2, .sub-title, .list-head h2, .sos-title, .ci-q, .empty-title,
+.support-title, .insight h3, .post.is-open .post-title {
+  font-family: var(--font-serif); font-weight: 500; letter-spacing: -.012em;
+}
+.score-num strong, .sum-head b, .ms-value, .breath-phase { font-family: var(--font-serif); font-weight: 500; letter-spacing: -.02em; }
+.view-head { padding-top: var(--sp-2); }
+.view-head h1 { margin: 0; font-size: 2.5rem; line-height: 1.05; }
+.view-lead { max-width: 34ch; margin: var(--sp-3) 0 var(--sp-8); font-size: 1rem; line-height: 1.6; }
+.stage-greet h1 { font-size: 1.8rem; line-height: 1.15; }
+.sec h2 { font-size: 1.8rem; line-height: 1.2; }
+.sec + .sec { margin-top: var(--sp-12); padding-top: var(--sp-10); }
+.sub-title, .list-head h2 { font-size: 1.45rem; }
+.sub-title { margin: var(--sp-10) 0 var(--sp-4); }
+.tr-sec + .sub-title, .tr-list + .sub-title, .helps + .sub-title { margin-top: var(--sp-4); padding-top: var(--sp-10); }
+.kicker, .ci-kicker { letter-spacing: .18em; }
+.sos-title { font-size: 1.6rem; }
+.ci-q { font-size: 1.9rem; line-height: 1.2; }
+.lead { line-height: 1.6; }
+.insight h3 { font-size: 1.3rem; }
+.empty-title { font-size: 1.5rem !important; }
+
+/* karta z treścią: większy promień — jak łagodny horyzont nad planetą */
+.sheet { border-radius: 36px 36px 0 0; }
+@media (min-width: 1024px) { .sheet { border-radius: 36px; } }
+
+/* ================================================================
+   Wejście zakładki: treść wyłania się z mgły (razem z obrotem planety)
+   ================================================================ */
+@keyframes fog-in { from { opacity: 0; filter: blur(8px); transform: translateY(12px); } 60% { filter: blur(0); } }
+.view.is-entering { animation: fog-in .9s var(--ease-out) .25s both; }
+
+/* ================================================================
+   Pasek zakładek: ikony to miejsca na planecie, bieżące miejsce ma nad sobą małe „słońce”
+   ================================================================ */
+.tab-ico { position: relative; }
+.tab[aria-current="page"] .tab-ico { background: none; }
+.tab-ico::before {
+  content: ""; position: absolute; left: 50%; top: -4px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%;
+  background: var(--primary); transform: scale(0); transition: transform var(--dur-base) var(--ease-spring);
+}
+.tab[aria-current="page"] .tab-ico::before { transform: none; }
+.tab[aria-current="page"] .tab-label { color: var(--text); }
+@media (min-width: 700px) {
+  .tab[aria-current="page"] { background: none; }
+  .tab-ico::before { top: 2px; }
+}
+
+/* ================================================================
+   Noc: jasne napisy na granatowym niebie, SOS jak latarnia
+   ================================================================ */
+/* data na niebie: pełny kolor tekstu (szary miał za mały kontrast na wieczornym, brzoskwiniowym niebie) */
+.greet-date { color: var(--text); }
+:root[data-pora="noc"] .stage-greet h1 { color: #EEF2F6; }
+/* nocą pod jasnym tekstem miękka, ciemna poświata — gdy obok wyrośnie jasny kwiat, napis nadal jest czytelny */
+:root[data-pora="noc"] .stage-greet > * { text-shadow: 0 0 3px rgb(16, 24, 42), 0 0 14px rgba(16, 24, 42, .9); }
+:root[data-pora="noc"] .greet-date { color: rgba(238, 242, 246, .82); }
+:root[data-pora="noc"] .brand-word.is-light { display: none; }
+:root[data-pora="noc"] .brand-word.is-dark { display: block; }
+/* jasny tryb o prawdziwej nocy: gdy pasek dostaje jasne tło karty, wraca ciemny napis */
+:root.noc-jasny .app-top.is-solid .brand-word.is-light { display: block; }
+:root.noc-jasny .app-top.is-solid .brand-word.is-dark { display: none; }
+
+:root[data-pora="noc"] .sos {
+  border-color: color-mix(in srgb, var(--plant-core) 75%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--plant-core) 16%, transparent), 0 0 26px 4px color-mix(in srgb, var(--plant-core) 34%, transparent);
+  animation: lantern 4.5s ease-in-out infinite;
+}
+:root[data-pora="noc"] .sos svg { fill: color-mix(in srgb, var(--plant-core) 45%, transparent); }
+@keyframes lantern {
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--plant-core) 22%, transparent), 0 0 36px 8px color-mix(in srgb, var(--plant-core) 44%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { :root[data-pora="noc"] .sos { animation: none; } }
+.is-static .sos { animation: none !important; }

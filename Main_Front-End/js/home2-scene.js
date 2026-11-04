@@ -19,6 +19,12 @@
  * Kolory z motywu (css/tokens.css, --plant-*), płynna zmiana po 'themechange'.
  * ?widok=… — bez animacji (zrzuty, podgląd dla zespołu).
  *
+ * MAŁA PLANETA (aplikacja.html, redesign): roślinka stoi na małej, okrągłej planecie, a każda zakładka to miejsce na niej
+ * (Dom — roślinka, Skrytka — słoik ze świetlikami, Tracker — 7 kamieni tygodnia, Testy — drogowskaz, Blog — kiełki innych).
+ * Zmiana zakładki (zdarzenie `tabchange` z js/app.js) obraca planetę, aż wybrane miejsce będzie na górze; w trakcie obrotu
+ * przez scenę przechodzi mgła. Na telefonie poza Dom scena jest niższa (--stage-compact). Niebo idzie za porą dnia
+ * (rano, dzień, wieczór, noc; tryb nocny = zawsze noc) — pora trafia do <html data-pora>, żeby CSS mógł np. zapalić SOS
+ * jak latarnię. Podgląd pory: ?pora=rano|dzien|wieczor|noc. Stuknięcie w miejsce na planecie przełącza zakładkę.
  * API (window.Home2Scene): start({ days, labels, missed }), water(mood?), select(i), isWatered(), debugAdvance(sec)
  *   water(mood) — mood 1–10 z pytań podlewania ustala wielkość dzisiejszego liścia (bez niego: średni liść).
  *   full(t, fast) — 0–1: scena rośnie do pełnego ekranu (telefon; aplikacja pociąga w dół na górze strony).
@@ -78,6 +84,7 @@
       primary: v('--primary'), muted: v('--text-muted'),
       water: mixC(v('--accent-light'), WHITE, .2),
       bokeh: [v('--mist'), v('--mint'), v('--accent-light'), v('--plant-flower')],
+      bg: v('--bg'), mist: v('--mist'),
     };
   }
   const lerpDeep = (a, b, t) => typeof a[0] === 'number' ? mixC(a, b, t) : a.map((x, i) => lerpDeep(x, b[i], t));
@@ -128,8 +135,11 @@
   // ================================================================
   //  Pora dnia (tło sceny)
   // ================================================================
-  const hour = new Date().getHours();
-  const DAYPART = hour >= 5 && hour < 11 ? 'morning' : hour >= 11 && hour < 17 ? 'day' : hour >= 17 && hour < 21 ? 'evening' : 'night';
+  const now0 = new Date();
+  const PORY = { rano: 'morning', dzien: 'day', wieczor: 'evening', noc: 'night' };
+  const poraParam = PORY[new URLSearchParams(location.search).get('pora')];
+  const hour = poraParam ? { morning: 8, day: 13, evening: 19, night: 23 }[poraParam] : now0.getHours() + now0.getMinutes() / 60;
+  const DAYPART = poraParam || (hour >= 5 && hour < 11 ? 'morning' : hour >= 11 && hour < 17 ? 'day' : hour >= 17 && hour < 21 ? 'evening' : 'night');
   const FIREFLY_N = { morning: 7, day: 6, evening: 14, night: 18 }[DAYPART];
 
   // ================================================================
@@ -151,12 +161,29 @@
   const leafPos = [];
   const pointer = { x: 0, y: 0, active: false };
 
+  // Planeta: miejsca zakładek co 72° (kolejność jak w pasku zakładek). worldAng = obrót świata (0 = Dom na górze).
+  const PLACES = ['dom', 'skrytka', 'tracker', 'testy', 'blog'];
+  const STEP = TAU / PLACES.length;
+  let R = 200, U = 1.5;                                         // promień planety (px) i skala miejsc
+  let worldAng = 0, rotFrom = 0, rotTo = 0, rotT = 1, fog = 0;
+  let compact = 0, compactTarget = 0, compactH = 220, firstPlace = true;
+  const placePos = [];                                          // pozycje miejsc na ekranie (do stukania)
+  const TUFTS = Array.from({ length: 30 }, (_, i) => ({ a: (i + .5) / 30 * TAU + srand(-.06, .06), h: srand(2.4, 4.6), tone: srand(.2, .9), flower: rnd() < .22 }))
+    .filter(t => PLACES.every((_, k) => Math.abs(Math.atan2(Math.sin(t.a - k * STEP), Math.cos(t.a - k * STEP))) > .16));
+
   const bokeh = Array.from({ length: 5 }, (_, i) => ({ nx: rand(0, 1), ny: rand(0, 1), r: rand(70, 150), spr: i % 4, a: rand(.16, .28), f: rand(.03, .07), ph: rand(0, TAU) }));
   const floaters = Array.from({ length: 6 }, () => ({ nx: rand(0, 1), ny: rand(0, 1), len: rand(12, 18), tone: rand(0, .6), f: rand(.15, .3), ph: rand(0, TAU), fall: rand(5, 10), rot: rand(0, TAU), spin: rand(-.35, .35), al: rand(.2, .34), wr: rand(.36, .44), curl: rand(-.5, .5) }));
   const fireflies = Array.from({ length: FIREFLY_N }, () => ({ cx: rand(-40, 40), cy: rand(-100, -10), rx: rand(6, 18), ry: rand(4, 12), sp: rand(.25, .55) * (Math.random() < .5 ? -1 : 1), ph: rand(0, TAU), size: rand(18, 28), bs: rand(.9, 1.9), bp: rand(0, TAU) }));
   const stars = Array.from({ length: 30 }, () => ({ nx: rand(0, 1), ny: rand(0, .55), r: rand(.6, 1.5), ph: rand(0, TAU), sp: rand(.6, 1.6) }));
   // Tryb nocny (js/theme.js): zawsze nocne niebo z gwiazdami i księżycem
   const darkMode = () => !!(window.Theme && window.Theme.isDark && window.Theme.isDark());
+  const nightSky = () => darkMode() || DAYPART === 'night';
+  function markPora() {
+    document.documentElement.dataset.pora = nightSky() ? 'noc' : { morning: 'rano', day: 'dzien', evening: 'wieczor' }[DAYPART];
+    // jasny tryb o prawdziwej nocy: niebo ciemne, ale karta z treścią jasna (css/planeta.css)
+    document.documentElement.classList.toggle('noc-jasny', nightSky() && !darkMode());
+  }
+  markPora();
 
   // ================================================================
   //  Roślina (jednostki: pełna wysokość ≈ 100; y w górę ujemne)
@@ -462,15 +489,7 @@
     ctx.fillStyle = sh;
     ctx.beginPath(); ctx.arc(baseX + 2 * S, baseY + 1.4 * S, 16 * S, 0, TAU); ctx.fill();
     ctx.restore();
-    const rx = 20 * S, ry = 4.4 * S, cy = baseY + 1.3 * S;
-    const mg = ctx.createLinearGradient(0, cy - ry, 0, cy + ry);
-    mg.addColorStop(0, rgba(tint(pal.ground, .4)));
-    mg.addColorStop(1, rgba(pal.ground));
-    ctx.fillStyle = mg;
-    ctx.beginPath(); ctx.ellipse(baseX, cy, rx, ry, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(baseX, cy, rx * .96, ry * .9, 0, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+    const cy = baseY + 1.3 * S;
     // kamyki
     for (const p of PEBBLES) {
       ctx.fillStyle = rgba(mixC(pal.ground, pal.stem, .35));
@@ -516,14 +535,26 @@
     }
   }
 
-  // Pora dnia: delikatne światło nad roślinką
+  // ================================================================
+  //  Niebo: pełny gradient zależny od pory dnia (z kolorów motywu), słońce idzie po łuku, nocą księżyc i gwiazdy
+  // ================================================================
+  const NIGHT_TOP = [16, 24, 42], NIGHT_LOW = [34, 48, 74];
   function drawSky() {
-    const part = darkMode() ? 'moon' : DAYPART;
-    if (part === 'moon') {
+    const night = nightSky();
+    let top, low;
+    if (night) { top = NIGHT_TOP; low = mixC(NIGHT_LOW, pal.glow, .12); }
+    else if (DAYPART === 'morning') { top = mixC(pal.bg, [255, 214, 178], .5); low = mixC(pal.bg, pal.glow, .25); }
+    else if (DAYPART === 'evening') { top = mixC(mixC([232, 168, 150], pal.flower, .3), pal.bg, .3); low = mixC(pal.bg, pal.tip, .5); }
+    else { top = mixC(pal.bg, pal.mist, .85); low = mixC(pal.bg, pal.glow, .3); }
+    const g = ctx.createLinearGradient(0, 0, 0, stageH);
+    g.addColorStop(0, rgba(top));
+    g.addColorStop(1, rgba(low));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, CW, Math.max(stageH, CH));
+    if (night) {
       // księżyc w prawym górnym rogu: miękka poświata + tarcza
-      const mx = CW * .8, my = Math.max(70, stageH * .17), r = 15;
+      const mx = CW * .8, my = Math.max(84, stageH * .2), r = 14;
       const glow = ctx.createRadialGradient(mx, my, 0, mx, my, r * 7);
-      glow.addColorStop(0, 'rgba(255,244,214,.28)');
+      glow.addColorStop(0, 'rgba(255,244,214,.26)');
       glow.addColorStop(1, 'rgba(255,244,214,0)');
       ctx.fillStyle = glow; ctx.fillRect(0, 0, CW, stageH);
       ctx.fillStyle = 'rgba(255,246,222,.95)';
@@ -531,34 +562,170 @@
       ctx.fillStyle = 'rgba(214,206,186,.35)';
       ctx.beginPath(); ctx.arc(mx - 4, my - 3, 3.2, 0, TAU); ctx.arc(mx + 5, my + 4, 2.2, 0, TAU); ctx.fill();
       ctx.fillStyle = '#fff';
-      for (const s of stars) {
-        ctx.globalAlpha = .3 + .5 * (.5 + .5 * Math.sin(clock * s.sp + s.ph));
-        ctx.beginPath(); ctx.arc(s.nx * CW, s.ny * stageH, s.r, 0, TAU); ctx.fill();
+      for (const st0 of stars) {
+        ctx.globalAlpha = .3 + .5 * (.5 + .5 * Math.sin(clock * st0.sp + st0.ph));
+        ctx.beginPath(); ctx.arc(st0.nx * CW, st0.ny * stageH, st0.r, 0, TAU); ctx.fill();
       }
       ctx.globalAlpha = 1;
-    } else if (DAYPART === 'morning') {
-      const g = ctx.createRadialGradient(CW * .85, 0, 0, CW * .85, 0, Math.max(CW, stageH) * .9);
-      g.addColorStop(0, 'rgba(255,226,180,.32)');
-      g.addColorStop(1, 'rgba(255,226,180,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, CW, stageH);
-    } else if (DAYPART === 'evening') {
-      const g = ctx.createLinearGradient(0, 0, 0, stageH);
-      g.addColorStop(0, 'rgba(246,184,158,.22)');
-      g.addColorStop(1, 'rgba(246,184,158,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, CW, stageH);
-    } else if (DAYPART === 'night') {
-      const g = ctx.createLinearGradient(0, 0, 0, stageH);
-      g.addColorStop(0, 'rgba(40,52,90,.16)');
-      g.addColorStop(1, 'rgba(40,52,90,0)');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, CW, stageH);
-      ctx.fillStyle = '#fff';
-      for (const s of stars) {
-        ctx.globalAlpha = .35 + .5 * (.5 + .5 * Math.sin(clock * s.sp + s.ph));
-        ctx.beginPath(); ctx.arc(s.nx * CW, s.ny * stageH, s.r, 0, TAU); ctx.fill();
+      return;
+    }
+    // słońce: od 6:00 (lewo, nisko) do 20:00 (prawo, nisko), w południe najwyżej
+    const p = clamp((hour - 6) / 14);
+    const sx = CW * (.4 + .5 * p), sy = Math.max(70, stageH * (.46 - .3 * Math.sin(Math.PI * p)));
+    const warm = DAYPART === 'day' ? [255, 246, 220] : [255, 222, 186];
+    const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(CW, stageH) * .45);
+    halo.addColorStop(0, rgba(warm, .5));
+    halo.addColorStop(1, rgba(warm, 0));
+    ctx.fillStyle = halo; ctx.fillRect(0, 0, CW, stageH);
+    ctx.fillStyle = rgba(tint(warm, .3), .95);
+    ctx.beginPath(); ctx.arc(sx, sy, 13, 0, TAU); ctx.fill();
+  }
+
+  // ================================================================
+  //  Planeta i miejsca zakładek
+  // ================================================================
+  const planetC = () => [baseX, baseY + R];
+  function worldTransform() {
+    const [cx, cy] = planetC();
+    ctx.translate(cx, cy); ctx.rotate(-worldAng); ctx.translate(-cx, -cy);
+  }
+  function drawPlanet() {
+    const [cx, cy] = planetC();
+    const night = nightSky();
+    const atm = ctx.createRadialGradient(cx, cy, R * .92, cx, cy, R * 1.22);
+    atm.addColorStop(0, rgba(night ? tint(pal.glow, .2) : pal.glow, night ? .28 : .6));
+    atm.addColorStop(1, rgba(pal.glow, 0));
+    ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, TAU); ctx.fill();
+    let top = tint(pal.ground, .3), mid = mixC(pal.ground, pal.stem, .22), deep = mixC(pal.ground, pal.stem, .5);
+    if (night) { top = mixC(top, NIGHT_LOW, .35); mid = mixC(mid, NIGHT_TOP, .4); deep = mixC(deep, NIGHT_TOP, .55); }
+    // światło pada z góry świata (od nieba) — gradient liczony po obrocie, więc oświetlona jest zawsze górna strona
+    ctx.save();
+    ctx.translate(cx, cy); ctx.rotate(worldAng); ctx.translate(-cx, -cy);
+    const g = ctx.createRadialGradient(cx - R * .25, cy - R * .8, R * .08, cx, cy, R * 1.02);
+    g.addColorStop(0, rgba(top)); g.addColorStop(.55, rgba(mid)); g.addColorStop(1, rgba(deep));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+    ctx.strokeStyle = rgba(tint(pal.ground, .65), night ? .35 : .8);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, R - 1.5, -Math.PI * .86, -Math.PI * .14); ctx.stroke();
+    ctx.restore();
+    // kępki trawy i drobne kwiatki dookoła
+    ctx.lineCap = 'round';
+    for (const t of TUFTS) {
+      ctx.save();
+      ctx.translate(cx, cy); ctx.rotate(t.a); ctx.translate(0, -R + .5);
+      const sway = Math.sin(clock * 1.4 + t.a * 5) * .18 * motion;
+      ctx.strokeStyle = leafColors(t.tone, .6).mid;
+      ctx.lineWidth = Math.max(1, .5 * U);
+      for (const dx of [-1.6, 0, 1.4]) {
+        ctx.beginPath(); ctx.moveTo(dx * U, 0);
+        ctx.quadraticCurveTo((dx + sway * 2) * U, -t.h * .6 * U, (dx * 1.4 + sway * 4) * U, -t.h * U * (dx ? .8 : 1)); ctx.stroke();
       }
-      ctx.globalAlpha = 1;
+      if (t.flower) {
+        ctx.fillStyle = rgba(pal.tip, .95);
+        ctx.beginPath(); ctx.arc(sway * 4 * U, -t.h * U - 1.2 * U, 1.3 * U, 0, TAU); ctx.fill();
+        ctx.fillStyle = rgba(pal.core);
+        ctx.beginPath(); ctx.arc(sway * 4 * U, -t.h * U - 1.2 * U, .55 * U, 0, TAU); ctx.fill();
+      }
+      ctx.restore();
     }
   }
+
+  // Miejsca: rysowane w jednostkach miejsca (y w górę ujemne, ~40 wysokości), stoją na powierzchni planety
+  const PLACE_DRAW = {
+    // Skrytka: słoik ze świetlikami
+    skrytka() {
+      ctx.fillStyle = rgba(mixC(pal.stem, pal.ground, .25));
+      roundRect(-8, -37, 16, 5, 1.6); ctx.fill();
+      ctx.fillStyle = rgba(tint(pal.glow, .4), .55);
+      ctx.strokeStyle = rgba(pal.stem, .55); ctx.lineWidth = 1.1;
+      roundRect(-11.5, -32, 23, 32, 6); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-7.5, -25); ctx.lineTo(-7.5, -10); ctx.stroke();
+      for (const [x, y, ph] of [[-3, -12, 0], [4, -21, 2], [2, -7, 4], [-4, -24, 5.2]]) {
+        const fx = x + Math.sin(clock * .9 + ph) * 1.6 * motion, fy = y + Math.cos(clock * .7 + ph) * 1.8 * motion;
+        const a = .55 + .45 * Math.sin(clock * 2 + ph);
+        const gl = ctx.createRadialGradient(fx, fy, 0, fx, fy, 5);
+        gl.addColorStop(0, rgba(tint(pal.core, .5), a)); gl.addColorStop(1, rgba(pal.core, 0));
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(fx, fy, 5, 0, TAU); ctx.fill();
+      }
+    },
+    // Tracker: 7 kamieni — wysokość z nastroju danego dnia (dzień bez wpisu = mały kamyk, nic się nie stało)
+    tracker() {
+      for (let i = 0; i < 7; i++) {
+        const v = i === 6 ? todayMood : days[i];
+        const hgt = v == null ? 3.5 : 6 + v * 2.4;
+        const x = -21 + i * 7;
+        ctx.fillStyle = rgba(mixC(mixC(pal.ground, pal.stem, .3 + (v || 0) * .025), NIGHT_TOP, nightSky() ? .25 : 0));
+        roundRect(x - 2.6, -hgt, 5.2, hgt + 1, 2.4); ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,.35)';
+        roundRect(x - 1.8, -hgt + .8, 1.4, Math.max(1, hgt - 3), .7); ctx.fill();
+      }
+    },
+    // Testy: drogowskaz („wkrótce”)
+    testy() {
+      const wood = mixC(pal.core, pal.stem, .55), board = mixC(pal.core, WHITE, .35);
+      ctx.fillStyle = rgba(wood); roundRect(-1.3, -36, 2.6, 37, 1); ctx.fill();
+      ctx.fillStyle = rgba(board); ctx.strokeStyle = rgba(wood); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-2, -34); ctx.lineTo(13, -34); ctx.lineTo(17, -30.5); ctx.lineTo(13, -27); ctx.lineTo(-2, -27); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2, -24); ctx.lineTo(-12, -24); ctx.lineTo(-16, -20.5); ctx.lineTo(-12, -17); ctx.lineTo(2, -17); ctx.closePath(); ctx.fill(); ctx.stroke();
+    },
+    // Blog: kiełki innych osób w różnych kolorach — społeczność
+    blog() {
+      const cols = [pal.l1, pal.flower, pal.l3, pal.core];
+      [[-15, 11], [-5, 16], [5.5, 12.5], [15, 9]].forEach(([x, hgt], i) => {
+        const sw = Math.sin(clock * 1.2 + i * 1.7) * .9 * motion;
+        ctx.strokeStyle = rgba(mixC(pal.stem, pal.ground, .2)); ctx.lineWidth = 1.3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.quadraticCurveTo(x, -hgt * .6, x + sw, -hgt); ctx.stroke();
+        ctx.fillStyle = rgba(cols[i]);
+        ctx.beginPath(); ctx.ellipse(x + sw - 2.6, -hgt + 1, 3, 1.5, -.5, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + sw + 2.6, -hgt - .4, 3, 1.5, .5, 0, TAU); ctx.fill();
+      });
+    },
+  };
+  function drawPlaces() {
+    const [cx, cy] = planetC();
+    placePos.length = 0;
+    PLACES.forEach((id, k) => {
+      if (!PLACE_DRAW[id]) return;
+      const a = k * STEP;
+      ctx.save();
+      ctx.translate(cx, cy); ctx.rotate(a); ctx.translate(0, -R + .5); ctx.scale(U, U);
+      PLACE_DRAW[id]();
+      ctx.restore();
+      const sa = a - worldAng;                                   // kąt na ekranie (po obrocie świata)
+      placePos.push({ id, x: cx + Math.sin(sa) * (R + 18 * U), y: cy - Math.cos(sa) * (R + 18 * U) });
+    });
+  }
+  // Mgła w trakcie obrotu: miękkie pasma przepływają przez scenę (jak w panoramie), najgęstsze w połowie drogi
+  function drawFog() {
+    if (fog < .01) return;
+    const c = nightSky() ? [150, 168, 196] : tint(pal.bg, .3);
+    ctx.fillStyle = rgba(c, fog * .35); ctx.fillRect(0, 0, CW, stageH);
+    for (let i = 0; i < 6; i++) {
+      const dir = i % 2 ? 1 : -1;
+      const x = ((clock * 70 * dir + i * CW * .37) % (CW * 1.6) + CW * 1.6) % (CW * 1.6) - CW * .3;
+      const y = stageH * (.18 + i * .13);
+      const r = CW * .5;
+      ctx.save(); ctx.translate(x, y); ctx.scale(1, .28);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+      g.addColorStop(0, rgba(c, .8 * fog)); g.addColorStop(1, rgba(c, 0));
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // Zmiana zakładki: obrót do jej miejsca (najkrótszą drogą) i wysokość sceny
+  function goPlace(tab) {
+    const k = Math.max(0, PLACES.indexOf(tab));
+    const d = angDiff(worldAng, k * STEP);
+    const instant = firstPlace || reduceMotion || Math.abs(d) < 1e-3;
+    rotFrom = worldAng; rotTo = worldAng + d; rotT = instant ? 1 : 0;
+    if (instant) worldAng = rotTo;
+    compactTarget = tab === 'dom' ? 0 : 1;
+    if (firstPlace || reduceMotion) compact = compactTarget;
+    firstPlace = false;
+  }
+  window.addEventListener('tabchange', e => goPlace(e.detail.tab));
 
   function roundRect(x, y, w, h, r) {
     ctx.beginPath();
@@ -582,6 +749,8 @@
       probe.style.cssText = 'position:absolute;visibility:hidden;height:var(--stage-max)';
       document.body.appendChild(probe);
       stageMax = probe.offsetHeight || Math.min(440, H * .47);
+      probe.style.height = 'var(--stage-compact)';
+      compactH = probe.offsetHeight || 220;
       probe.remove();
     }
     // komputer: szerokość sceny z CSS (połowa strony — mniej, gdy obok jest panel Asystenta)
@@ -598,7 +767,7 @@
   const greetEl = stage.querySelector('.stage-greet');
   function frameLayout() {
     const f = wide ? 0 : st.full;
-    stageH = wide ? H : lerp(lerp(stageMax, stageMax * .86, st.shrink), H, f);
+    stageH = wide ? H : lerp(lerp(lerp(stageMax, stageMax * .86, st.shrink), H, f), compactH, compact);
     if (!wide) stage.style.setProperty('--stage-h', stageH.toFixed(1) + 'px');
     greetEl.style.opacity = ((1 - st.greet) * (1 - f)).toFixed(3);
     const greetBottom = greetEl.offsetTop + greetEl.offsetHeight + 8;
@@ -607,8 +776,13 @@
     else if (closeUp) topReserve = lerp(lerp(Math.min(104, greetBottom), 58, st.greet), 84, f);   // „bliżej”: roślinka sięga nad powitanie (stoi obok niego)
     else topReserve = lerp(greetBottom, 58, st.greet);
     baseX = closeUp && !wide ? CW * lerp(lerp(.57, .5, st.greet), .5, f) : CW / 2;
-    baseY = stageH - (wide ? H * .1 : lerp(22, 150, f));                // w pełnym ekranie nad kaflem i paskiem zakładek
+    // roślinka stoi wyżej niż kiedyś, żeby nad kartą było widać kopułę planety (w pełnym ekranie nad kaflem i paskiem zakładek)
+    baseY = stageH - (wide ? H * .2 : lerp(lerp(66, 150, f), 50, compact));
     S = clamp(Math.min((baseY - topReserve) / (FULL_H + 12), CW * lerp(.9, 1, f) / 78), .9, 7);
+    // planeta: na telefonie szersza niż połowa ekranu (widać krzywiznę), na komputerze cała kula w lewej połowie
+    R = wide ? Math.min(CW * .4, H * .34) : Math.max(CW * .62, 190);
+    U = clamp(R / (wide ? 105 : 140), 1, 2.8);
+    if (!wide && compact > .01) S = lerp(S, Math.max(S, 2.2), compact);   // roślinka nie maleje, gdy scena się obniża
   }
 
   // ================================================================
@@ -649,6 +823,13 @@
       st.full = approach(st.full, fullTarget, fullRate, dt);
     }
     if (reduceMotion) st.full = fullTarget;
+    if (rotT < 1) {
+      rotT = Math.min(1, rotT + dt / 1.3);
+      worldAng = lerp(rotFrom, rotTo, easeInOut(rotT));
+      if (rotT === 1) worldAng = ((rotTo % TAU) + TAU) % TAU;
+    }
+    fog = rotT < 1 ? Math.sin(Math.PI * rotT) : 0;
+    compact = reduceMotion ? compactTarget : approach(compact, compactTarget, 3.2, dt);
     frameLayout();
 
     // najstarszy liść odpada chwilę po wejściu (okno 7 dni przesunęło się o dzień)
@@ -727,32 +908,27 @@
       const span = stageH + 60;
       const fy = (f.ny * span + clock * f.fall * motion) % span - 30;
       const fx = f.nx * CW + Math.sin(clock * f.f + f.ph) * 22 * motion;
-      drawLeaf(fx, fy, f.rot + clock * f.spin * motion, f.len, { wr: f.wr, curl: f.curl, fold: .3, stalk: .1, colors: leafColors(f.tone, .5), flip: clock * .5 * motion + f.ph }, f.al);
+      drawLeaf(fx, fy, f.rot + clock * f.spin * motion, f.len, { wr: f.wr, curl: f.curl, fold: .3, stalk: .1, colors: leafColors(f.tone, .5), flip: clock * .5 * motion + f.ph }, f.al * (nightSky() ? .55 : 1));   // nocą ciszej — jasny listek na granatowym niebie rzuca się w oczy
     }
 
     const h = FULL_H * introStem();
     const P = stemP(h);
     const bloom = introBloom() * lerp(.3, 1, st.awake);
 
+    // świat (planeta, miejsca, roślinka) obraca się razem; niebo i mgła zostają na miejscu
+    ctx.save();
+    worldTransform();
     const gy = baseY - h * .5 * S;
     const glow = ctx.createRadialGradient(baseX, gy, 0, baseX, gy, Math.max(h, 40) * 1.05 * S);
-    glow.addColorStop(0, rgba(pal.glow, .36 + .2 * bloom));
+    glow.addColorStop(0, rgba(pal.glow, .3 + .2 * bloom));
     glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, CW, stageH);
-    // niebo i blask wygaszamy przy dolnej krawędzi sceny — inaczej widać ostrą linię tam, gdzie zaczyna się treść
-    if (!wide) {
-      const fade = ctx.createLinearGradient(0, stageH * .72, 0, stageH);
-      fade.addColorStop(0, 'rgba(0,0,0,0)');
-      fade.addColorStop(1, 'rgba(0,0,0,1)');
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.fillStyle = fade;
-      ctx.fillRect(0, stageH * .72, CW, stageH * .28);
-      ctx.globalCompositeOperation = 'source-over';
-    }
+    ctx.beginPath(); ctx.arc(baseX, gy, Math.max(h, 40) * 1.05 * S, 0, TAU); ctx.fill();
+    drawPlanet();
+    drawPlaces();
 
     drawGround();
-    if (h < 1) return;
+    if (h < 1) { ctx.restore(); drawFog(); return; }
 
     // ---- odnogi dni ----
     leafPos.length = 0;
@@ -1034,6 +1210,8 @@
       ctx.drawImage(fireflySprite, x - size / 2, y - size / 2, size, size);
     }
     ctx.globalAlpha = 1;
+    ctx.restore();
+    drawFog();
   }
 
   function frame(ms) {
@@ -1059,6 +1237,11 @@
   canvas.addEventListener('pointerleave', () => { pointer.active = false; });
   canvas.addEventListener('click', e => {
     const [x, y] = local(e);
+    // stuknięcie w miejsce na planecie (np. słoik obok roślinki na komputerze) przełącza zakładkę
+    const place = placePos.find(q => Math.hypot(q.x - x, q.y - y) < 30 * U && q.y < stageH);
+    const atHome = Math.abs(angDiff(worldAng, 0)) < .05;
+    if (place && (place.id !== 'dom' || !atHome)) { location.hash = `#/${place.id}`; return; }
+    if (!atHome) return;
     let best = -1, bd = 42;
     leafPos.forEach((p, i) => { if (!p) return; const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = i; } });
     wind = Math.min(1.5, wind + .5 * motion);
@@ -1093,6 +1276,7 @@
   }
 
   window.addEventListener('themechange', () => {
+    markPora();
     palFrom = pal;
     palTo = readPalette();
     palT = 0;
