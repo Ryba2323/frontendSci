@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/tokens.css">
   <script src="js/theme.js"></script>
   <style>
-    /* Strona robocza dla zespołu: trzy wersje strony głównej obok siebie, każda w ramce telefonu (aplikacja.html?uklad=…) */
+    /* Strona robocza dla zespołu: cztery wersje strony głównej obok siebie, każda w ramce telefonu (aplikacja.html?uklad=…) */
     *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; font-family: var(--font); color: var(--text); background: var(--bg); }
     header { max-width: 1240px; margin: 0 auto; padding: var(--sp-10) var(--sp-4) var(--sp-6); }
@@ -28,12 +28,16 @@
 </head>
 <body>
   <header>
-    <h1>Strona główna — trzy wersje</h1>
+    <h1>Strona główna — cztery wersje</h1>
     <p>Wszystkie działają naprawdę: można podlać roślinkę, przełączać zakładki i otworzyć Asystenta. Wybierzcie jedną — na niej zbudujemy resztę aplikacji. Na telefonie przesuwaj w bok.</p>
   </header>
   <main class="grid">
     <figure>
-      <figcaption><b>A · Dziś jednym dotknięciem <small style="display:inline;color:var(--primary-dark);font-family:var(--font);font-size:.8rem;font-weight:800">WYBRANA</small></b><small>Nastrój jako 10 dużych przycisków — jedno stuknięcie podlewa roślinkę. Reszta pytań opcjonalnie, pod spodem jedna podpowiedź.</small><a href="aplikacja.html?uklad=a#/dom">Otwórz na pełnym ekranie →</a></figcaption>
+      <figcaption><b>D · Żywa planeta <small style="display:inline;color:var(--primary-dark);font-family:var(--font);font-size:.8rem;font-weight:800">DOMYŚLNA</small></b><small>Treść leży na planecie, roślinka nigdy nie znika. „Podlej roślinkę” i liczba w tym samym miejscu, potem deszcz. Niebo, motyw i ciepłe światło mają osobne zadania.</small><a href="aplikacja.html#/dom">Otwórz na pełnym ekranie →</a></figcaption>
+      <div class="phone"><iframe src="aplikacja.html#/dom" title="Wersja D: Żywa planeta"></iframe></div>
+    </figure>
+    <figure>
+      <figcaption><b>A · Dziś jednym dotknięciem</b><small>Nastrój jako 10 dużych przycisków — jedno stuknięcie podlewa roślinkę. Reszta pytań opcjonalnie, pod spodem jedna podpowiedź.</small><a href="aplikacja.html?uklad=a#/dom">Otwórz na pełnym ekranie →</a></figcaption>
       <div class="phone"><iframe src="aplikacja.html?uklad=a#/dom" title="Wersja A: Dziś jednym dotknięciem"></iframe></div>
     </figure>
     <figure>

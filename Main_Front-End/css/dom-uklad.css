@@ -14,7 +14,7 @@
 
 /* ---------- Przełącznik wersji (tylko podgląd) ---------- */
 .du-switch {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-1); margin: 0 0 var(--sp-8);
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-1); margin: 0 0 var(--sp-8);
   padding: var(--sp-1); border-radius: 18px; background: var(--track);
 }
 .du-switch a {

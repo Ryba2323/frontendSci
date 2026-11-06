@@ -28,6 +28,12 @@
  * API (window.Home2Scene): start({ days, labels, missed }), water(mood?), select(i), isWatered(), debugAdvance(sec)
  *   water(mood) — mood 1–10 z pytań podlewania ustala wielkość dzisiejszego liścia (bez niego: średni liść).
  *   full(t, fast) — 0–1: scena rośnie do pełnego ekranu (telefon; aplikacja pociąga w dół na górze strony).
+ * ŻYWA PLANETA (<html data-uklad="d">, telefon i tablet): cały ekran to jeden świat. Powierzchnia planety ma kolor --ground, tego samego
+ * koloru jest tło treści, więc nie ma karty — treść leży na planecie. Przy przewijaniu scena nie znika, tylko zwija się do paska
+ * (--band-h) z małą, wciąż żywą roślinką. Wszystkie miejsca stoją obok siebie na horyzoncie, roślinka jest widoczna na każdej zakładce.
+ *   nudge() — roślinka reaguje (wiatr, świetliki), np. gdy ktoś stuknie „Podlej roślinkę”.
+ * CISZA (zasada po opiniach użytkowników: „za dużo się dzieje”): na scenie jest roślinka i co najwyżej miejsce bieżącej zakładki.
+ * Bez plam światła, spadających listków, samoczynnych płatków i innych miejsc na horyzoncie. Ruch pojawia się w odpowiedzi na dotyk.
  * <div class="stage" data-blisko> (aplikacja.html) — na telefonie roślinka jest większa („bliżej”), lekko w prawo od powitania,
  * a canvas ma wysokość całego ekranu, żeby scena mogła urosnąć do pełnego ekranu.
  */
@@ -39,6 +45,8 @@
   if (!canvas || !canvas.getContext) { window.Home2Scene = { start() {}, water() {}, select() {}, isWatered: () => false }; return; }
   const ctx = canvas.getContext('2d');
   const closeUp = stage.hasAttribute('data-blisko');
+  const zywa = document.documentElement.dataset.uklad === 'd';   // kierunek „Żywa planeta” (css/zywa.css)
+  const fadeEl = document.getElementById('stage-fade');
 
   const view = new URLSearchParams(location.search).get('widok');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!view;
@@ -84,12 +92,16 @@
       primary: v('--primary'), muted: v('--text-muted'),
       water: mixC(v('--accent-light'), WHITE, .2),
       bokeh: [v('--mist'), v('--mint'), v('--accent-light'), v('--plant-flower')],
-      bg: v('--bg'), mist: v('--mist'),
+      bg: v('--bg'), mist: v('--mist'), accent: v('--accent-light'),
+      // grunt: powierzchnia planety i tło treści to ten sam kolor (zapisywany do --ground, żeby CSS i canvas się nie rozjechały)
+      uiGround: mixC(v('--sheet'), v('--plant-ground'), parseFloat(cs.getPropertyValue('--ground-k')) || .4),
     };
   }
   const lerpDeep = (a, b, t) => typeof a[0] === 'number' ? mixC(a, b, t) : a.map((x, i) => lerpDeep(x, b[i], t));
   function lerpPalette(a, b, t) { const o = {}; for (const k in a) o[k] = lerpDeep(a[k], b[k], t); return o; }
   let pal = readPalette(), palFrom = pal, palTo = pal, palT = 1;
+  const markGround = () => { if (zywa) document.documentElement.style.setProperty('--ground', `rgb(${pal.uiGround.map(c => Math.round(c)).join(',')})`); };
+  markGround();
 
   // Kolory liścia: ton (0 = młody/jasny … 1 = dojrzały/ciemny) i żywość (0 = blady … 1 = soczysty)
   function leafColors(tone, vivid, hue = 0) {
@@ -150,7 +162,7 @@
   let clock = 0, lastMs = performance.now(), wind = 0, lastScroll = window.scrollY;
   let started = false;
 
-  const st = { intro: 0, shrink: 0, greet: 0, labels: 0, awake: 1, full: 0 };
+  const st = { intro: 0, shrink: 0, greet: 0, labels: 0, awake: 1, full: 0, band: 0 };
   let fullTarget = 0, fullRate = 6;
   let days = [], labels = [], missed = [];
   let fallen = null, fallDone = false, twig0 = null;
@@ -166,7 +178,12 @@
   const STEP = TAU / PLACES.length;
   let R = 200, U = 1.5;                                         // promień planety (px) i skala miejsc
   let worldAng = 0, rotFrom = 0, rotTo = 0, rotT = 1, fog = 0;
-  let compact = 0, compactTarget = 0, compactH = 220, firstPlace = true;
+  let compact = 0, compactTarget = 0, compactH = 220, firstPlace = true, curTab = 'dom';
+  // Żywa planeta: na scenie jest roślinka i najwyżej jedno miejsce — bieżącej zakładki, tuż obok niej (pozycja 1); w Domu sama roślinka
+  const SLOT = { dom: 0, skrytka: 1, tracker: 1, testy: 1, blog: 1 };
+  let bandH = 104, worldSlot = 0, arc = 70, bandOn = false, prevTab = null, placeT = 1, bumpAt = -9;
+  const onPlanet = () => zywa && !wide;
+  const placeAng = id => (onPlanet() ? SLOT[id] * arc / R : PLACES.indexOf(id) * STEP);
   const placePos = [];                                          // pozycje miejsc na ekranie (do stukania)
   const TUFTS = Array.from({ length: 30 }, (_, i) => ({ a: (i + .5) / 30 * TAU + srand(-.06, .06), h: srand(2.4, 4.6), tone: srand(.2, .9), flower: rnd() < .22 }))
     .filter(t => PLACES.every((_, k) => Math.abs(Math.atan2(Math.sin(t.a - k * STEP), Math.cos(t.a - k * STEP))) > .16));
@@ -491,7 +508,7 @@
     ctx.restore();
     const cy = baseY + 1.3 * S;
     // kamyki
-    for (const p of PEBBLES) {
+    for (const p of zywa ? [] : PEBBLES) {
       ctx.fillStyle = rgba(mixC(pal.ground, pal.stem, .35));
       ctx.beginPath(); ctx.ellipse(baseX + p.x * S, cy + .4 * S, p.r * S, p.r * .65 * S, 0, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgba(255,255,255,.4)';
@@ -499,7 +516,7 @@
     }
     // trawa
     ctx.lineCap = 'round';
-    for (const g of GRASS) {
+    for (const g of zywa ? GRASS.filter((_, gi) => gi % 3 === 1) : GRASS) {
       const sway = (Math.sin(clock * 1.7 + g.ph) * .25 + Math.sin(clock * 8 + g.ph) * wind * .3) * motion;
       const gx = baseX + g.x * S, gy = cy - .5 * S;
       const tx = gx + (g.lean + sway) * g.h * S, ty = gy - g.h * S * clamp(st.intro * 2);
@@ -541,18 +558,27 @@
   const NIGHT_TOP = [16, 24, 42], NIGHT_LOW = [34, 48, 74];
   function drawSky() {
     const night = nightSky();
-    let top, low;
-    if (night) { top = NIGHT_TOP; low = mixC(NIGHT_LOW, pal.glow, .12); }
+    let top, low, mid = null;
+    if (zywa) {
+      // Żywa planeta: niebo to główne pole koloru — wyraźna pora dnia, odcień od motywu
+      if (night) { top = [13, 21, 46]; low = mixC([40, 56, 98], pal.glow, .1); }
+      else if (DAYPART === 'morning') { top = mixC(pal.accent, [249, 205, 178], .6); low = mixC([255, 233, 200], pal.glow, .2); }
+      else if (DAYPART === 'evening') { top = mixC([52, 46, 96], pal.primary, .12); mid = mixC([196, 112, 128], pal.flower, .2); low = mixC([246, 178, 138], pal.tip, .25); }
+      else { top = mixC(pal.accent, pal.primary, .1); low = tint(mixC(pal.mist, pal.glow, .5), .4); }
+    }
+    else if (night) { top = NIGHT_TOP; low = mixC(NIGHT_LOW, pal.glow, .12); }
     else if (DAYPART === 'morning') { top = mixC(pal.bg, [255, 214, 178], .5); low = mixC(pal.bg, pal.glow, .25); }
     else if (DAYPART === 'evening') { top = mixC(mixC([232, 168, 150], pal.flower, .3), pal.bg, .3); low = mixC(pal.bg, pal.tip, .5); }
     else { top = mixC(pal.bg, pal.mist, .85); low = mixC(pal.bg, pal.glow, .3); }
     const g = ctx.createLinearGradient(0, 0, 0, stageH);
     g.addColorStop(0, rgba(top));
+    if (mid) { g.addColorStop(.3, rgba(mixC(top, mid, .22))); g.addColorStop(.68, rgba(mid)); }
     g.addColorStop(1, rgba(low));
     ctx.fillStyle = g; ctx.fillRect(0, 0, CW, Math.max(stageH, CH));
     if (night) {
       // księżyc w prawym górnym rogu: miękka poświata + tarcza
       const mx = CW * .8, my = Math.max(84, stageH * .2), r = 14;
+      ctx.globalAlpha = 1 - st.band;                             // w zwiniętym pasku księżyc gaśnie, zamiast wystawać zza planety
       const glow = ctx.createRadialGradient(mx, my, 0, mx, my, r * 7);
       glow.addColorStop(0, 'rgba(255,244,214,.26)');
       glow.addColorStop(1, 'rgba(255,244,214,0)');
@@ -562,6 +588,7 @@
       ctx.fillStyle = 'rgba(214,206,186,.35)';
       ctx.beginPath(); ctx.arc(mx - 4, my - 3, 3.2, 0, TAU); ctx.arc(mx + 5, my + 4, 2.2, 0, TAU); ctx.fill();
       ctx.fillStyle = '#fff';
+      ctx.globalAlpha = 1;
       for (const st0 of stars) {
         ctx.globalAlpha = .3 + .5 * (.5 + .5 * Math.sin(clock * st0.sp + st0.ph));
         ctx.beginPath(); ctx.arc(st0.nx * CW, st0.ny * stageH, st0.r, 0, TAU); ctx.fill();
@@ -573,12 +600,16 @@
     const p = clamp((hour - 6) / 14);
     const sx = CW * (.4 + .5 * p), sy = Math.max(70, stageH * (.46 - .3 * Math.sin(Math.PI * p)));
     const warm = DAYPART === 'day' ? [255, 246, 220] : [255, 222, 186];
+    ctx.globalAlpha = 1 - st.band;                               // w pasku słońce gaśnie jak księżyc
     const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(CW, stageH) * .45);
     halo.addColorStop(0, rgba(warm, .5));
     halo.addColorStop(1, rgba(warm, 0));
     ctx.fillStyle = halo; ctx.fillRect(0, 0, CW, stageH);
-    ctx.fillStyle = rgba(tint(warm, .3), .95);
-    ctx.beginPath(); ctx.arc(sx, sy, 13, 0, TAU); ctx.fill();
+    if (!zywa) {
+      ctx.fillStyle = rgba(tint(warm, .3), .95);
+      ctx.beginPath(); ctx.arc(sx, sy, 13, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
   }
 
   // ================================================================
@@ -601,8 +632,16 @@
     // światło pada z góry świata (od nieba) — gradient liczony po obrocie, więc oświetlona jest zawsze górna strona
     ctx.save();
     ctx.translate(cx, cy); ctx.rotate(worldAng); ctx.translate(-cx, -cy);
-    const g = ctx.createRadialGradient(cx - R * .25, cy - R * .8, R * .08, cx, cy, R * 1.02);
-    g.addColorStop(0, rgba(top)); g.addColorStop(.55, rgba(mid)); g.addColorStop(1, rgba(deep));
+    let g;
+    if (onPlanet()) {
+      // łąka na horyzoncie przechodzi w grunt: na dolnej krawędzi sceny to dokładnie kolor tła treści, więc nie ma szwu
+      const rim = darkMode() ? mixC(pal.uiGround, pal.ground, .3) : mixC(pal.ground, pal.uiGround, .12);
+      g = ctx.createLinearGradient(0, baseY, 0, Math.max(baseY + 1, stageH));
+      g.addColorStop(0, rgba(rim)); g.addColorStop(1, rgba(pal.uiGround));
+    } else {
+      g = ctx.createRadialGradient(cx - R * .25, cy - R * .8, R * .08, cx, cy, R * 1.02);
+      g.addColorStop(0, rgba(top)); g.addColorStop(.55, rgba(mid)); g.addColorStop(1, rgba(deep));
+    }
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
     ctx.strokeStyle = rgba(tint(pal.ground, .65), night ? .35 : .8);
     ctx.lineWidth = 2;
@@ -610,7 +649,8 @@
     ctx.restore();
     // kępki trawy i drobne kwiatki dookoła
     ctx.lineCap = 'round';
-    for (const t of TUFTS) {
+    for (let ti = 0; ti < TUFTS.length; ti += onPlanet() ? 4 : 1) {
+      const t = TUFTS[ti];
       ctx.save();
       ctx.translate(cx, cy); ctx.rotate(t.a); ctx.translate(0, -R + .5);
       const sway = Math.sin(clock * 1.4 + t.a * 5) * .18 * motion;
@@ -620,7 +660,7 @@
         ctx.beginPath(); ctx.moveTo(dx * U, 0);
         ctx.quadraticCurveTo((dx + sway * 2) * U, -t.h * .6 * U, (dx * 1.4 + sway * 4) * U, -t.h * U * (dx ? .8 : 1)); ctx.stroke();
       }
-      if (t.flower) {
+      if (t.flower && !onPlanet()) {
         ctx.fillStyle = rgba(pal.tip, .95);
         ctx.beginPath(); ctx.arc(sway * 4 * U, -t.h * U - 1.2 * U, 1.3 * U, 0, TAU); ctx.fill();
         ctx.fillStyle = rgba(pal.core);
@@ -685,14 +725,24 @@
   function drawPlaces() {
     const [cx, cy] = planetC();
     placePos.length = 0;
-    PLACES.forEach((id, k) => {
-      if (!PLACE_DRAW[id]) return;
-      const a = k * STEP;
+    PLACES.forEach(id => {
+      const a = placeAng(id);
+      const sa = a - worldAng;                                   // kąt na ekranie (po obrocie świata)
+      if (!PLACE_DRAW[id]) {
+        // Dom nie ma własnego miejsca: to sama roślinka; stuknięcie w nią z innej zakładki wraca do Domu
+        if (onPlanet()) placePos.push({ id, x: cx + Math.sin(sa) * (R + 40 * S), y: cy - Math.cos(sa) * (R + 40 * S) });
+        return;
+      }
+      // tylko miejsce bieżącej zakładki (przenika się z poprzednim); w zwiniętym pasku zostaje sama roślinka
+      const fade = !onPlanet() ? 1 : (id === curTab ? placeT : id === prevTab ? 1 - placeT : 0) * (1 - st.band);
+      if (fade <= .01) return;
       ctx.save();
-      ctx.translate(cx, cy); ctx.rotate(a); ctx.translate(0, -R + .5); ctx.scale(U, U);
+      ctx.globalAlpha = fade;
+      // bieżące miejsce wyrasta z planety sprężyście
+      const pop = onPlanet() && id === curTab ? lerp(.55, 1, easeOutBack(placeT)) : 1;
+      ctx.translate(cx, cy); ctx.rotate(a); ctx.translate(0, -R + .5); ctx.scale(U * pop, U * pop);
       PLACE_DRAW[id]();
       ctx.restore();
-      const sa = a - worldAng;                                   // kąt na ekranie (po obrocie świata)
       placePos.push({ id, x: cx + Math.sin(sa) * (R + 18 * U), y: cy - Math.cos(sa) * (R + 18 * U) });
     });
   }
@@ -716,11 +766,20 @@
 
   // Zmiana zakładki: obrót do jej miejsca (najkrótszą drogą) i wysokość sceny
   function goPlace(tab) {
-    const k = Math.max(0, PLACES.indexOf(tab));
-    const d = angDiff(worldAng, k * STEP);
-    const instant = firstPlace || reduceMotion || Math.abs(d) < 1e-3;
-    rotFrom = worldAng; rotTo = worldAng + d; rotT = instant ? 1 : 0;
-    if (instant) worldAng = rotTo;
+    if (tab !== curTab) { prevTab = curTab; placeT = firstPlace || reduceMotion ? 1 : 0; }
+    curTab = tab;
+    if (onPlanet()) {
+      const to = SLOT[tab] || 0;
+      const instant = firstPlace || reduceMotion || to === worldSlot;
+      rotFrom = worldSlot; rotTo = to; rotT = instant ? 1 : 0;
+      if (instant) worldSlot = to;
+    } else {
+      const k = Math.max(0, PLACES.indexOf(tab));
+      const d = angDiff(worldAng, k * STEP);
+      const instant = firstPlace || reduceMotion || Math.abs(d) < 1e-3;
+      rotFrom = worldAng; rotTo = worldAng + d; rotT = instant ? 1 : 0;
+      if (instant) worldAng = rotTo;
+    }
     compactTarget = tab === 'dom' ? 0 : 1;
     if (firstPlace || reduceMotion) compact = compactTarget;
     firstPlace = false;
@@ -741,7 +800,9 @@
   function layout() {
     W = window.innerWidth;
     H = window.innerHeight;
+    const wasWide = wide;
     wide = W >= 1024;
+    if (started && wasWide !== wide) { firstPlace = true; worldAng = 0; worldSlot = 0; goPlace(curTab); }
     if (wide) stageMax = H;
     else {
       // --stage-max jest w clamp()/svh — mierzymy rzeczywistą wysokość elementem testowym
@@ -751,6 +812,8 @@
       stageMax = probe.offsetHeight || Math.min(440, H * .47);
       probe.style.height = 'var(--stage-compact)';
       compactH = probe.offsetHeight || 220;
+      probe.style.height = 'var(--band-h, 104px)';
+      bandH = probe.offsetHeight || 104;
       probe.remove();
     }
     // komputer: szerokość sceny z CSS (połowa strony — mniej, gdy obok jest panel Asystenta)
@@ -765,7 +828,38 @@
   }
 
   const greetEl = stage.querySelector('.stage-greet');
+  // Żywa planeta (telefon, tablet): łuk planety kończy się dokładnie na dolnych rogach sceny, a scena zwija się razem z przewijaniem
+  function frameLayoutPlanet() {
+    const f = st.full;
+    const base = lerp(stageMax, compactH, compact);
+    const sy = Math.max(0, window.scrollY);
+    st.band = f > .01 ? 0 : clamp(sy / Math.max(1, base - bandH));
+    const band = st.band;
+    stageH = lerp(Math.max(bandH, base - sy), H, f);
+    stage.style.setProperty('--stage-h', stageH.toFixed(1) + 'px');
+    if (fadeEl) { fadeEl.style.transform = `translate3d(0, ${stageH.toFixed(1)}px, 0)`; fadeEl.style.opacity = clamp(sy / 40).toFixed(2); }
+    const on = band > .92;
+    if (on !== bandOn) { bandOn = on; document.body.classList.toggle('is-band', on); }
+    greetEl.style.opacity = ((1 - st.greet) * (1 - f)).toFixed(3);
+    const greetBottom = greetEl.offsetTop + greetEl.offsetHeight + 8;
+    const wk = clamp(CW / 375, 1, 2);                                  // szerszy ekran: wyższy łuk
+    const drop = lerp(lerp(60, 52, compact), 24, band) * wk;           // wysokość łuku nad dolną krawędzią sceny
+    // na Domu roślinka stoi po prawej, a po lewej zostaje miejsce na powitanie i resztę horyzontu
+    baseX = CW * lerp(lerp(lerp(.5, .5, compact), .46, band), .5, f);
+    const reach = Math.max(baseX, CW - baseX);                         // łuk schodzi do dolnej krawędzi przy dalszym brzegu ekranu
+    R = (drop * drop + reach * reach) / (2 * drop);
+    baseY = stageH - lerp(drop, 150, f);
+    topReserve = lerp(lerp(lerp(Math.min(96, greetBottom), 58, compact), 6, band), 84, f);
+    S = clamp(Math.min((baseY - topReserve) / (FULL_H + 12), CW * lerp(.9, 1, f) / 78), .4, 7);
+    // po podlaniu roślinka lekko się prostuje i wraca (krótki „oddech”)
+    if (motion && clock > bumpAt && clock < bumpAt + 1.1) S *= 1 + .022 * Math.sin((clock - bumpAt) / 1.1 * Math.PI);
+    U = clamp(lerp(lerp(1.05, 1.3, compact), .95, band) * wk, .8, 2.4);
+    arc = clamp(CW * .27, 90, 190);
+    worldAng = worldSlot * (1 - band) * arc / R;                       // zwinięty pasek: roślinka wraca na środek
+  }
+
   function frameLayout() {
+    if (onPlanet()) { frameLayoutPlanet(); return; }
     const f = wide ? 0 : st.full;
     stageH = wide ? H : lerp(lerp(lerp(stageMax, stageMax * .86, st.shrink), H, f), compactH, compact);
     if (!wide) stage.style.setProperty('--stage-h', stageH.toFixed(1) + 'px');
@@ -801,12 +895,12 @@
     lastScroll = sy;
     if (motion && dy > 0) wind = Math.min(1.5, wind + dy * .0028);
 
-    const tShrink = wide ? 0 : clamp(sy / 260);
+    const tShrink = wide || onPlanet() ? 0 : clamp(sy / 260);
     const tGreet = wide ? 0 : clamp((sy - 20) / 140);
     const weekVis = inView(document.getElementById('sec-week'));
     const quoteVis = inView(document.getElementById('sec-quote'));
-    if (weekVis && !weekIn) waveAt = clock;                              // fala przez liście dni
-    if (quoteVis && !quoteIn && st.intro >= 1) { bloomFlashAt = clock; petalBurst(6); }
+    if (!zywa && weekVis && !weekIn) waveAt = clock;                              // fala przez liście dni
+    if (!zywa && quoteVis && !quoteIn && st.intro >= 1) { bloomFlashAt = clock; petalBurst(6); }
     weekIn = weekVis; quoteIn = quoteVis;
 
     // kwiat: otwarty przy >= 3 podlaniach w ostatnich 7 dniach (dzisiejsze też się liczy)
@@ -824,15 +918,20 @@
     }
     if (reduceMotion) st.full = fullTarget;
     if (rotT < 1) {
-      rotT = Math.min(1, rotT + dt / 1.3);
-      worldAng = lerp(rotFrom, rotTo, easeInOut(rotT));
-      if (rotT === 1) worldAng = ((rotTo % TAU) + TAU) % TAU;
+      rotT = Math.min(1, rotT + dt / (onPlanet() ? .9 : 1.3));
+      if (onPlanet()) worldSlot = lerp(rotFrom, rotTo, easeInOut(rotT));
+      else {
+        worldAng = lerp(rotFrom, rotTo, easeInOut(rotT));
+        if (rotT === 1) worldAng = ((rotTo % TAU) + TAU) % TAU;
+      }
     }
-    fog = rotT < 1 ? Math.sin(Math.PI * rotT) : 0;
+    fog = rotT < 1 ? Math.sin(Math.PI * rotT) * (zywa ? .25 : 1) : 0;
+    placeT = Math.min(1, placeT + dt / .5);
     compact = reduceMotion ? compactTarget : approach(compact, compactTarget, 3.2, dt);
     frameLayout();
 
     // najstarszy liść odpada chwilę po wejściu (okno 7 dni przesunęło się o dzień)
+    if (zywa) fallDone = true;                                           // bez opadającego liścia przy każdym wejściu
     if (!fallDone && motion && st.intro >= 1 && twig0) {
       fallDone = true;
       fallen = { x: twig0.x, y: twig0.y, ang: twig0.ang, len: twig0.len, vx: twig0.side * 14, vy: -6, rot: 0, t0: clock, ph: rand(0, TAU) };
@@ -852,6 +951,7 @@
     if (palT < 1) {
       palT = Math.min(1, palT + dt / 1.1);
       pal = lerpPalette(palFrom, palTo, easeInOut(palT));
+      markGround();
       paintBokeh();
     }
 
@@ -874,7 +974,7 @@
     }
 
     // płatki: co jakiś czas pojedynczy, przy wietrze częściej
-    if (motion && st.intro >= 1 && Math.random() < dt * (.18 + wind * .5) && petals.length < 10) petalBurst(1);
+    if (!zywa && motion && st.intro >= 1 && Math.random() < dt * (.18 + wind * .5) && petals.length < 10) petalBurst(1);
     for (let i = petals.length - 1; i >= 0; i--) {
       const p = petals[i];
       p.life += dt; p.vy += 6 * dt; p.vx += Math.sin(clock * 1.2 + p.seed) * 10 * dt + wind * 12 * dt;
@@ -897,14 +997,14 @@
   function draw() {
     ctx.clearRect(0, 0, CW, CH);
     drawSky();
-    for (const o of bokeh) {
+    for (const o of zywa ? [] : bokeh) {
       const bx = o.nx * CW + Math.sin(clock * o.f + o.ph) * 30 * motion;
       const by = o.ny * stageH + Math.cos(clock * o.f * 1.3 + o.ph) * 20 * motion;
       ctx.globalAlpha = o.a;
       ctx.drawImage(bokehSprites[o.spr], bx - o.r, by - o.r, o.r * 2, o.r * 2);
     }
     ctx.globalAlpha = 1;
-    for (const f of floaters) {
+    for (const f of zywa ? [] : floaters) {
       const span = stageH + 60;
       const fy = (f.ny * span + clock * f.fall * motion) % span - 30;
       const fx = f.nx * CW + Math.sin(clock * f.f + f.ph) * 22 * motion;
@@ -970,7 +1070,7 @@
       ctx.lineWidth = Math.max(1, .8 * S);
       ctx.beginPath(); ctx.moveTo(mx, my); ctx.quadraticCurveTo(lerp(tw.cx, tw.ex, .5), lerp(tw.cy, tw.ey, .5), tw.ex, tw.ey); ctx.stroke();
       // drobne listki po drodze
-      for (const x of tw.L.extra) {
+      for (const x of zywa ? [] : tw.L.extra) {
         const px = qx(tw.sx, tw.cx, tw.ex, x.f), py = qx(tw.sy, tw.cy, tw.ey, x.f);
         const tx = qx(tw.sx, tw.cx, tw.ex, x.f + .05) - px, ty = qx(tw.sy, tw.cy, tw.ey, x.f + .05) - py;
         const a0 = Math.atan2(ty, tx) + x.side * .95;
@@ -983,6 +1083,7 @@
     const wet = clamp(1 - (clock - wetAt) / 7) * (clock >= wetAt ? 1 : 0);
     const stemLeaves = behind => STEM_LEAVES.forEach((l, idx) => {
       if (!!l.behind !== behind) return;
+      if (zywa && l.t > .3 && l.t < .75) return;                         // liście dni mają być czytelne: bez drobnych listków między nimi
       const e = introLeaf(idx);
       if (e <= 0) return;
       const s = grown(e);
@@ -1055,7 +1156,7 @@
         // dzień bez podlania: mały, blady, zwinięty pąk — „śpi”, nie więdnie
         const a = angTip - .25;
         drawLeaf(tw.ex, tw.ey, a, 6.5 * S * tw.k * (selK ? 1.15 : 1), { wr: .3, curl: .5, fold: .65, stalk: .25, shape: 'lance', colors: leafColors(.15, 0) });
-        if (motion) {
+        if (motion && !zywa) {
           // trzy malutkie kropki unoszące się nad pąkiem (sen)
           for (let z = 0; z < 3; z++) {
             const ph = (clock * .45 + z / 3 + tw.i * .17) % 1;
@@ -1087,12 +1188,12 @@
       }
 
       // podpis dnia (zaznaczony: dzień i wynik w dymku) — rysowany po wszystkich liściach
-      const lab = tw.i === sel ? 1 : st.labels;
+      const lab = tw.i === sel ? 1 - st.band : zywa ? 0 : st.labels;
       if (lab > .02) {
         const selected = tw.i === sel;
         const reach = (tw.isToday && !tw.watered) || tw.off ? 12 * S : dayLeafLen(tw) + 10;
         const text = !selected ? labels[tw.i]
-          : tw.off ? `${labels[tw.i]} · bez podlania`
+          : tw.off ? `${labels[tw.i]} · odpoczynek`
           : tw.m == null ? `${labels[tw.i]} · ${tw.watered ? 'podlane' : 'czeka'}` : `${labels[tw.i]} · ${tw.m}/10`;
         tags.push({ x: tw.ex + Math.cos(angTip) * reach, y: tw.ey + Math.sin(angTip) * reach, text, selected, lab });
       }
@@ -1104,7 +1205,7 @@
     const placed = [];
     tags.sort((a, b) => a.selected - b.selected || a.y - b.y);
     for (const t of tags) {
-      ctx.font = `${t.selected ? 800 : 700} ${t.selected ? 12 : 10.5}px "Plus Jakarta Sans", system-ui, sans-serif`;
+      ctx.font = `${t.selected ? (zywa ? 600 : 800) : 700} ${t.selected ? 12 : 10.5}px ${zywa ? '"Instrument Sans"' : '"Plus Jakarta Sans"'}, system-ui, sans-serif`;
       const bw = ctx.measureText(t.text).width + (t.selected ? 16 : 10), bh = t.selected ? 22 : 16;
       let px = clamp(t.x, bw / 2 + 4, CW - bw / 2 - 4), py = clamp(t.y, 12, stageH - 12);
       for (let guard = 0; guard < 6; guard++) {
@@ -1196,7 +1297,9 @@
 
     // ---- świetliki ----
     const flare = clamp(1 - (clock - flareAt) / 1.8);
-    for (const f of fireflies) {
+    const fireflyN = zywa ? (nightSky() ? 5 : 2) : fireflies.length;
+    for (let fi = 0; fi < fireflyN; fi++) {
+      const f = fireflies[fi];
       const th = clock * f.sp * motion + f.ph;
       const ox = lerp(f.cx, f.cx * .5, bloom * .5), oy = lerp(f.cy, -h - 4 + f.cy * .2, bloom * .3);
       let x = baseX + (ox + Math.cos(th) * f.rx) * S, y = baseY + (oy + Math.sin(th * 1.3) * f.ry) * S;
@@ -1205,7 +1308,7 @@
         if (dd < 150) { const kk = (1 - dd / 150) * .35; x += dx * kk; y += dy * kk; }
       }
       const blink = .35 + .65 * Math.pow(.5 + .5 * Math.sin(clock * f.bs + f.bp), 2);
-      const size = f.size * (1 + flare * .6);
+      const size = f.size * (1 + flare * .6) * lerp(1, .42, st.band);
       ctx.globalAlpha = st.intro * Math.min(1, blink + flare * .6);
       ctx.drawImage(fireflySprite, x - size / 2, y - size / 2, size, size);
     }
@@ -1237,6 +1340,8 @@
   canvas.addEventListener('pointerleave', () => { pointer.active = false; });
   canvas.addEventListener('click', e => {
     const [x, y] = local(e);
+    // zwinięty pasek: stuknięcie w małą roślinkę wraca na górę, do dużej
+    if (onPlanet() && st.band > .6) { window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); return; }
     // stuknięcie w miejsce na planecie (np. słoik obok roślinki na komputerze) przełącza zakładkę
     const place = placePos.find(q => Math.hypot(q.x - x, q.y - y) < 30 * U && q.y < stageH);
     const atHome = Math.abs(angDiff(worldAng, 0)) < .05;
@@ -1245,6 +1350,7 @@
     let best = -1, bd = 42;
     leafPos.forEach((p, i) => { if (!p) return; const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = i; } });
     wind = Math.min(1.5, wind + .5 * motion);
+    if (zywa && motion && st.intro >= 1) flareAt = clock;
     if (best >= 0) {
       select(best);
       window.dispatchEvent(new CustomEvent('dayselect', { detail: { index: best, from: 'plant' } }));
@@ -1270,6 +1376,7 @@
     wind = Math.min(1.5, wind + 1 * motion);
     flareAt = clock + .5;
     pulseAt = clock + .6;
+    bumpAt = clock + .5;
     wetAt = clock + .6;
     if (wateredAt == null) wateredAt = clock + 1;
     if (reduceMotion) { drops.length = 0; wateredAt = clock; wetAt = clock; }
@@ -1280,7 +1387,7 @@
     palFrom = pal;
     palTo = readPalette();
     palT = 0;
-    if (reduceMotion) { pal = palTo; palT = 1; paintBokeh(); }
+    if (reduceMotion) { pal = palTo; palT = 1; markGround(); paintBokeh(); }
     wind = Math.min(1.5, wind + .6 * motion);
   });
   let resizeTimer;
@@ -1304,8 +1411,14 @@
     if (!fast && fullTarget === 1 && was < 1) { wind = Math.min(1.5, wind + .9 * motion); if (motion) petalBurst(5); }
   }
 
+  // Reakcja na dotyk (np. „Podlej roślinkę”): liście szumią, świetliki rozbłyskują
+  function nudge() { wind = Math.min(1.5, wind + .7 * motion); flareAt = clock; }
+
   window.Home2Scene = {
     full,
+    nudge,
+    // Gdzie jest dzisiejszy pąk albo liść (współrzędne ekranu): tam leci kropla z wybranej liczby
+    budPos() { const p = leafPos[6], r = canvas.getBoundingClientRect(); return p ? { x: p.x + r.left, y: p.y + r.top } : null; },
     start(opts) {
       days = opts.days;
       labels = opts.labels;

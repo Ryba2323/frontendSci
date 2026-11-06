@@ -1,0 +1,392 @@
+/*
+ * ŻYWA PLANETA — wygląd aplikacji na telefonie i tablecie (domyślny, <html data-uklad="d">). Ładowany ostatni.
+ * Poprzednie wersje zostają do podglądu: ?uklad=a|b|c.
+ *
+ * Zasady:
+ *  • Jeden świat, bez karty: powierzchnia planety (canvas) i tło treści to ten sam kolor --ground, więc treść leży na planecie.
+ *    Kolor --ground zapisuje js/home2-scene.js (z --sheet, --plant-ground i --ground-k); niżej jest tylko wartość na pierwszą klatkę.
+ *  • Roślinka nie znika: przy przewijaniu scena zwija się do paska (--band-h) z małą, żywą roślinką.
+ *  • Kolor ma trzy zadania: NIEBO = pora dnia · MOTYW = to, co robisz i co rośnie (--primary, liście) ·
+ *    CIEPŁE ŚWIATŁO = wsparcie i dobre chwile (--plant-core: SOS, pomoc przy niskim nastroju, świetliki, serce kwiatu).
+ *    Kategorie (--cat-*) dalej tylko w Trackerze.
+ *  • Pierwszy ekran Domu mieści się bez przewijania: scena + stały panel.
+ *  • Cisza: na pierwszym ekranie są trzy rzeczy (roślinka, tydzień, „Podlej roślinkę”) plus logo, Asystent i SOS w pasku. Nic więcej nie dodawaj.
+ * Tokeny jak w całej aplikacji: --sp-*, --dur-*, kolory motywu. W React Native: --ground do konfiguracji NativeWind, scena w Skii.
+ */
+:root[data-uklad="d"] {
+  --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --ground-k: .4;
+  --ground: color-mix(in srgb, var(--plant-ground) 40%, var(--sheet));
+  /* Trzy poziomy tekstu: --text (tytuły) · --text-body (to, co się czyta) · --text-muted / --text-soft (podpisy, daty).
+     Karty (--surface) i linie (--line) muszą wyraźnie odcinać się od gruntu; tym steruje ten blok, nie pojedyncze ekrany. */
+  --text: #16222A;
+  --text-body: #2B3942;
+  --text-muted: #42525B;
+  --text-soft: #4A5A63;
+  --line: color-mix(in srgb, var(--text) 15%, transparent);
+  --track: color-mix(in srgb, var(--primary) 20%, transparent);
+  --tab-h: calc(74px + env(safe-area-inset-bottom));
+  --dom-panel: 164px;
+  --dom-peek: var(--sp-2);
+  --band-h: calc(env(safe-area-inset-top) + 104px);
+  --stage-compact: clamp(190px, 30vh, 250px);
+  --tap: 44px;
+  /* Forma: miękka, ale nie pigułka i nie kwadrat. Głębia z cieni zamiast ramek. */
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 30px;
+  --e1: 0 1px 2px rgba(16, 44, 48, .05), 0 12px 28px -16px rgba(16, 44, 48, .24);
+  --e2: 0 2px 6px rgba(16, 44, 48, .06), 0 24px 48px -20px rgba(16, 44, 48, .38);
+  /* Sprężyny (mała i wyraźna): reakcja na dotyk i wejścia elementów. Czasy zostają trzy: --dur-fast, --dur-base, --dur-slow. */
+  --spring: linear(0, .009, .035 2.1%, .141 4.4%, .723 12.9%, .938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, .991, .977 51%, .974 53.8%, .975 57.1%, .997 69.8%, 1.003 76.9%, 1);
+  --spring-soft: linear(0, .133 5.2%, .453 11.4%, .812 18.6%, 1.002 24.4%, 1.082 29.4%, 1.109 34.3%, 1.088 40.6%, 1.012 56%, .993 67.2%, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-uklad="d"]:not([data-mode="light"]) { --ground-k: .04; --ground: color-mix(in srgb, var(--plant-ground) 4%, var(--sheet)); --text: #F2F7F8; --text-body: #DBE6E9; --text-muted: #B9C9CE; --text-soft: #A8B9BE; --surface: #263C44; --line: color-mix(in srgb, var(--text) 16%, transparent); --track: color-mix(in srgb, var(--text) 16%, transparent); --e1: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 28px -16px rgba(0, 0, 0, .7); --e2: inset 0 1px 0 rgba(255, 255, 255, .08), 0 24px 48px -18px rgba(0, 0, 0, .8); }
+}
+:root[data-uklad="d"][data-mode="dark"] { --ground-k: .04; --ground: color-mix(in srgb, var(--plant-ground) 4%, var(--sheet)); --text: #F2F7F8; --text-body: #DBE6E9; --text-muted: #B9C9CE; --text-soft: #A8B9BE; --surface: #263C44; --line: color-mix(in srgb, var(--text) 16%, transparent); --track: color-mix(in srgb, var(--text) 16%, transparent); --e1: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 28px -16px rgba(0, 0, 0, .7); --e2: inset 0 1px 0 rgba(255, 255, 255, .08), 0 24px 48px -18px rgba(0, 0, 0, .8); }
+
+@media (max-width: 1023px) {
+  :root[data-uklad="d"] { --stage-max: calc(100vh - var(--tab-h) - var(--dom-panel) - var(--dom-peek)); }
+  @supports (height: 1svh) {
+    :root[data-uklad="d"] { --stage-max: calc(100svh - var(--tab-h) - var(--dom-panel) - var(--dom-peek)); --stage-compact: clamp(190px, 30svh, 250px); }
+  }
+  :root[data-uklad="d"], :root[data-uklad="d"] body { background: var(--ground); }
+  :root[data-uklad="d"] body::before, :root[data-uklad="d"] body::after { display: none; }
+
+  /* ---------- Świat: scena nad treścią, treść bez karty ---------- */
+  :root[data-uklad="d"] .stage { z-index: 3; will-change: auto; }
+  :root[data-uklad="d"] body.plant-full .stage { z-index: 0; }
+  :root[data-uklad="d"] .content { padding-top: var(--stage-max); }
+  :root[data-uklad="d"] body:not([data-tab="dom"]) .content { padding-top: var(--stage-compact); }
+  :root[data-uklad="d"] .sheet {
+    background: none; box-shadow: none; border-radius: 0; animation: none;
+    padding: var(--sp-5) var(--sp-5) var(--sp-16);
+  }
+  :root[data-uklad="d"] .view { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+  :root[data-uklad="d"] #view-dom { padding-top: 0; }
+
+  /* treść łagodnie chowa się pod zwiniętą sceną (przesuwa to js/home2-scene.js) */
+  :root[data-uklad="d"] .stage-fade {
+    position: fixed; z-index: 3; left: 0; right: 0; top: 0; height: var(--sp-12); opacity: 0; pointer-events: none;
+    background: linear-gradient(var(--ground) 35%, color-mix(in srgb, var(--ground) 0%, transparent));
+    will-change: transform;
+  }
+  :root[data-uklad="d"] body.plant-full .stage-fade { display: none; }
+
+  /* ---------- Górny pasek na niebie ---------- */
+  /* przez pusty środek paska można stuknąć małą roślinkę (powrót na górę) */
+  :root[data-uklad="d"] .app-top { pointer-events: none; }
+  :root[data-uklad="d"] .app-top > * { pointer-events: auto; }
+  /* fokus i przewijanie do elementu nie chowają go pod zwiniętą sceną ani pod paskiem zakładek */
+  :root[data-uklad="d"] { scroll-padding-top: calc(var(--band-h) + var(--sp-4)); scroll-padding-bottom: calc(var(--tab-h) + var(--sp-4)); }
+  /* w pasku tylko logo, Asystent i SOS; kolor i pełny ekran są na końcu Domu (.zy-foot-links) */
+  :root[data-uklad="d"] .color-btn { display: none; }
+  :root[data-uklad="d"] .sos { background: color-mix(in srgb, var(--sheet) 92%, transparent); }
+
+  /* przycisk powiększania widać tylko w pełnym ekranie: służy do wyjścia */
+  :root[data-uklad="d"] .plant-zoom { position: fixed; z-index: 16; visibility: hidden; right: var(--sp-4); left: auto; bottom: auto; top: calc(env(safe-area-inset-top) + 68px); }
+  :root[data-uklad="d"] body.plant-full .plant-zoom { visibility: visible; }
+
+  /* ---------- Asystent mieszka w górnym pasku: nie pływa, nie zasłania tekstu, jest na każdej zakładce ---------- */
+  :root[data-uklad="d"] .as-fab, :root[data-uklad="d"] body[data-tab="blog"] .as-fab {
+    top: calc(env(safe-area-inset-top) + var(--sp-4)); bottom: auto; right: calc(var(--sp-4) + 86px); width: 44px; height: 44px; top: calc(env(safe-area-inset-top) + var(--sp-3));
+  }
+  :root[data-uklad="d"] .as-fab { border-radius: var(--radius-sm); background: var(--surface); }
+  :root[data-uklad="d"] .as-fab-peek { width: 34px; top: 6px; margin-left: -17px; animation: none; }
+
+  /* ---------- Dom: stały panel pod roślinką ---------- */
+  :root[data-uklad="d"] #scroll-hint, :root[data-uklad="d"] #sec-water, :root[data-uklad="d"] .sec-short,
+  :root[data-uklad="d"] #days, :root[data-uklad="d"] #day-detail, :root[data-uklad="d"] #meter { display: none; }
+  :root[data-uklad="d"] #view-dom { padding-left: var(--sp-5); padding-right: var(--sp-5); }
+  /* kolejna sekcja zaczyna się dopiero pod paskiem zakładek: na pierwszym ekranie nic przez niego nie prześwituje */
+  :root[data-uklad="d"] .zy-next { margin-top: var(--tab-h); padding-top: var(--sp-5); border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent); }
+  :root[data-uklad="d"] .sec + .sec { border-top-color: color-mix(in srgb, var(--text) 12%, transparent); }
+}
+
+/* Panel: każdy stan ma tę samą wysokość, więc nic nie skacze, a deszcz na roślince jest widoczny */
+.zy-panel { position: relative; height: var(--dom-panel); margin-top: var(--sp-2); }
+.zy-face {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: var(--sp-3);
+  visibility: hidden; opacity: 0; transform: translateY(var(--sp-2));
+  transition: opacity var(--dur-fast) ease, transform var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-fast);
+}
+.zy-panel[data-state="idle"] .zy-f-main, .zy-panel[data-state="done"] .zy-f-main,
+.zy-panel[data-state="choose"] .zy-f-choose, .zy-panel[data-state="low"] .zy-f-low {
+  visibility: visible; opacity: 1; transform: none;
+  transition: opacity var(--dur-base) ease, transform var(--dur-base) var(--ease-out), visibility 0s;
+}
+
+/* Tydzień jako jedna gałązka: wspólna łodyga, a na niej liście. Lepszy dzień = większy liść; odpoczynek = mały pąk (bez żadnego „braku") */
+.zy-week { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); }
+.zy-week::before {
+  content: ""; position: absolute; left: 7%; right: 7%; top: 38px; height: 2px; border-radius: 2px;
+  background: color-mix(in srgb, var(--plant-stem) 70%, transparent);
+}
+.zy-day {
+  position: relative; min-height: 62px; min-width: var(--tap); padding: 0; display: block;
+  border: 0; border-radius: 14px; background: none; font: inherit; color: var(--text-muted); cursor: pointer;
+}
+.zy-day i { position: absolute; left: 50%; top: 4px; width: 34px; height: 34px; margin-left: -9px; }
+.zy-day svg { display: block; width: 100%; height: 100%; overflow: visible; transform-origin: 18% 88%; transform: scale(calc(.5 + var(--v) * .058)); transition: transform var(--dur-base) var(--ease-spring); }
+.zy-l-a { fill: color-mix(in srgb, var(--plant-leaf-2) 70%, var(--primary)); }
+.zy-l-b { fill: var(--primary); }
+.zy-l-v { fill: none; stroke: var(--ground); stroke-width: 1; stroke-linecap: round; opacity: .75; }
+.zy-day span { position: absolute; left: 0; right: 0; top: 44px; text-align: center; font-size: .78rem; font-weight: 500; line-height: 1.2; }
+/* odpoczynek: mały pąk na gałązce */
+.zy-day.is-rest svg { display: none; }
+.zy-day.is-rest i { width: 10px; height: 10px; top: 29px; margin-left: -5px; border-radius: 50%; transform: none; background: var(--plant-stem); opacity: .55; }
+/* dziś: pąk czeka na końcu gałązki, po podlaniu rozwija się w liść */
+.zy-day.is-today { color: var(--text); }
+.zy-day.is-today span { font-weight: 700; }
+.zy-day.is-today:not(.is-watered) svg { display: none; }
+.zy-day.is-today:not(.is-watered) i { width: 16px; height: 16px; top: 26px; margin-left: -8px; border-radius: 50%; transform: none; background: var(--ground); border: 2px solid var(--primary); }
+.zy-day.is-watered svg { animation: zy-sprout var(--dur-slow) var(--ease-spring) both; }
+@keyframes zy-sprout { from { transform: scale(.2); } }
+/* wybrany dzień: pogrubiony podpis z kreską, bez dodatkowego tła */
+.zy-day[aria-pressed="true"] { color: var(--text); }
+.zy-day[aria-pressed="true"] span { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.zy-day:focus-visible { outline: 3px solid var(--ring); outline-offset: 1px; }
+
+/* Główna akcja: jedyny pełny kolor na ekranie */
+.zy-water {
+  width: 100%; height: 58px; flex: none; display: flex; align-items: center; justify-content: center; gap: var(--sp-3); padding: 0 var(--sp-5);
+  border: 0; border-radius: var(--radius-md); color: #fff;
+  /* światło z góry i dół ciemniejszy: przycisk ma bryłę, a tekst zachowuje kontrast */
+  background: linear-gradient(transparent, rgba(0, 0, 0, .16)), var(--primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 16px 30px -16px color-mix(in srgb, var(--primary) 85%, #000);
+  font: inherit; font-size: 1.08rem; font-weight: 600; cursor: pointer;
+  transition: transform var(--dur-base) var(--spring), box-shadow var(--dur-fast);
+}
+@media (hover: hover) { .zy-water:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 20px 34px -16px color-mix(in srgb, var(--primary) 85%, #000); } }
+.zy-water:active { transform: scale(.96); transition-duration: .1s; }
+.zy-water:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+.zy-drop { display: grid; place-items: center; width: 26px; height: 26px; }
+.zy-drop svg { width: 100%; height: 100%; fill: rgba(255, 255, 255, .24); }
+
+.zy-done { display: none; align-items: center; gap: var(--sp-3); height: 58px; flex: none; padding: 0 var(--sp-1) 0 var(--sp-3); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--e1); }
+.zy-panel[data-state="done"] .zy-water { display: none; }
+.zy-panel[data-state="done"] .zy-done { display: flex; animation: zy-rise var(--dur-base) var(--ease-out) backwards; }
+.zy-panel[data-state="done"] .zy-done-ico path { stroke-dasharray: 24; animation: zy-draw var(--dur-base) var(--ease-out) .15s backwards; }
+@keyframes zy-draw { from { stroke-dashoffset: 24; } }
+@keyframes zy-rise { from { opacity: 0; transform: translateY(10px); } }
+.zy-done b { flex: 1; min-width: 0; font-size: .98rem; line-height: 1.25; }
+.zy-done-ico { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; }
+.zy-done-ico svg { width: 18px; height: 18px; }
+.zy-change {
+  flex: none; min-height: var(--tap); padding: 0 var(--sp-3); border: 0; border-radius: var(--radius-sm); background: none;
+  font: inherit; font-size: .92rem; font-weight: 600; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.zy-change:focus-visible, .zy-x:focus-visible, .zy-help:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* Wybór nastroju: w miejscu przycisku, roślinkę cały czas widać */
+.zy-q { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: var(--tap); }
+.zy-q h2 { margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: 1.45rem; line-height: 1.2; letter-spacing: -.012em; }
+.zy-x { flex: none; width: var(--tap); height: var(--tap); margin-right: calc(var(--sp-2) * -1); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--text-muted); cursor: pointer; }
+.zy-x svg { width: 20px; height: 20px; }
+/* Przycisk otwiera się w kartę wyboru: karta rośnie dokładnie z miejsca przycisku, w jego kolorze, który gaśnie po drodze */
+.zy-panel .zy-f-choose {
+  inset: -10px -10px 2px; padding: var(--sp-2) var(--sp-3) var(--sp-3); gap: 0; opacity: 1; transform: none; z-index: 2;
+  border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--e2);
+  clip-path: inset(84px 10px 30px 10px round var(--radius-md));
+  transition: clip-path var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
+}
+.zy-panel[data-state="choose"] .zy-f-choose {
+  opacity: 1; clip-path: inset(-60px round var(--radius-lg));
+  transition: clip-path var(--dur-base) var(--spring-soft), visibility 0s;
+}
+.zy-f-choose::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--primary); pointer-events: none;
+  transition: opacity var(--dur-fast) ease;
+}
+.zy-panel[data-state="choose"] .zy-f-choose::before { opacity: 0; }
+.zy-f-choose > * { position: relative; opacity: 0; transition: opacity .1s ease; }
+.zy-panel[data-state="choose"] .zy-f-choose > * { opacity: 1; transition: opacity var(--dur-fast) ease; }
+.zy-q h2 { opacity: 0; }
+.zy-panel[data-state="choose"] .zy-q h2 { opacity: 1; transition: opacity var(--dur-base) ease .08s; }
+.zy-moods { margin-top: 0; gap: var(--sp-2); }
+.zy-moods .du-mood {
+  min-height: var(--tap); height: var(--tap); aspect-ratio: auto; border: 0; color: var(--text);
+  background: color-mix(in srgb, var(--primary) calc(8% + var(--v) * 4.8%), var(--surface));
+  transition: transform var(--dur-base) var(--spring), background var(--dur-fast);
+}
+.zy-moods .du-mood:active { transform: scale(.9); transition-duration: .1s; }
+.zy-moods .du-mood span { font-size: 1.12rem; }
+.zy-panel[data-state="choose"] .zy-moods .du-mood { animation: zy-tile var(--dur-base) var(--spring) backwards; animation-delay: calc(50ms + var(--v) * 20ms); }
+@keyframes zy-tile { from { opacity: 0; transform: scale(.7) translateY(10px); } }
+
+/* Kropla leci z wybranej liczby do dzisiejszego pąka na roślince (js/dom-uklad.js), potem pada deszcz */
+.zy-fly { position: fixed; z-index: 28; left: 0; top: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; pointer-events: none; color: var(--primary); filter: drop-shadow(0 4px 6px rgba(16, 44, 48, .3)); }
+.zy-fly svg { display: block; width: 100%; height: 100%; }
+/* po wylądowaniu światło biegnie gałązką tygodnia aż do dzisiejszego liścia */
+.zy-week::after {
+  content: ""; position: absolute; left: 7%; right: 7%; top: 37px; height: 4px; border-radius: 4px; opacity: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--plant-core)); transform-origin: left;
+}
+.zy-panel.is-pulse .zy-week::after { animation: zy-run var(--dur-slow) var(--ease-out); }
+@keyframes zy-run { 0% { opacity: 1; transform: scaleX(0); } 70% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1); } }
+
+/* Pierwsze wejście: gałązka się rysuje, liście wyrastają po kolei, przycisk wjeżdża na końcu */
+.zy-panel.is-arriving .zy-week::before { transform-origin: left; animation: zy-line var(--dur-slow) var(--ease-out) .25s backwards; }
+@keyframes zy-line { from { transform: scaleX(0); } }
+.zy-panel.is-arriving .zy-day i { transform-origin: 30% 90%; animation: zy-tile var(--dur-slow) var(--spring) backwards; animation-delay: calc(.35s + var(--i) * 70ms); }
+.zy-panel.is-arriving .zy-day span { animation: zy-fade var(--dur-base) ease backwards; animation-delay: calc(.35s + var(--i) * 70ms); }
+.zy-panel.is-arriving .zy-water { animation: zy-rise var(--dur-slow) var(--spring-soft) .85s backwards; }
+@keyframes zy-fade { from { opacity: 0; } }
+/* „Myśl na dziś”: słowa pojawiają się po kolei, gdy sekcja wjedzie na ekran */
+.zy-w { display: inline-block; opacity: 0; transform: translateY(10px); transition: opacity var(--dur-slow) ease, transform var(--dur-slow) var(--ease-out); transition-delay: calc(var(--i) * 45ms); }
+.is-in .zy-w { opacity: 1; transform: none; }
+
+/* Niski nastrój: pomoc od razu, w ciepłym świetle (ten sam kolor co SOS-latarnia), bez dodatkowego stuknięcia */
+.zy-f-low { gap: var(--sp-2); }
+.zy-low-title { margin: 0; font-size: .92rem; line-height: 1.3; }
+.zy-low-title b { display: block; font-family: var(--font-serif); font-weight: 500; font-size: 1.15rem; }
+.zy-low-btns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+.zy-help {
+  min-height: 56px; display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-3);
+  border: 1.5px solid color-mix(in srgb, var(--plant-core) 75%, var(--text) 10%); border-radius: 18px;
+  background: color-mix(in srgb, var(--plant-core) 20%, var(--sheet));
+  font: inherit; font-size: .9rem; font-weight: 700; line-height: 1.2; color: var(--text); text-decoration: none; text-align: left; cursor: pointer;
+}
+.zy-help svg { flex: none; width: 20px; height: 20px; }
+.zy-help b { white-space: nowrap; font-size: 1rem; font-weight: 800; }
+.zy-low-line { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); margin: 0; font-size: .88rem; font-weight: 600; color: var(--text-muted); }
+.zy-low-line .zy-change { min-height: 36px; padding: 0 var(--sp-2); }
+
+/* Kolejna sekcja: spokojnie, jedna podpowiedź i skróty */
+.zy-next .kicker { margin-bottom: var(--sp-3); }
+.zy-next .du-quick { margin-top: var(--sp-3); }
+
+/* ---------- Czytelność: wyraźna kolejność na każdej zakładce ---------- */
+/* 1. Tytuły sekcji to prawdziwe tytuły, a nie małe szare etykiety */
+:root[data-uklad="d"] .sheet .kicker {
+  font-family: var(--font-serif); font-size: 1.35rem; font-weight: 500; line-height: 1.25; letter-spacing: -.012em;
+  text-transform: none; color: var(--text);
+}
+:root[data-uklad="d"] .sub-title, :root[data-uklad="d"] .list-head h2 { font-size: 1.5rem; color: var(--text); }
+/* 2. To, co się czyta, ma mocny kolor i wygodny rozmiar */
+:root[data-uklad="d"] :is(.lead, .view-lead, .trend, .sum-sub, .sum-head span, .insight p, .helps-note, .post-body, .why-list, .how, .how li, .du-more-title, .zy-low-title, .plant-foot) { color: var(--text-body); }
+:root[data-uklad="d"] :is(.post-body, .insight p, .sum-sub, .trend, .helps-note) { font-size: .97rem; line-height: 1.55; }
+:root[data-uklad="d"] .du-suggest b { font-size: 1.04rem; }
+:root[data-uklad="d"] .du-suggest small { font-size: .9rem; color: var(--text-body); }
+:root[data-uklad="d"] .post-title { font-size: 1.12rem; color: var(--text); }
+:root[data-uklad="d"] .insight h3 { font-size: 1.18rem; color: var(--text); }
+/* 3. Podpisy i daty zostają mniejsze i ciszej */
+:root[data-uklad="d"] :is(.post-meta, .vault-when) { font-size: .8rem; color: var(--text-muted); }
+/* Karty i przyciski wyraźnie stoją na gruncie */
+:root[data-uklad="d"] :is(.du-suggest, .du-chip, .vault-item) { background: var(--surface); border: 1px solid var(--line); }
+/* skróty i „Jak to działa?" to zwykłe linki w tekście: jedna karta na sekcję wystarczy */
+:root[data-uklad="d"] .zy-quick .du-chip { background: none; border: 0; padding: 0 var(--sp-3) 0 0; }
+:root[data-uklad="d"] .how { background: none; padding: 0; border: 0; }
+.zy-foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 var(--sp-4); margin-top: var(--sp-4); }
+.zy-link { min-height: var(--tap); padding: 0 var(--sp-1); border: 0; background: none; font: inherit; font-size: .9rem; font-weight: 500; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.zy-link:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+@media (min-width: 1024px) { .zy-foot-links { display: none; } }
+/* Czcionka: mniej grubych napisów. Hierarchię budują rozmiar i kolor; pogrubienie 600–700 tylko tam, gdzie coś trzeba wyróżnić */
+:root[data-uklad="d"] body { font-family: var(--font); font-weight: 400; letter-spacing: 0; }
+:root[data-uklad="d"] :is(b, strong) { font-weight: 600; }
+:root[data-uklad="d"] :is(.du-chip, .tab, .sos, .seg button, .fab, .btn-soft, .btn-primary, .post-title, .du-suggest b, .zy-done b, .score-word, .zy-help, .zy-change) { font-weight: 600; letter-spacing: 0; }
+:root[data-uklad="d"] .tab { font-weight: 500; }
+:root[data-uklad="d"] .tab[aria-current="page"] { font-weight: 700; }
+:root[data-uklad="d"] .insight-tag { font-weight: 600; letter-spacing: .02em; text-transform: none; font-size: .86rem; }
+:root[data-uklad="d"] :is(.view-head h1, .stage-greet h1, .sec h2, .sub-title, .list-head h2, .sheet .kicker, .insight h3, .zy-q h2, .score-num strong, .sum-head b) { font-weight: 500; letter-spacing: -.015em; }
+:root[data-uklad="d"] .du-chip.is-done { background: color-mix(in srgb, var(--primary) 22%, var(--surface)); border-color: var(--primary); }
+:root[data-uklad="d"] .zy-done { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+
+/* ---------- Pozostałe zakładki na gruncie planety ---------- */
+@media (max-width: 1023px) {
+  /* „Napisz” przy tytule Bloga: pływający został tylko Asystent, dwa pływające przyciski zasłaniały posty */
+  :root[data-uklad="d"] #view-blog { position: relative; }
+  :root[data-uklad="d"] body[data-tab="blog"] .fab { position: absolute; z-index: 2; right: var(--sp-5); top: calc(var(--stage-compact) + var(--sp-5)); bottom: auto; animation: none; }
+  /* podpis roślinki nie wchodzi pod Asystenta */
+  :root[data-uklad="d"] .plant-foot { padding: 0 var(--sp-16); }
+  /* słupki tygodnia w Trackerze: mocniejszy kolor na gruncie */
+  :root[data-uklad="d"] .sum-day:not(.is-today) i { background: color-mix(in srgb, var(--primary) 42%, transparent); }
+  :root[data-uklad="d"] .view-head { padding-top: 0; }
+  :root[data-uklad="d"] .view-head h1 { font-size: 2rem; }
+  :root[data-uklad="d"] .view-lead { margin: var(--sp-1) 0 var(--sp-5); font-size: .95rem; line-height: 1.45; }
+  :root[data-uklad="d"] .card { background: var(--surface); border-color: var(--line); }
+  :root[data-uklad="d"] .sec h2 { font-size: 1.6rem; }
+  :root[data-uklad="d"] .sec + .sec { margin-top: var(--sp-8); padding-top: var(--sp-8); }
+}
+/* Pasek zakładek na telefonie: pływa nad światem, a wskaźnik przesuwa się sprężyście między zakładkami */
+@media (max-width: 699px) {
+  :root[data-uklad="d"] .tabbar {
+    left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px; border: 0; border-radius: 26px;
+    background: color-mix(in srgb, var(--sheet) 96%, transparent); box-shadow: var(--e2);
+  }
+  @supports (backdrop-filter: blur(1px)) { :root[data-uklad="d"] .tabbar { background: color-mix(in srgb, var(--sheet) 86%, transparent); -webkit-backdrop-filter: blur(20px) saturate(1.5); backdrop-filter: blur(20px) saturate(1.5); } }
+  :root[data-uklad="d"] .tab { position: relative; z-index: 1; height: 52px; padding: 0; justify-content: center; gap: 1px; }
+  :root[data-uklad="d"] .tab-ico { height: 26px; }
+  :root[data-uklad="d"] .tab-ico::before { display: none; }
+  :root[data-uklad="d"] .tab[aria-current="page"] { color: var(--primary-dark); }
+  :root[data-uklad="d"] .tab[aria-current="page"] .tab-label { color: var(--text); }
+  :root[data-uklad="d"] .tab[aria-current="page"] .tab-ico { animation: zy-pop var(--dur-base) var(--spring); }
+  .zy-tab-ind {
+    position: absolute; z-index: 0; left: 6px; top: 6px; bottom: 6px; width: calc((100% - 12px) / 5); border-radius: 20px;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    transform: translateX(calc(var(--ti, 0) * 100%)); transition: transform var(--dur-base) var(--spring-soft);
+  }
+}
+@media (min-width: 700px) { .zy-tab-ind { display: none; } }
+@keyframes zy-pop { 40% { transform: scale(1.14) translateY(-1px); } }
+
+/* wąski telefon: pasek 7 dni wchodzi w marginesy, żeby każdy dzień miał 44 px i strona nie przewijała się w bok */
+@media (max-width: 359px) {
+  .zy-week { gap: 0; margin-inline: calc(var(--sp-4) * -1); }
+  .zy-q h2 { font-size: 1.3rem; }
+  .zy-help svg { display: none; }
+}
+@media (min-width: 700px) and (max-width: 1023px) {
+  :root[data-uklad="d"] { --tab-h: calc(96px + env(safe-area-inset-bottom)); --dom-peek: 0px; }
+  :root[data-uklad="d"] .tabbar { background: color-mix(in srgb, var(--sheet) 86%, transparent); }
+  .zy-panel { max-width: 520px; margin-left: auto; margin-right: auto; }
+}
+
+/* ---------- Forma: miękkie kształty i głębia zamiast ramek ---------- */
+:root[data-uklad="d"] :is(.zy-water, .zy-done, .zy-help, .fab, .btn-primary, .btn-soft, .btn-ghost, .btn-danger, .btn-primary.is-small, .water-btn, .sos-item, .sos-breath, .shortcut, .trusted-call) { border-radius: var(--radius-md); }
+:root[data-uklad="d"] :is(.sos, .du-chip, .chip, .ci-chip, .post-btn, .icon-btn, .du-ico, .zy-change, .plant-zoom, .du-mood, .zy-moods .du-mood) { border-radius: var(--radius-sm); }
+:root[data-uklad="d"] :is(.card, .du-suggest, .du-row-btn, .du-support, .vault-item, .vault-compose, .post, .insight .try, .jar-card) { border-radius: var(--radius-lg); }
+:root[data-uklad="d"] :is(textarea, input[type="text"], input[type="tel"], .du-line-row input, .trusted-form input) { border-radius: var(--radius-md); border-width: 1px; }
+/* Karty i kafelki unoszą się cieniem; w nocy dodatkowo mają jasną krawędź u góry */
+:root[data-uklad="d"] :is(.card, .du-suggest, .vault-item, .du-chip) { border-color: transparent; box-shadow: var(--e1); }
+:root[data-uklad="d"] .zy-quick .du-chip { box-shadow: none; }
+:root[data-uklad="d"] .sos { box-shadow: var(--e1); }
+@media (max-width: 1023px) { :root[data-uklad="d"] .as-fab { box-shadow: var(--e1); } }
+:root[data-uklad="d"] .sos { height: 44px; padding: 0 var(--sp-3); border: 0; background: var(--surface); }
+:root[data-uklad="d"][data-pora="noc"] .sos { box-shadow: 0 0 0 1px color-mix(in srgb, var(--plant-core) 70%, transparent), 0 0 24px 3px color-mix(in srgb, var(--plant-core) 30%, transparent); }
+:root[data-uklad="d"] .fab { background: linear-gradient(transparent, rgba(0, 0, 0, .16)), var(--primary); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 14px 26px -14px color-mix(in srgb, var(--primary) 85%, #000); }
+/* Asystent: telefon i tablet: kafelek jak SOS, bez dymka (komputer: dymek w prawym rogu); postać raz podskakuje przy wejściu */
+@media (max-width: 1023px) { :root[data-uklad="d"] .as-bubble { display: none; } }
+:root[data-uklad="d"] .as-fab-peek { animation: zy-peek var(--dur-slow) var(--spring) 1.2s backwards; }
+@keyframes zy-peek { from { opacity: 0; transform: translateY(12px) scale(.8); } }
+/* Przełącznik: miękki, z jasną „płytką” pod wybraną opcją */
+:root[data-uklad="d"] .seg { padding: var(--sp-1); gap: var(--sp-1); border-radius: 20px; background: var(--track); }
+:root[data-uklad="d"] .seg button { height: 40px; padding: 0 var(--sp-4); border-radius: var(--radius-sm); font-weight: 500; transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast); }
+:root[data-uklad="d"] .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: var(--e1); }
+/* Dotyk: każdy element, który można stuknąć, wyraźnie się ugina i wraca sprężyście */
+:root[data-uklad="d"] :is(.du-suggest, .du-chip, .zy-help, .vault-item, .fab, .sos, .as-fab, .chip, .ci-chip, .btn-primary, .btn-soft, .btn-ghost) { transition: transform var(--dur-base) var(--spring), background-color var(--dur-fast), box-shadow var(--dur-fast), border-color var(--dur-fast), opacity var(--dur-base); }
+:root[data-uklad="d"] :is(.du-suggest, .du-chip, .zy-help, .vault-item:not(.is-open), .fab, .sos, .as-fab, .chip, .ci-chip, .btn-primary, .btn-soft, .btn-ghost):active { transform: scale(.96); transition-duration: .1s; }
+
+/* Zmiana zakładki: treść wjeżdża z kierunku zakładki (--dir), kolejne bloki chwilę po sobie; to samo dzieje się z planetą */
+:root[data-uklad="d"] .view.is-entering { animation: none; }
+:root[data-uklad="d"] .view.is-entering > * { animation: zy-in var(--dur-base) var(--ease-out) backwards; animation-delay: calc(var(--n, 5) * 45ms); }
+:root[data-uklad="d"] .view.is-entering > :nth-child(1) { --n: 0; }
+:root[data-uklad="d"] .view.is-entering > :nth-child(2) { --n: 1; }
+:root[data-uklad="d"] .view.is-entering > :nth-child(3) { --n: 2; }
+:root[data-uklad="d"] .view.is-entering > :nth-child(4) { --n: 3; }
+:root[data-uklad="d"] .view.is-entering > :nth-child(5) { --n: 4; }
+@keyframes zy-in { from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 24px)); } }
+
+/* ---------- Pory dnia: wieczorem niebo jest ciemne u góry, więc napisy są jasne (jak nocą) ---------- */
+:root[data-uklad="d"][data-pora="wieczor"] .stage-greet h1 { color: #FFF8F2; }
+:root[data-uklad="d"][data-pora="wieczor"] .greet-date { color: rgba(255, 248, 242, .88); }
+:root[data-uklad="d"][data-pora="wieczor"] .brand-word.is-light { display: none; }
+:root[data-uklad="d"][data-pora="wieczor"] .brand-word.is-dark { display: block; }
+
+/* Mniej ruchu i ?widok: klasa .is-static (js/home2.js). Stany zmieniają się od razu, informacja zostaje ta sama. */
+:root.is-static :is(.zy-panel, .zy-panel *, .zy-panel *::before, .zy-panel *::after, .tab-ico, .as-fab-peek, .zy-tab-ind, .view.is-entering > *) { animation: none !important; transition: none !important; }
+:root.is-static .zy-panel .zy-f-choose { clip-path: none; }
+:root.is-static .zy-f-choose::before { display: none; }
+:root.is-static .zy-q h2, :root.is-static .zy-f-choose > * { opacity: 1; }

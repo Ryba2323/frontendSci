@@ -70,7 +70,10 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 - Mobile-first: telefon to główny cel.
 - **Strona główna: układ A „Dziś jednym dotknięciem”** (wybór zespołu, 4.11.2026): nastrój 1–10 jako przyciski na samej stronie, jedno stuknięcie = podlanie; sen, „co było ważne” i notatka opcjonalnie („+”); jedna podpowiedź dopasowana do nastroju; dzień bez wpisu nazywamy „odpoczynkiem”. To realizuje punkt 1 propozycji strony głównej niżej (suwak/nastrój widoczny od razu). Na tym układzie budujemy pozostałe ekrany (zasady w CLAUDE.md).
 
+- **Propozycja „Żywa planeta”** (6.11.2026, do potwierdzenia przez zespół i testu z nastolatkami; opis w CLAUDE.md): treść leży na planecie zamiast na białej karcie, roślinka nie znika przy przewijaniu, wraca przycisk „Podlej roślinkę” (przycisk + liczba = dwa stuknięcia, bez nakładki). Układ A zostaje pod `?uklad=a`.
+
 ## Do rozstrzygnięcia (ważne dla ekranów)
+- Czy „mały liść = gorszy dzień” nie brzmi jak kara? Rada przy redesignie (6.11.2026) zgłosiła to jako ryzyko; na razie zasada bez zmian. Do sprawdzenia w teście z nastolatkami.
 - Nazwa aplikacji; grupa wiekowa; zgody rodziców.
 - Mechanika roślinki w codziennym użyciu.
 - Zawartość strony głównej, ton komunikacji, dark mode.

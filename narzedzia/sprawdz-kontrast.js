@@ -60,7 +60,7 @@ function audit() {
     await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
     await p.click('#sos-open'); await p.waitForTimeout(300); note('SOS', await p.evaluate(audit));
     await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
-    await p.click('#color-open'); await p.waitForTimeout(300); note('kolor', await p.evaluate(audit));
+    await p.evaluate(() => document.querySelector('#color-open').click()); await p.waitForTimeout(300);   /* na telefonie otwiera się z końca Domu */ note('kolor', await p.evaluate(audit));
     await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
     await p.click('#as-fab'); await p.waitForTimeout(1500); note('Asystent', await p.evaluate(audit));
     await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
@@ -69,6 +69,14 @@ function audit() {
     await p.evaluate(() => { const s = document.querySelector('.ms-slider'); if (s) { s.focus(); } });
     for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowRight');
     await p.waitForTimeout(400); note('podlewanie, niski nastrój', await p.evaluate(audit));
+    // Żywa planeta: stany panelu na Domu (wybór liczby, po podlaniu, wsparcie przy niskim nastroju)
+    if (!process.env.UKLAD || process.env.UKLAD === 'd') {
+      await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
+      await p.click('#zy-water'); await p.waitForTimeout(300); note('panel: wybór', await p.evaluate(audit));
+      await p.click('.zy-moods .du-mood[data-v="8"]'); await p.waitForTimeout(300); note('panel: podlane', await p.evaluate(audit));
+      await p.click('#zy-done [data-zy-open]'); await p.waitForTimeout(300);
+      await p.click('.zy-moods .du-mood[data-v="2"]'); await p.waitForTimeout(300); note('panel: niski nastrój', await p.evaluate(audit));
+    }
     await p.close();
   }
   await b.close();

@@ -10,8 +10,12 @@
   <link rel="apple-touch-icon" href="img/ikona-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- Żywa planeta: Newsreader (tytuły, osobiste treści) + Instrument Sans (reszta), wybór Marcela 6.11.2026; niżej czcionki starszych układów -->
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
 
+  <!-- Kierunek „Żywa planeta” (domyślny; ?uklad=a|b|c|stary — poprzednie wersje). Musi być ustawiony przed pierwszym rysowaniem. -->
+  <script>(function () { var u = new URLSearchParams(location.search).get('uklad'); if (!u || u === 'd') document.documentElement.dataset.uklad = 'd'; })();</script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/home2.css">
   <link rel="stylesheet" href="css/checkin.css">
@@ -22,6 +26,8 @@
   <link rel="stylesheet" href="css/planeta.css">
   <!-- Trzy wersje strony głównej do porównania (?uklad=a|b|c, porownanie.html) -->
   <link rel="stylesheet" href="css/dom-uklad.css">
+  <!-- Żywa planeta: wygląd całej aplikacji na telefonie (ładowany ostatni) -->
+  <link rel="stylesheet" href="css/zywa.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
 
@@ -70,6 +76,9 @@
   </div>
 
 </div>
+
+<!-- Żywa planeta: miękkie zejście treści pod zwiniętą scenę (js/home2-scene.js przesuwa je razem z dolną krawędzią sceny) -->
+<div class="stage-fade" id="stage-fade" aria-hidden="true"></div>
 
 <!-- Górny pasek: napis ReLeaf (osobny na tryb nocny), kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę.
      Postać z logo jest tu celowo pominięta: pojawia się tylko jako twarz Asystenta i na pustych ekranach. -->

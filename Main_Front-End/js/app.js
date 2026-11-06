@@ -50,7 +50,13 @@
     window.scrollTo(0, scrollPos[tab] || 0);
 
     const v = views[tab];
-    if (current && !reduceMotion) { v.classList.remove('is-entering'); void v.offsetWidth; v.classList.add('is-entering'); }
+    if (current && !reduceMotion) {
+      // kierunek wjazdu: jak kolejność zakładek w pasku
+      const order = id => TABS.findIndex(t => t.id === id);
+      v.style.setProperty('--dir', order(tab) > order(current) ? 1 : -1);
+      v.classList.remove('is-entering'); void v.offsetWidth; v.classList.add('is-entering');
+      setTimeout(() => v.classList.remove('is-entering'), 1100);
+    }
     // czytnik ekranu: po zmianie zakładki fokus na tytuł
     if (current) {
       const h = v.querySelector('h1');
@@ -76,12 +82,15 @@
   //  a górny pasek dostaje tło, gdy kafel do niego dojedzie.
   // ================================================================
   const stage = $('#stage'), top = $('#app-top'), homeSheet = views.dom;
+  // Żywa planeta: scena nie odpływa i nie gaśnie — sama zwija się do paska (js/home2-scene.js), pasek górny nie potrzebuje tła
+  const zywa = document.documentElement.dataset.uklad === 'd';
   let ticking = false;
   function onScroll() {
     ticking = false;
     const phone = window.innerWidth < 1024;
     const sy = window.scrollY;
-    if (phone) {
+    if (zywa && phone) { stage.style.transform = ''; stage.style.opacity = ''; }
+    else if (phone) {
       const h = stage.offsetHeight || 1;
       const p = Math.min(1, sy / h);
       stage.style.transform = reduceMotion ? '' : `translate3d(0, ${(-sy * .35).toFixed(1)}px, 0)`;
@@ -93,7 +102,7 @@
     // iPhone: „gumka” przy górnej krawędzi (scrollY < 0) też otwiera pełny ekran
     if (sy < -45 && !isFull && pullY == null && canPull()) setFull(true);
     const sheetTop = (views[current] || homeSheet).getBoundingClientRect().top;
-    top.classList.toggle('is-solid', phone && sheetTop < top.offsetHeight + 4);
+    top.classList.toggle('is-solid', !zywa && phone && sheetTop < top.offsetHeight + 4);
   }
   const queue = () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } };
   window.addEventListener('scroll', queue, { passive: true });

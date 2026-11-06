@@ -1,9 +1,14 @@
 /*
- * Strona główna (Dom) — układ A „Dziś jednym dotknięciem” (wybrany przez zespół 4.11.2026, opis w CLAUDE.md).
- * B i C zostają tylko do podglądu i porównania: ?uklad=b | c (porownanie.html pokazuje wszystkie trzy obok siebie;
- * przełącznik wersji widać tylko z parametrem ?uklad). ?uklad=stary — dawna strona główna z przyciskiem „Podlej roślinkę”.
+ * Strona główna (Dom) — domyślnie D „Żywa planeta” (6.11.2026, opis w CLAUDE.md); poprzednie wersje do podglądu i porównania:
+ * ?uklad=a | b | c (porownanie.html pokazuje je obok siebie; przełącznik widać tylko z parametrem ?uklad).
+ * ?uklad=stary — dawna strona główna z przyciskiem „Podlej roślinkę”.
  * Logika podlewania zostaje jedna: window.Podlewanie (js/home2.js) i window.Checkin (js/checkin.js).
  *
+ *  D „Żywa planeta” (wybór z dyskusji o A, B i C)
+ *    • pierwszy ekran to roślinka, 7 dni i jeden przycisk „Podlej roślinkę”; bez przewijania i bez nakładki,
+ *    • stuknięcie zamienia dolny panel w 10 liczb w tym samym miejscu, drugie stuknięcie = deszcz — roślinkę cały czas widać,
+ *    • z A: wsparcie od razu przy nastroju 1–3, „+” dla szczegółów, jedna podpowiedź; z B: pasek 7 dni na górze treści,
+ *    • panel ma stałą wysokość w każdym stanie, więc nic nie skacze, a deszcz jest widoczny.
  *  A „Dziś jednym dotknięciem” (Daylio + Gentler Streak + cofanie zamiast potwierdzeń)
  *    • nastrój jako 10 dużych przycisków na samej stronie: jedno stuknięcie = podlana roślinka (zamiast 6 kroków),
  *    • sen, „co było ważne” i notatka jako opcjonalne „+” — otwierają pytania od razu od tego kroku,
@@ -26,8 +31,8 @@
 
   const params = new URLSearchParams(location.search);
   // window.UKLAD_DOMYSLNY: wersja wpisana na stałe (np. w pliku podglądu bez adresu z parametrem)
-  const U = (params.get('uklad') || window.UKLAD_DOMYSLNY || 'a').toLowerCase();   // domyślnie A
-  if (!['a', 'b', 'c'].includes(U) || !window.Podlewanie) return;
+  const U = (params.get('uklad') || window.UKLAD_DOMYSLNY || 'd').toLowerCase();   // domyślnie D
+  if (!['a', 'b', 'c', 'd'].includes(U) || !window.Podlewanie) return;
   document.documentElement.dataset.uklad = U;
 
   const P = window.Podlewanie, D = (window.Checkin && window.Checkin.DATA) || null;
@@ -62,10 +67,10 @@
   //  Wspólne komponenty
   // ================================================================
   // Przełącznik wersji (tylko w podglądzie z ?uklad) — zmiana przeładowuje stronę
-  const NAMES = { a: 'Dziś jednym dotknięciem', b: 'Strona dnia', c: 'Wszystko pod kciukiem' };
+  const NAMES = { a: 'Dziś jednym dotknięciem', b: 'Strona dnia', c: 'Wszystko pod kciukiem', d: 'Żywa planeta' };
   const Switch = () => `
     <nav class="du-switch" aria-label="Wersja strony głównej">
-      ${['a', 'b', 'c'].map(k => `<a href="?uklad=${k}#/dom"${k === U ? ' aria-current="page"' : ''}><b>${k.toUpperCase()}</b><span>${NAMES[k]}</span></a>`).join('')}
+      ${['a', 'b', 'c', 'd'].map(k => `<a href="?uklad=${k}#/dom"${k === U ? ' aria-current="page"' : ''}><b>${k.toUpperCase()}</b><span>${NAMES[k]}</span></a>`).join('')}
     </nav>`;
 
   // Wsparcie przy niskim nastroju — ta sama treść co w pytaniach podlewania
@@ -112,6 +117,210 @@
     $('#days').addEventListener('click', e => { const b = e.target.closest('.day'); if (b) say(+b.dataset.i); });
     window.addEventListener('dayselect', e => say(e.detail.index));
     $$('.day.is-missed').forEach(b => b.setAttribute('aria-label', `${names[+b.dataset.i]}: odpoczynek`));
+  }
+
+  // ================================================================
+  //  D — Żywa planeta
+  // ================================================================
+  // Liść dnia: dwie połówki (światło i cień) i nerw; podstawa stoi na gałązce tygodnia
+  const LEAF = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="zy-l-a" d="M5 21C3.500 10.500 10 4 21 3 21 3 21 3 5 21z"/><path class="zy-l-b" d="M5 21 21 3c-.5 11-7.500 18-16 18z"/><path class="zy-l-v" d="M5 21 17 7.500"/></svg>';
+  function buildD() {
+    const { days, names, labels, missed } = P.week;
+    const Scene = window.Home2Scene || { nudge() {}, select() {} };
+    anchor.insertAdjacentHTML('beforebegin', `
+      <section class="zy-panel" id="zy-panel" data-state="idle" aria-label="Dziś">
+        <div class="zy-face zy-f-main">
+          <div class="zy-week" role="group" aria-label="Ostatnie 7 dni">
+            ${days.map((v, i) => {
+              const today = i === 6, rest = missed[i];
+              return `<button type="button" class="zy-day${today ? ' is-today' : ''}${rest ? ' is-rest' : ''}" data-i="${i}" aria-pressed="false" style="--v:${v || 0};--i:${i}" aria-label="${today ? 'Dziś: roślinka czeka' : rest ? `${names[i]}: odpoczynek` : `${names[i]}: ${v} na 10`}"><i>${LEAF}</i><span>${labels[i]}</span></button>`;
+            }).join('')}
+          </div>
+          <span class="sr" id="zy-day-say" aria-live="polite"></span>
+          <button type="button" class="zy-water" id="zy-water"><span class="zy-drop">${svg(ICON.drop)}</span>Podlej roślinkę</button>
+          <div class="zy-done" id="zy-done">
+            <span class="zy-done-ico">${svg(ICON.check)}</span>
+            <b id="zy-done-text" aria-live="polite"></b>
+            <button type="button" class="zy-change" data-zy-open>Zmień</button>
+          </div>
+        </div>
+
+        <div class="zy-face zy-f-choose">
+          <div class="zy-q">
+            <h2 id="zy-q-title">Jak się dziś czujesz?</h2>
+            <button type="button" class="zy-x" id="zy-close" aria-label="Zamknij bez podlewania">${svg('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
+          </div>
+          <div class="du-moods zy-moods" role="radiogroup" aria-labelledby="zy-q-title">
+            ${Array.from({ length: 10 }, (_, i) => i + 1).map(v => `<button type="button" role="radio" aria-checked="false" class="du-mood" data-v="${v}" style="--v:${v}" aria-label="${v} — ${word(v)}"><span>${v}</span></button>`).join('')}
+          </div>
+        </div>
+
+        <div class="zy-face zy-f-low">
+          <p class="zy-low-title"><b>Ciężki dzień?</b> Nie musisz zostawać z tym sam(a).</p>
+          <div class="zy-low-btns">
+            <button type="button" class="zy-help" data-asystent="dom">${svg(ICON.chat)}<span>Porozmawiaj<br>z Asystentem</span></button>
+            <a class="zy-help" href="tel:116111">${svg(ICON.phone)}<span>Zadzwoń<br><b>116 111</b></span></a>
+          </div>
+          <p class="zy-low-line"><span id="zy-low-text" aria-live="polite"></span> <button type="button" class="zy-change" data-zy-open>Zmień</button></p>
+        </div>
+      </section>
+
+      <section class="sec zy-next" aria-labelledby="zy-next-title">
+        <p class="kicker" id="zy-next-title">Dla Ciebie teraz</p>
+        <div id="du-suggest">${Suggest(suggestion(null))}</div>
+        <div class="du-more" id="du-more" hidden>
+          <p class="du-more-title">Chcesz dodać więcej? Nie musisz.</p>
+          <div class="du-add">
+            <button type="button" class="du-chip" data-step="sleep">${svg(ICON.plus)}Sen</button>
+            <button type="button" class="du-chip" data-step="areas">${svg(ICON.plus)}Co było ważne</button>
+            <button type="button" class="du-chip" data-step="note">${svg(ICON.plus)}Notatka</button>
+          </div>
+        </div>
+        <div class="du-quick zy-quick" role="group" aria-label="Na skróty">
+          <button type="button" class="du-chip" data-go="skrytka">${svg(ICON.lock)}Zapisz myśl</button>
+          <button type="button" class="du-chip" data-breath>${svg(ICON.breath)}Oddech</button>
+        </div>
+      </section>`);
+    const root = $('#zy-panel'), next = root.nextElementSibling;
+    const moods = $$('.du-mood', root);
+    const setState = s => { root.dataset.state = s; };
+    const settled = m => (m ? (m <= LOW ? 'low' : 'done') : 'idle');
+
+    function openChoose() {
+      setState('choose');
+      Scene.nudge();
+      haptic(8);
+      const m = P.entry && P.entry.mood;
+      (moods[(m || 5) - 1]).focus({ preventScroll: true });
+    }
+    function closeChoose() {
+      setState(settled(P.entry && P.entry.mood));
+      const back = $(root.dataset.state === 'idle' ? '#zy-water' : '[data-zy-open]', root);
+      if (back) back.focus({ preventScroll: true });
+    }
+    // Wybór liczby: panel od razu wraca (roślinka i wynik widoczne, wsparcie przy 1–3 bez czekania), kropla leci do pąka, a dopiero
+    // jej lądowanie zapisuje wpis i uruchamia deszcz. Bez animacji (mniej ruchu) zapis jest natychmiastowy.
+    function choose(v, from) {
+      const said = `Podlane · ${v}/10 · ${word(v)}`;
+      $('#zy-done-text').textContent = said;
+      $('#zy-low-text').textContent = said;
+      setState(settled(v));
+      const change = $(v <= LOW ? '.zy-low-line .zy-change' : '#zy-done .zy-change', root);
+      if (change) change.focus({ preventScroll: true });
+      const land = () => {
+        P.save({ mood: v });
+        haptic([10, 30, 10]);
+        root.classList.add('is-pulse');
+        setTimeout(() => root.classList.remove('is-pulse'), 800);
+      };
+      const to = !reduceMotion && Scene.budPos && Scene.budPos();
+      if (!to) { land(); return; }
+      haptic(8);
+      const a = from.getBoundingClientRect(), x0 = a.left + a.width / 2, y0 = a.top + a.height / 2;
+      const peak = Math.min(y0, to.y) - 36;                   // łuk: kropla wznosi się nad pąk i na niego opada
+      const fly = document.createElement('span');
+      fly.className = 'zy-fly';
+      fly.setAttribute('aria-hidden', 'true');
+      fly.innerHTML = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.500c3.800 4.600 6.800 8.300 6.800 11.900a6.800 6.800 0 0 1-13.600 0c0-3.600 3-7.300 6.800-11.900z"/><circle cx="9.500" cy="14.500" r="1.700" fill="#fff" opacity=".75"/></svg>';
+      document.body.appendChild(fly);
+      const at = (x, y, s) => `translate(${x}px, ${y}px) scale(${s})`;
+      const anim = fly.animate([
+        { transform: at(x0, y0, .4), opacity: 0, easing: 'cubic-bezier(.2, .7, .3, 1)' },
+        { transform: at(x0 + (to.x - x0) * .55, peak, 1.15), opacity: 1, offset: .55, easing: 'cubic-bezier(.5, 0, .9, .5)' },
+        { transform: at(to.x, to.y, .7), opacity: 1 },
+      ], { duration: 700 });                                  // --dur-slow
+      anim.onfinish = () => { fly.remove(); land(); };
+      anim.oncancel = () => { fly.remove(); land(); };
+    }
+    $('#zy-water').addEventListener('click', openChoose);
+    $('#zy-close').addEventListener('click', closeChoose);
+    root.addEventListener('click', e => {
+      if (e.target.closest('[data-zy-open]')) { openChoose(); return; }
+      const b = e.target.closest('.du-mood');
+      if (b) { choose(+b.dataset.v, b); return; }
+      const d = e.target.closest('.zy-day');
+      if (d) { showDay(+d.dataset.i); Scene.select(+d.dataset.i); }
+    });
+    // strzałki w grupie nastroju (←/→ o jeden, ↑/↓ o rząd), Escape zamyka
+    root.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && root.dataset.state === 'choose') { closeChoose(); return; }
+      const b = e.target.closest('.du-mood');
+      const map = { ArrowRight: 1, ArrowDown: 5, ArrowLeft: -1, ArrowUp: -5 };
+      if (!b || !(e.key in map)) return;
+      e.preventDefault();
+      moods[Math.min(10, Math.max(1, +b.dataset.v + map[e.key])) - 1].focus();
+    });
+    next.addEventListener('click', e => {
+      const add = e.target.closest('[data-step]');
+      if (add) P.open({ from: add, step: add.dataset.step });
+    });
+
+    // Dzień z paska: podświetla swój liść na roślince (podpis rysuje scena), czytnik ekranu dostaje tekst
+    function showDay(i) {
+      $$('.zy-day', root).forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.i === i)));
+      const m = P.entry && P.entry.mood;
+      $('#zy-day-say').textContent = i === 6 ? (m ? `Dziś: ${m} na 10, ${word(m)}` : 'Dziś: roślinka czeka')
+        : missed[i] ? `${names[i]}: odpoczynek. Też się liczy, roślinka nic nie traci.` : `${names[i]}: ${days[i]} na 10, ${word(days[i])}`;
+    }
+    window.addEventListener('dayselect', e => showDay(e.detail.index));
+
+    function paint(entry) {
+      const m = entry && entry.mood;
+      if (root.dataset.state !== 'choose') setState(settled(m));
+      moods.forEach(b => { const on = +b.dataset.v === m; b.setAttribute('aria-checked', String(on)); b.tabIndex = on || (!m && b.dataset.v === '5') ? 0 : -1; });
+      const today = $('.zy-day.is-today', root);
+      today.classList.toggle('is-watered', !!m);
+      today.style.setProperty('--v', m || 0);
+      today.setAttribute('aria-label', m ? `Dziś: ${m} na 10` : 'Dziś: roślinka czeka');
+      const said = m ? `Podlane · ${m}/10 · ${word(m)}` : '';
+      $('#zy-done-text').textContent = said;
+      $('#zy-low-text').textContent = said;
+      $('#du-more').hidden = !m;
+      $('#du-suggest').innerHTML = Suggest(suggestion(m));
+      if (entry) [['sleep', entry.sleepHours != null || entry.sleepQuality != null], ['areas', Object.keys(entry.areas || {}).length], ['note', !!(entry.note || '').trim()]]
+        .forEach(([k, done]) => { const c = $(`[data-step="${k}"]`, next); c.classList.toggle('is-done', !!done); c.querySelector('svg').innerHTML = done ? ICON.check : ICON.plus; });
+    }
+    paint(P.entry);
+    window.addEventListener('entrychange', e => paint(e.detail));
+
+    // Wskaźnik bieżącej zakładki przesuwa się między nimi (telefon)
+    const bar = $('#tabbar');
+    if (bar) {
+      const ORDER = ['dom', 'skrytka', 'tracker', 'testy', 'blog'];
+      bar.insertAdjacentHTML('afterbegin', '<span class="zy-tab-ind" aria-hidden="true"></span>');
+      const place = tab => bar.style.setProperty('--ti', Math.max(0, ORDER.indexOf(tab)));
+      place(document.body.dataset.tab);
+      window.addEventListener('tabchange', e => place(e.detail.tab));
+    }
+
+    // Pierwsze wejście: gałązka się rysuje, liście wyrastają, przycisk wjeżdża
+    if (!reduceMotion) {
+      root.classList.add('is-arriving');
+      setTimeout(() => root.classList.remove('is-arriving'), 2400);
+      // „Myśl na dziś”: słowa po kolei, gdy sekcja wjedzie na ekran
+      const q = $('#quote');
+      if (q && 'IntersectionObserver' in window) {
+        q.innerHTML = q.textContent.trim().split(/\s+/).map((w, i) => `<span class="zy-w" style="--i:${i}">${esc(w)}</span>`).join(' ');
+        const io = new IntersectionObserver(en => { if (en.some(x => x.isIntersecting)) { q.classList.add('is-in'); io.disconnect(); } }, { threshold: .3 });
+        io.observe(q);
+      }
+    }
+
+    // Rzadko używane opcje schodzą z górnego paska na koniec Domu
+    const foot = $('.plant-foot');
+    if (foot) {
+      foot.insertAdjacentHTML('beforeend', `
+        <span class="zy-foot-links">
+          <button type="button" class="zy-link" data-zy-click="#color-open">Kolor roślinki</button>
+          <button type="button" class="zy-link" data-zy-click="#plant-zoom">Roślinka na cały ekran</button>
+        </span>`);
+      foot.addEventListener('click', e => {
+        const b = e.target.closest('[data-zy-click]');
+        if (!b) return;
+        if (b.dataset.zyClick === '#plant-zoom') window.scrollTo(0, 0);
+        $(b.dataset.zyClick).click();
+      });
+    }
   }
 
   // ================================================================
@@ -447,7 +656,7 @@
   // ================================================================
   // przełącznik wersji tylko w podglądzie (?uklad=…) — zwykły użytkownik widzi po prostu stronę główną A
   const hint = $('#scroll-hint');
-  if (params.has('uklad') || window.UKLAD_DOMYSLNY) (hint || view).insertAdjacentHTML(hint ? 'afterend' : 'afterbegin', Switch());
-  ({ a: buildA, b: buildB, c: buildC })[U]();
+  if (U !== 'd' && (params.has('uklad') || window.UKLAD_DOMYSLNY)) (hint || view).insertAdjacentHTML(hint ? 'afterend' : 'afterbegin', Switch());
+  ({ a: buildA, b: buildB, c: buildC, d: buildD })[U]();
   if (reduceMotion) document.documentElement.classList.add('du-still');
 })();
