@@ -98,13 +98,15 @@
   :root[data-uklad="d"] .as-fab-peek { width: 34px; top: 6px; margin-left: -17px; animation: none; }
 
   /* ---------- Dom: stały panel pod roślinką ---------- */
-  :root[data-uklad="d"] #scroll-hint, :root[data-uklad="d"] #sec-water, :root[data-uklad="d"] .sec-short,
-  :root[data-uklad="d"] #days, :root[data-uklad="d"] #day-detail, :root[data-uklad="d"] #meter { display: none; }
   :root[data-uklad="d"] #view-dom { padding-left: var(--sp-5); padding-right: var(--sp-5); }
   /* kolejna sekcja zaczyna się dopiero pod paskiem zakładek: na pierwszym ekranie nic przez niego nie prześwituje */
   :root[data-uklad="d"] .zy-next { margin-top: var(--tab-h); padding-top: var(--sp-5); border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent); }
   :root[data-uklad="d"] .sec + .sec { border-top-color: color-mix(in srgb, var(--text) 12%, transparent); }
 }
+
+/* Tydzień pokazuje gałązka, a podlewanie panel: stare bloki znikają na każdej szerokości */
+:root[data-uklad="d"] #scroll-hint, :root[data-uklad="d"] #sec-water, :root[data-uklad="d"] .sec-short,
+:root[data-uklad="d"] #days, :root[data-uklad="d"] #day-detail, :root[data-uklad="d"] #meter { display: none; }
 
 /* Panel: każdy stan ma tę samą wysokość, więc nic nie skacze, a deszcz na roślince jest widoczny */
 .zy-panel { position: relative; height: var(--dom-panel); margin-top: var(--sp-2); }
@@ -188,20 +190,21 @@
 .zy-x svg { width: 20px; height: 20px; }
 /* Przycisk otwiera się w kartę wyboru: karta rośnie dokładnie z miejsca przycisku, w jego kolorze, który gaśnie po drodze */
 .zy-panel .zy-f-choose {
-  inset: -10px -10px 2px; padding: var(--sp-2) var(--sp-3) var(--sp-3); gap: 0; opacity: 1; transform: none; z-index: 2;
+  inset: -10px -10px 2px; padding: var(--sp-2) var(--sp-3) var(--sp-3); gap: 0; opacity: 0; transform: none; z-index: 2;
   border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--e2);
   clip-path: inset(84px 10px 30px 10px round var(--radius-md));
-  transition: clip-path var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
+  /* zamykanie: karta po prostu gaśnie; dopiero otwieranie rośnie z miejsca przycisku */
+  transition: opacity var(--dur-fast) ease, clip-path 0s linear var(--dur-fast), visibility 0s linear var(--dur-fast);
 }
 .zy-panel[data-state="choose"] .zy-f-choose {
   opacity: 1; clip-path: inset(-60px round var(--radius-lg));
-  transition: clip-path var(--dur-base) var(--spring-soft), visibility 0s;
+  transition: opacity 0s, clip-path var(--dur-base) var(--spring-soft), visibility 0s;
 }
 .zy-f-choose::before {
   content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--primary); pointer-events: none;
-  transition: opacity var(--dur-fast) ease;
+  transition: opacity 0s linear var(--dur-fast);
 }
-.zy-panel[data-state="choose"] .zy-f-choose::before { opacity: 0; }
+.zy-panel[data-state="choose"] .zy-f-choose::before { opacity: 0; transition: opacity var(--dur-fast) ease; }
 .zy-f-choose > * { position: relative; opacity: 0; transition: opacity .1s ease; }
 .zy-panel[data-state="choose"] .zy-f-choose > * { opacity: 1; transition: opacity var(--dur-fast) ease; }
 .zy-q h2 { opacity: 0; }

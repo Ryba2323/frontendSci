@@ -256,8 +256,11 @@
     });
 
     // Dzień z paska: podświetla swój liść na roślince (podpis rysuje scena), czytnik ekranu dostaje tekst
+    let dayTimer = 0;
     function showDay(i) {
       $$('.zy-day', root).forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.i === i)));
+      clearTimeout(dayTimer);
+      dayTimer = setTimeout(() => $$('.zy-day', root).forEach(x => x.setAttribute('aria-pressed', 'false')), 3200);   // jak podpis na roślince
       const m = P.entry && P.entry.mood;
       $('#zy-day-say').textContent = i === 6 ? (m ? `Dziś: ${m} na 10, ${word(m)}` : 'Dziś: roślinka czeka')
         : missed[i] ? `${names[i]}: odpoczynek. Też się liczy, roślinka nic nie traci.` : `${names[i]}: ${days[i]} na 10, ${word(days[i])}`;

@@ -1188,7 +1188,9 @@
       }
 
       // podpis dnia (zaznaczony: dzień i wynik w dymku) — rysowany po wszystkich liściach
-      const lab = tw.i === sel ? 1 - st.band : zywa ? 0 : st.labels;
+      // Żywa planeta: podpis dnia znika sam po chwili i pokazuje się tylko na Domu (na innych zakładkach roślinka stoi z boku)
+      const selLab = zywa ? clamp((3.2 - (clock - selAt)) / .4) * (1 - st.band) * (1 - compact) : 1;
+      const lab = tw.i === sel ? selLab : zywa ? 0 : st.labels;
       if (lab > .02) {
         const selected = tw.i === sel;
         const reach = (tw.isToday && !tw.watered) || tw.off ? 12 * S : dayLeafLen(tw) + 10;
