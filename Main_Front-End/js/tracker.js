@@ -146,7 +146,8 @@
   //  Widok
   // ================================================================
   const maxBar = 10;
-  const strip = week.map(d => `<span class="sum-day${d === data[DAYS - 1] ? ' is-today' : ''}${d.mood == null ? ' is-rest' : ''}" style="--v:${d.mood == null ? .12 : d.mood / maxBar}"><i></i><small>${d === data[DAYS - 1] ? 'dziś' : LETTER[d.dow]}</small></span>`).join('');
+  const strip = week.map(d => `<span class="sum-day${d === data[DAYS - 1] ? ' is-today' : ''}${d.mood == null ? ' is-rest' : ''}" style="--v:${d.mood == null ? .12 : d.mood / maxBar};--k:${week.indexOf(d)}"><b>${d.mood == null ? '' : d.mood}</b><i></i><small>${d === data[DAYS - 1] ? 'dziś' : LETTER[d.dow]}</small></span>`).join('');
+  const stripLabel = 'Ostatnie 7 dni: ' + week.map(d => `${d === data[DAYS - 1] ? 'dziś' : DOW_NAME[d.dow]} ${d.mood == null ? 'odpoczynek' : `${d.mood} na 10`}`).join(', ');
   const dowOrder = [1, 2, 3, 4, 5, 6, 0];
   const dowBars = dowOrder.map(k => `<span class="mb${k === worst.k ? ' is-hl' : ''}" style="--v:${dowAvg[k] == null ? 0 : dowAvg[k] / 10}"><b>${dowAvg[k] == null ? '–' : fmt(dowAvg[k])}</b><i></i><small>${LETTER[k]}</small></span>`).join('');
   const thisCount = thisWeek.days.filter(d => d.mood != null).length;
@@ -155,7 +156,7 @@
     <section class="tr-sec week-sum" aria-labelledby="tr-week-title">
       <p class="kicker" id="tr-week-title">Twój tydzień w skrócie</p>
       <p class="sum-head"><b>${fmt(wAvg)}</b><span>/10 · ${Math.abs(diff) < .2 ? 'podobnie jak tydzień wcześniej' : `o ${fmt(Math.abs(diff))} ${diff > 0 ? 'lepiej' : 'mniej'} niż tydzień wcześniej`}</span></p>
-      <div class="sum-strip" aria-hidden="true">${strip}</div>
+      <div class="sum-strip" role="img" aria-label="${stripLabel}">${strip}</div>
       ${best ? `<p class="sum-sub">Najlepszy dzień: ${best === data[DAYS - 1] ? 'dziś' : DOW_NAME[best.dow]}${bestHelp ? ` · pomogło: ${bestHelp.name.toLowerCase()}` : ''}</p>` : ''}
     </section>
 

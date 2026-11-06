@@ -490,7 +490,7 @@
     ctx.scale(1, .24);
     const R = 40 * S;
     const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-    halo.addColorStop(0, rgba(pal.l2, .35));
+    halo.addColorStop(0, rgba(pal.l2, zywa ? 0 : .35));
     halo.addColorStop(1, rgba(pal.l2, 0));
     ctx.fillStyle = halo;
     ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
@@ -516,7 +516,7 @@
     }
     // trawa
     ctx.lineCap = 'round';
-    for (const g of zywa ? GRASS.filter((_, gi) => gi % 3 === 1) : GRASS) {
+    for (const g of zywa ? [] : GRASS) {
       const sway = (Math.sin(clock * 1.7 + g.ph) * .25 + Math.sin(clock * 8 + g.ph) * wind * .3) * motion;
       const gx = baseX + g.x * S, gy = cy - .5 * S;
       const tx = gx + (g.lean + sway) * g.h * S, ty = gy - g.h * S * clamp(st.intro * 2);
@@ -547,7 +547,7 @@
     ctx.beginPath(); ctx.ellipse(bx0, cy - .2 * S, 5.5 * S, .9 * S, 0, 0, Math.PI); ctx.fill();
     // mech
     ctx.fillStyle = rgba(mixC(pal.l2, pal.stem, .25), .9);
-    for (const [dx, r] of [[-4.2, .9], [-3.2, .7], [3.6, .85], [4.6, .6], [2.8, .55]]) {
+    for (const [dx, r] of zywa ? [] : [[-4.2, .9], [-3.2, .7], [3.6, .85], [4.6, .6], [2.8, .55]]) {
       ctx.beginPath(); ctx.arc(bx0 + dx * S, cy - .7 * S, r * S, 0, TAU); ctx.fill();
     }
   }
@@ -589,7 +589,7 @@
       ctx.beginPath(); ctx.arc(mx - 4, my - 3, 3.2, 0, TAU); ctx.arc(mx + 5, my + 4, 2.2, 0, TAU); ctx.fill();
       ctx.fillStyle = '#fff';
       ctx.globalAlpha = 1;
-      for (const st0 of stars) {
+      for (const st0 of zywa ? stars.slice(0, 12) : stars) {
         ctx.globalAlpha = .3 + .5 * (.5 + .5 * Math.sin(clock * st0.sp + st0.ph));
         ctx.beginPath(); ctx.arc(st0.nx * CW, st0.ny * stageH, st0.r, 0, TAU); ctx.fill();
       }
@@ -602,7 +602,7 @@
     const warm = DAYPART === 'day' ? [255, 246, 220] : [255, 222, 186];
     ctx.globalAlpha = 1 - st.band;                               // w pasku słońce gaśnie jak księżyc
     const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(CW, stageH) * .45);
-    halo.addColorStop(0, rgba(warm, .5));
+    halo.addColorStop(0, rgba(warm, zywa ? .22 : .5));
     halo.addColorStop(1, rgba(warm, 0));
     ctx.fillStyle = halo; ctx.fillRect(0, 0, CW, stageH);
     if (!zywa) {
@@ -624,7 +624,7 @@
     const [cx, cy] = planetC();
     const night = nightSky();
     const atm = ctx.createRadialGradient(cx, cy, R * .92, cx, cy, R * 1.22);
-    atm.addColorStop(0, rgba(night ? tint(pal.glow, .2) : pal.glow, night ? .28 : .6));
+    atm.addColorStop(0, rgba(night ? tint(pal.glow, .2) : pal.glow, (night ? .28 : .6) * (onPlanet() ? .35 : 1)));
     atm.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R * 1.22, 0, TAU); ctx.fill();
     let top = tint(pal.ground, .3), mid = mixC(pal.ground, pal.stem, .22), deep = mixC(pal.ground, pal.stem, .5);
@@ -635,7 +635,7 @@
     let g;
     if (onPlanet()) {
       // łąka na horyzoncie przechodzi w grunt: na dolnej krawędzi sceny to dokładnie kolor tła treści, więc nie ma szwu
-      const rim = darkMode() ? mixC(pal.uiGround, pal.ground, .3) : mixC(pal.ground, pal.uiGround, .12);
+      const rim = darkMode() ? mixC(pal.uiGround, pal.ground, .16) : mixC(pal.ground, pal.uiGround, .5);
       g = ctx.createLinearGradient(0, baseY, 0, Math.max(baseY + 1, stageH));
       g.addColorStop(0, rgba(rim)); g.addColorStop(1, rgba(pal.uiGround));
     } else {
@@ -643,13 +643,13 @@
       g.addColorStop(0, rgba(top)); g.addColorStop(.55, rgba(mid)); g.addColorStop(1, rgba(deep));
     }
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
-    ctx.strokeStyle = rgba(tint(pal.ground, .65), night ? .35 : .8);
+    ctx.strokeStyle = rgba(tint(pal.ground, .65), (night ? .35 : .8) * (onPlanet() ? .4 : 1));
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(cx, cy, R - 1.5, -Math.PI * .86, -Math.PI * .14); ctx.stroke();
     ctx.restore();
     // kępki trawy i drobne kwiatki dookoła
     ctx.lineCap = 'round';
-    for (let ti = 0; ti < TUFTS.length; ti += onPlanet() ? 4 : 1) {
+    for (let ti = 0; ti < (onPlanet() ? 0 : TUFTS.length); ti++) {   // na telefonie czysty horyzont
       const t = TUFTS[ti];
       ctx.save();
       ctx.translate(cx, cy); ctx.rotate(t.a); ctx.translate(0, -R + .5);
@@ -843,13 +843,13 @@
     greetEl.style.opacity = ((1 - st.greet) * (1 - f)).toFixed(3);
     const greetBottom = greetEl.offsetTop + greetEl.offsetHeight + 8;
     const wk = clamp(CW / 375, 1, 2);                                  // szerszy ekran: wyższy łuk
-    const drop = lerp(lerp(60, 52, compact), 24, band) * wk;           // wysokość łuku nad dolną krawędzią sceny
+    const drop = lerp(lerp(46, 42, compact), 22, band) * wk;           // wysokość łuku nad dolną krawędzią sceny
     // na Domu roślinka stoi po prawej, a po lewej zostaje miejsce na powitanie i resztę horyzontu
     baseX = CW * lerp(lerp(lerp(.5, .5, compact), .46, band), .5, f);
     const reach = Math.max(baseX, CW - baseX);                         // łuk schodzi do dolnej krawędzi przy dalszym brzegu ekranu
     R = (drop * drop + reach * reach) / (2 * drop);
     baseY = stageH - lerp(drop, 150, f);
-    topReserve = lerp(lerp(lerp(Math.min(96, greetBottom), 58, compact), 6, band), 84, f);
+    topReserve = lerp(lerp(lerp(greetBottom + 4, 58, compact), 6, band), 84, f);   // kwiat zaczyna się pod powitaniem, nie obok niego
     S = clamp(Math.min((baseY - topReserve) / (FULL_H + 12), CW * lerp(.9, 1, f) / 78), .4, 7);
     // po podlaniu roślinka lekko się prostuje i wraca (krótki „oddech”)
     if (motion && clock > bumpAt && clock < bumpAt + 1.1) S *= 1 + .022 * Math.sin((clock - bumpAt) / 1.1 * Math.PI);
@@ -1020,7 +1020,7 @@
     worldTransform();
     const gy = baseY - h * .5 * S;
     const glow = ctx.createRadialGradient(baseX, gy, 0, baseX, gy, Math.max(h, 40) * 1.05 * S);
-    glow.addColorStop(0, rgba(pal.glow, .3 + .2 * bloom));
+    glow.addColorStop(0, rgba(pal.glow, (.3 + .2 * bloom) * (zywa ? .3 : 1)));
     glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(baseX, gy, Math.max(h, 40) * 1.05 * S, 0, TAU); ctx.fill();
@@ -1083,7 +1083,7 @@
     const wet = clamp(1 - (clock - wetAt) / 7) * (clock >= wetAt ? 1 : 0);
     const stemLeaves = behind => STEM_LEAVES.forEach((l, idx) => {
       if (!!l.behind !== behind) return;
-      if (zywa && l.t > .3 && l.t < .75) return;                         // liście dni mają być czytelne: bez drobnych listków między nimi
+      if (zywa && !l.behind) return;                                     // liście dni mają być czytelne: z dodatkowych zostają tylko dwa dolne
       const e = introLeaf(idx);
       if (e <= 0) return;
       const s = grown(e);
@@ -1101,7 +1101,7 @@
     for (const tw of twigs) { ctx.beginPath(); ctx.arc(tw.sx, tw.sy, Math.max(1.2, 1.2 * S), 0, TAU); ctx.fill(); }
     stemLeaves(false);
     // zapasowy pąk przy czubku
-    [SPARE_BUD].forEach(b => {
+    (zywa ? [] : [SPARE_BUD]).forEach(b => {
       const e = introBranch(3);
       if (e <= 0) return;
       const [x, y] = stemPt(P, b.t);
@@ -1141,13 +1141,13 @@
 
       if (tw.isToday && !tw.watered) {
         // pąk na dziś: zwinięty listek w przerywanym kółku
-        const pr = 1 + .03 * Math.sin(clock * 2) * motion;
+        const pr = 1 + (zywa ? 0 : .03 * Math.sin(clock * 2) * motion);
         drawLeaf(tw.ex, tw.ey, angTip - .3, 7 * S * tw.k * pr, { wr: .28, curl: .4, fold: .6, stalk: .2, shape: 'lance', colors: leafColors(.1, .9) });
         const bx = tw.ex + Math.cos(angTip - .3) * 3.5 * S, by = tw.ey + Math.sin(angTip - .3) * 3.5 * S;
         ctx.beginPath();
-        ctx.arc(bx, by, (6.5 + 1 * Math.sin(clock * 2) * motion) * S * .9, 0, TAU);
-        ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = rgba(pal.primary, .6 * tw.k);
+        ctx.arc(bx, by, (6.5 + (zywa ? 0 : 1 * Math.sin(clock * 2) * motion)) * S * .9, 0, TAU);
+        if (!zywa) ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = rgba(pal.primary, (zywa ? .32 : .6) * tw.k);
         ctx.lineWidth = 1.4;
         ctx.stroke();
         ctx.setLineDash([]);
@@ -1205,7 +1205,7 @@
     const placed = [];
     tags.sort((a, b) => a.selected - b.selected || a.y - b.y);
     for (const t of tags) {
-      ctx.font = `${t.selected ? (zywa ? 600 : 800) : 700} ${t.selected ? 12 : 10.5}px ${zywa ? '"Instrument Sans"' : '"Plus Jakarta Sans"'}, system-ui, sans-serif`;
+      ctx.font = `${t.selected ? (zywa ? 600 : 800) : 700} ${t.selected ? 12 : 10.5}px ${zywa ? '"Figtree"' : '"Plus Jakarta Sans"'}, system-ui, sans-serif`;
       const bw = ctx.measureText(t.text).width + (t.selected ? 16 : 10), bh = t.selected ? 22 : 16;
       let px = clamp(t.x, bw / 2 + 4, CW - bw / 2 - 4), py = clamp(t.y, 12, stageH - 12);
       for (let guard = 0; guard < 6; guard++) {
@@ -1297,7 +1297,7 @@
 
     // ---- świetliki ----
     const flare = clamp(1 - (clock - flareAt) / 1.8);
-    const fireflyN = zywa ? (nightSky() ? 5 : 2) : fireflies.length;
+    const fireflyN = zywa ? (flare > .01 ? 3 : nightSky() ? 2 : 0) : fireflies.length;   // w dzień świetliki tylko po dotyku
     for (let fi = 0; fi < fireflyN; fi++) {
       const f = fireflies[fi];
       const th = clock * f.sp * motion + f.ph;

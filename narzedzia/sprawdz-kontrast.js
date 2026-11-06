@@ -7,7 +7,7 @@
  * Wersja strony głównej: UKLAD=a|b|c node narzedzia/sprawdz-kontrast.js
  */
 const { chromium } = require('playwright');
-const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/aplikacja.html') + (process.env.UKLAD ? `?uklad=${process.env.UKLAD}&` : '?');
+const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/aplikacja.html') + (process.env.UKLAD ? `?uklad=${process.env.UKLAD}&` : '?') + 'pora=dzien&';   // stała pora: wynik nie zależy od godziny (napisy na niebie sprawdza sprawdz-niebo.js)
 const THEMES = ['morski', 'zielony', 'niebieski', 'lawenda', 'rozowy', 'morelowy'];
 
 function audit() {
