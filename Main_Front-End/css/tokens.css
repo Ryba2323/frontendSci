@@ -10,6 +10,10 @@
  * Kolory --plant-* czyta canvas (js/plant-scene.js) — zapisuj je jako #RRGGBB.
  */
 :root {
+  /* Jasny tryb to świadomy wybór, a ciemny robimy sami (niżej). „only light” zabrania przeglądarce wymuszania
+     ciemnych stron (Opera GX „Force dark pages”, Chrome „Auto Dark Mode”), które przyciemniały karty,
+     a niebo na canvasie zostawiały jasne. */
+  color-scheme: only light;
   /* Stałe (niezależne od motywu) */
   --text: #1E2A32;
   --text-muted: #53636C;   /* 4,5:1 także na przyciemnionych tłach (--bg-2, odcienie motywu) we wszystkich motywach */
