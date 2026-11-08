@@ -92,7 +92,7 @@
       primary: v('--primary'), muted: v('--text-muted'),
       water: mixC(v('--accent-light'), WHITE, .2),
       bokeh: [v('--mist'), v('--mint'), v('--accent-light'), v('--plant-flower')],
-      bg: v('--bg'), mist: v('--mist'), accent: v('--accent-light'),
+      bg: v('--bg'), mist: v('--mist'), accent: v('--accent-light'), sheet: v('--sheet'),
       // grunt: powierzchnia planety i tło treści to ten sam kolor (zapisywany do --ground, żeby CSS i canvas się nie rozjechały)
       uiGround: mixC(v('--sheet'), v('--plant-ground'), parseFloat(cs.getPropertyValue('--ground-k')) || .4),
     };
@@ -100,7 +100,22 @@
   const lerpDeep = (a, b, t) => typeof a[0] === 'number' ? mixC(a, b, t) : a.map((x, i) => lerpDeep(x, b[i], t));
   function lerpPalette(a, b, t) { const o = {}; for (const k in a) o[k] = lerpDeep(a[k], b[k], t); return o; }
   let pal = readPalette(), palFrom = pal, palTo = pal, palT = 1;
-  const markGround = () => { if (zywa) document.documentElement.style.setProperty('--ground', `rgb(${pal.uiGround.map(c => Math.round(c)).join(',')})`); };
+  // POKOJE (?uklad=e, <html data-pokoje>): każda zakładka ma własny, delikatny odcień gruntu, żeby było widać, w którym „pokoju” jesteś.
+  // Skrytka: ciepłe światło (wsparcie, dobre chwile) · Tracker: jaśniej i neutralnie (czytanie wykresów) · Blog: odrobina motywu.
+  // [kolor z palety, ile w trybie dziennym, ile w nocnym]. Grunt przechodzi płynnie przy zmianie zakładki.
+  const pokoje = zywa && document.documentElement.hasAttribute('data-pokoje');
+  const ROOM = { skrytka: ['core', .14, .07], tracker: ['sheet', .55, 0], blog: ['primary', .09, .08] };
+  let roomFromC = null, roomTo = null, roomT = 1, lastGround = '';
+  function roomColor(tab) {
+    const r = pokoje && ROOM[tab];
+    return r ? mixC(pal.uiGround, pal[r[0]], darkMode() ? r[2] : r[1]) : pal.uiGround;
+  }
+  const groundNow = () => (roomTo == null ? pal.uiGround : roomT >= 1 || !roomFromC ? roomColor(roomTo) : mixC(roomFromC, roomColor(roomTo), easeInOut(roomT)));
+  const markGround = () => {
+    if (!zywa) return;
+    const s = `rgb(${groundNow().map(c => Math.round(c)).join(',')})`;
+    if (s !== lastGround) { lastGround = s; document.documentElement.style.setProperty('--ground', s); }
+  };
   markGround();
 
   // Kolory liścia: ton (0 = młody/jasny … 1 = dojrzały/ciemny) i żywość (0 = blady … 1 = soczysty)
@@ -635,9 +650,10 @@
     let g;
     if (onPlanet()) {
       // łąka na horyzoncie przechodzi w grunt: na dolnej krawędzi sceny to dokładnie kolor tła treści, więc nie ma szwu
-      const rim = darkMode() ? mixC(pal.uiGround, pal.ground, .16) : mixC(pal.ground, pal.uiGround, .5);
+      const ug = groundNow();
+      const rim = darkMode() ? mixC(ug, pal.ground, .16) : mixC(pal.ground, ug, .5);
       g = ctx.createLinearGradient(0, baseY, 0, Math.max(baseY + 1, stageH));
-      g.addColorStop(0, rgba(rim)); g.addColorStop(1, rgba(pal.uiGround));
+      g.addColorStop(0, rgba(rim)); g.addColorStop(1, rgba(ug));
     } else {
       g = ctx.createRadialGradient(cx - R * .25, cy - R * .8, R * .08, cx, cy, R * 1.02);
       g.addColorStop(0, rgba(top)); g.addColorStop(.55, rgba(mid)); g.addColorStop(1, rgba(deep));
@@ -768,6 +784,11 @@
   function goPlace(tab) {
     if (tab !== curTab) { prevTab = curTab; placeT = firstPlace || reduceMotion ? 1 : 0; }
     curTab = tab;
+    if (pokoje && tab !== roomTo) {
+      roomFromC = roomTo == null ? null : groundNow();
+      roomTo = tab; roomT = firstPlace || reduceMotion ? 1 : 0;
+      markGround();
+    }
     if (onPlanet()) {
       const to = SLOT[tab] || 0;
       const instant = firstPlace || reduceMotion || to === worldSlot;
@@ -927,6 +948,7 @@
     }
     fog = rotT < 1 ? Math.sin(Math.PI * rotT) * (zywa ? .25 : 1) : 0;
     placeT = Math.min(1, placeT + dt / .5);
+    if (roomT < 1) { roomT = Math.min(1, roomT + dt / .7); markGround(); }   // --dur-slow
     compact = reduceMotion ? compactTarget : approach(compact, compactTarget, 3.2, dt);
     frameLayout();
 

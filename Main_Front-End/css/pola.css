@@ -1,0 +1,99 @@
+/*
+ * POLA KOLORU — charakter dla Żywej planety (<html data-uklad="d" data-pola>, domyślnie włączone; ?pola=0 pokazuje wersję bez nich).
+ * Ładowany po zywa.css i pokoje.css. Odpowiedź na uwagę zespołu: „wszystkie boxy są białe, aplikacja jest bez charakteru”.
+ *
+ * Zasada: mało kolorów, ale każdy coś znaczy. Tylko dwa kolory na kartach, oba z motywu, więc 6 motywów daje 6 różnych aplikacji:
+ *  • POLE (--pole): jedna pełna karta w kolorze roślinki na ekran — najważniejsze dane o Tobie (Dom: Twój tydzień,
+ *    Tracker: tydzień w skrócie). Biały tekst, w rogu sylwetka liścia. Nigdy dwie na jednym ekranie.
+ *  • KARTA (--pole-soft): zwykła karta lekko zabarwiona kolorem roślinki zamiast bieli.
+ *  • CIEPŁE (--pole-warm): podpowiedzi i wsparcie („Dla Ciebie teraz”, „Spróbuj”) — to samo ciepłe światło co SOS i świetliki.
+ *  • Kształt liścia: każda karta ma jeden ostry róg (lewy dolny). Myśl na dziś i listy (Blog) zostają bez karty.
+ * Kolory kategorii (--cat-*) dalej tylko w wykresach Trackera. Tokeny jak w całej aplikacji: --sp-*, --dur-*, --radius-*.
+ * W React Native: --pole / --pole-soft / --pole-warm jako kolory w konfiguracji NativeWind, liść jako komponent SVG.
+ */
+:root[data-pola] {
+  --pole: var(--primary);
+  --pole-ink: #FFFFFF;
+  --pole-soft: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  --pole-warm: color-mix(in srgb, var(--plant-core) 30%, var(--surface));
+  --pole-warm-ico: color-mix(in srgb, var(--plant-core) 58%, var(--surface));
+  --pole-bar: color-mix(in srgb, var(--primary) 24%, var(--pole-soft));   /* słupki bez wyróżnienia */
+  --leaf: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--sp-2);
+  --leaf-sm: var(--radius-md) var(--radius-md) var(--radius-md) 6px;
+  --pole-shadow: 0 2px 6px color-mix(in srgb, var(--primary) 18%, transparent), 0 22px 40px -22px color-mix(in srgb, var(--primary) 85%, #000);
+  /* sylwetka liścia w rogu pola (maska, kolor z tła) */
+  --leaf-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M10 92C6 52 34 14 94 8c2 56-28 86-84 84z'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-pola]:not([data-mode="light"]) {
+    --pole-soft: color-mix(in srgb, var(--primary) 20%, var(--surface));
+    --pole-warm: color-mix(in srgb, var(--plant-core) 17%, var(--surface));
+    --pole-warm-ico: color-mix(in srgb, var(--plant-core) 32%, var(--surface));
+    --pole-bar: color-mix(in srgb, var(--text) 16%, var(--pole-soft));   /* w nocy neutralne, żeby wyróżniony słupek był widoczny */
+  }
+}
+:root[data-pola][data-mode="dark"] {
+  --pole-soft: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  --pole-warm: color-mix(in srgb, var(--plant-core) 17%, var(--surface));
+  --pole-warm-ico: color-mix(in srgb, var(--plant-core) 32%, var(--surface));
+  --pole-bar: color-mix(in srgb, var(--text) 16%, var(--pole-soft));
+}
+
+/* ---------- KARTA: zabarwiona zamiast białej, kształt liścia ---------- */
+:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .zy-done, .post.is-open, .du-chip:not(.zy-quick .du-chip)) { background: var(--pole-soft); }
+:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open) { border-radius: var(--leaf); }
+:root[data-pola] :is(.zy-done, .du-chip:not(.zy-quick .du-chip)) { border-radius: var(--leaf-sm); }
+:root[data-pola] .vault-item.is-open { background: var(--surface); }
+:root[data-pola] .herb.is-now { border-radius: var(--leaf); border-color: color-mix(in srgb, var(--primary) 45%, transparent); background: var(--pole-soft); }
+
+/* szare słupki w kartach Trackera dostają odcień motywu (wyróżniony słupek zostaje w kolorze kategorii) */
+:root[data-pola] :is(.mb:not(.is-hl) i, .compare span:not(.is-hl) i, .help-bar) { background: var(--pole-bar); }
+
+/* ---------- CIEPŁE: podpowiedź i „Spróbuj” ---------- */
+:root[data-pola] .du-suggest { background: var(--pole-warm); border-color: transparent; border-radius: var(--leaf); }
+@media (hover: hover) { :root[data-pola] .du-suggest:hover { background: color-mix(in srgb, var(--plant-core) 38%, var(--surface)); } }
+:root[data-pola] .du-suggest .du-ico { background: var(--pole-warm-ico); color: var(--text); border-radius: var(--leaf-sm); }
+:root[data-pola] .du-suggest small { color: var(--text-body); }
+:root[data-pola] .du-suggest > svg:last-child { color: var(--text); }
+:root[data-pola] .insight .try { background: var(--pole-warm); border-radius: var(--leaf-sm); }
+
+/* ---------- POLE: jedna pełna karta w kolorze roślinki ---------- */
+:root[data-pola] :is(#sec-week, .tr-sec.week-sum) {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding: var(--sp-5) var(--sp-5) var(--sp-6); border: 0; border-radius: var(--leaf);
+  background: linear-gradient(170deg, transparent 40%, rgba(0, 0, 0, .1)), var(--pole);
+  box-shadow: var(--pole-shadow), inset 0 1px 0 rgba(255, 255, 255, .14); color: var(--pole-ink);
+  /* światło z góry, cień na dole: pole ma bryłę, a biały tekst nigdy nie traci kontrastu (dół tylko ciemnieje) */
+}
+/* sylwetka liścia wyrasta z prawego dolnego rogu */
+:root[data-pola] :is(#sec-week, .tr-sec.week-sum)::after {
+  content: ""; position: absolute; z-index: -1; right: -18px; bottom: -22px; width: 132px; height: 132px; pointer-events: none;
+  background: color-mix(in srgb, #fff 14%, transparent);
+  -webkit-mask: var(--leaf-mask) center / contain no-repeat; mask: var(--leaf-mask) center / contain no-repeat;
+  transform: scaleX(-1) rotate(6deg);   /* nasada w rogu, czubek liścia celuje w środek karty */
+}
+/* Dom: tydzień to osobne pole, a nie kolejna sekcja za linią */
+:root[data-pola] #view-dom #sec-week { margin-top: var(--sp-10); border-top: 0; }
+:root[data-pola] #view-dom #sec-week + .sec { border-top: 0; }
+/* każdy tekst w polu jest biały: hierarchię robi rozmiar, nie szarość (szarość na kolorze traci kontrast) */
+:root[data-pola] :is(#sec-week, .tr-sec.week-sum) :is(p, span, small, b, strong, u, li, .kicker, .score-word, .trend, .sum-sub, .sum-head span, summary, .pk-link) { color: var(--pole-ink); }
+:root[data-pola] #sec-week .kicker { font-family: var(--font); font-size: 1rem; font-weight: 600; letter-spacing: 0; }
+:root[data-pola] #sec-week .score-num strong { font-size: 3.4rem; }
+:root[data-pola] #sec-week .score-num span { font-weight: 500; }
+:root[data-pola] #sec-week .trend b { color: var(--pole-ink); }
+:root[data-pola] #sec-week .how summary svg { color: var(--pole-ink); }
+:root[data-pola] #sec-week .how summary u, :root[data-pola] #sec-week .pk-link { text-decoration-color: color-mix(in srgb, #fff 70%, transparent); }
+:root[data-pola] #sec-week .how summary:focus-visible, :root[data-pola] #sec-week .pk-link:focus-visible { outline-color: #fff; }
+/* Tracker: słupki w polu są jasne, dziś pełna biel; dzień bez wpisu to cienka kreska */
+:root[data-pola] .tr-sec.week-sum .kicker { color: var(--pole-ink); }
+:root[data-pola] .tr-sec.week-sum .sum-day i { background: color-mix(in srgb, #fff 42%, transparent); }
+:root[data-pola] .tr-sec.week-sum .sum-day.is-today i { background: #fff; }
+:root[data-pola] .tr-sec.week-sum .sum-day.is-rest i { background: color-mix(in srgb, #fff 24%, transparent); }
+:root[data-pola] .tr-sec.week-sum .sum-day b { color: var(--pole-ink); }
+
+/* Pokoje (?uklad=e): rozdział „Ten tydzień” ma pole, „Twój tydzień” na Domu też */
+:root[data-pola][data-pokoje] #view-dom #sec-week { padding: var(--sp-5) var(--sp-5) var(--sp-6); background: linear-gradient(170deg, transparent 40%, rgba(0, 0, 0, .1)), var(--pole); box-shadow: var(--pole-shadow); }
+:root[data-pola][data-pokoje] #view-dom #sec-week .kicker { color: var(--pole-ink); }
+
+/* Mniej ruchu: pola nie mają animacji, nic do wyłączania. Wysoki kontrast: pole zostaje pełnym kolorem, bez gradientu. */
+@media (prefers-contrast: more) { :root[data-pola] :is(#sec-week, .tr-sec.week-sum) { background: var(--pole); } }

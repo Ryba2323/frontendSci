@@ -14,8 +14,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
 
-  <!-- Kierunek „Żywa planeta” (domyślny; ?uklad=a|b|c|stary — poprzednie wersje). Musi być ustawiony przed pierwszym rysowaniem. -->
-  <script>(function () { var u = new URLSearchParams(location.search).get('uklad'); if (!u || u === 'd') document.documentElement.dataset.uklad = 'd'; })();</script>
+  <!-- Kierunek „Żywa planeta” (domyślny; ?uklad=a|b|c|stary — poprzednie wersje). Musi być ustawiony przed pierwszym rysowaniem.
+       Pola koloru (css/pola.css) są włączone w D i E; ?pola=0 pokazuje wersję bez nich.
+       ?uklad=e — „Pokoje”: Żywa planeta + wyraźnie oddzielone zakładki (css/pokoje.css, js/pokoje.js), propozycja do porównania. -->
+  <script>(function () { var u = new URLSearchParams(location.search).get('uklad'); if (!u || u === 'd' || u === 'e') document.documentElement.dataset.uklad = 'd'; if (u === 'e') document.documentElement.setAttribute('data-pokoje', ''); if (document.documentElement.dataset.uklad === 'd' && new URLSearchParams(location.search).get('pola') !== '0') document.documentElement.setAttribute('data-pola', ''); })();</script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/home2.css">
   <link rel="stylesheet" href="css/checkin.css">
@@ -28,6 +30,10 @@
   <link rel="stylesheet" href="css/dom-uklad.css">
   <!-- Żywa planeta: wygląd całej aplikacji na telefonie (ładowany ostatni) -->
   <link rel="stylesheet" href="css/zywa.css">
+  <!-- Pokoje (?uklad=e): każda zakładka to osobny pokój, nagłówek zostaje w pasku, pisanie w Skrytce na pełnym ekranie -->
+  <link rel="stylesheet" href="css/pokoje.css">
+  <!-- Pola koloru: charakter kart (jedno pole w kolorze roślinki na ekran, zabarwione karty, ciepłe podpowiedzi) -->
+  <link rel="stylesheet" href="css/pola.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
 
@@ -48,6 +54,7 @@
   <script src="js/testy.js" defer></script>
   <script src="js/asystent.js" defer></script>
   <script src="js/dom-uklad.js" defer></script>
+  <script src="js/pokoje.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
 <body data-tab="dom">

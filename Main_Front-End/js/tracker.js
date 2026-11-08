@@ -208,7 +208,7 @@
     <h2 class="sub-title">Zielnik</h2>
     <p class="helps-note">Kwiat za każdy tydzień z 3 podlaniami.</p>
     <ul class="herbarium">
-      <li class="herb is-now"><span class="herb-seed">${Array.from({ length: 3 }, (_, k) => `<i class="${k < thisCount ? 'on' : ''}"></i>`).join('')}</span><small>Ten tydzień</small><b>${thisCount >= 3 ? 'kwiat w niedzielę' : `${thisCount} z 3 podlań`}</b></li>
+      <li class="herb is-now"><span class="herb-seed">${Array.from({ length: 3 }, (_, k) => `<i class="${k < thisCount ? 'on' : ''}"></i>`).join('')}</span><small>Ten tydzień</small><b>${thisCount >= 3 ? (today.getDay() === 0 ? 'kwiat dziś' : 'kwiat w niedzielę') : `${thisCount} z 3 podlań`}</b></li>
       ${pressed.map((w, i) => `<li class="herb" style="--i:${i + 1}">${flower(w, i)}<small>${range(w)}</small></li>`).join('')}
     </ul>
     <p class="demo-note">Dane przykładowe. Wnioski to podpowiedzi, nie diagnoza.</p>`;

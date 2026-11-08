@@ -33,6 +33,24 @@ Built on "Mała planeta" below; it fixes the phone: the plant used to disappear 
 - **Tracker is readable at a glance:** each block is a card (conclusion first, chart under it), bars are tall and solid with a value above each one, the day an insight is about is the only coloured bar in its chart.
 - **Three levels of text, on every tab:** section titles are real serif headings (`.sheet .kicker` too, no small grey labels), reading text uses `--text-body`, only dates and captions use `--text-muted` / `--text-soft`. Cards use `--surface` + `--line` and must stand out from `--ground` (at night the card is lighter than the ground). The contrast test can't see hierarchy, so check this by eye.
 - Not tested on a real phone yet (only Playwright and browser emulation). Test with teenagers before the team treats this as chosen.
+- **Colour fields ("Pola koloru", 8.11.2026, `css/pola.css`, `<html data-pola>`, on by default in D and E; `?pola=0` shows the look without them).** The team's feedback was that every box was white and the app had no character. The fix keeps colour scarce: only two colours on cards, both from the theme, so each of the 6 themes gives a different app.
+  - **Field (`--pole`)**: one card per screen filled with `--primary`, white text and a leaf silhouette in the corner: the most important data about you (Dom: "Twój tydzień", Tracker: the week summary). Never two on one screen. Every text in it is white; hierarchy comes from size, never grey. Its gradient only darkens towards the bottom, so white text keeps its contrast.
+  - **Card (`--pole-soft`)**: ordinary cards are tinted with the theme colour instead of white (insights, "Co Ci pomaga", thoughts in Skrytka, an open blog post, the "Podlane" chip).
+  - **Warm (`--pole-warm`)**: suggestions and support ("Dla Ciebie teraz", "Spróbuj" in Tracker) use the same warm light as SOS and the fireflies.
+  - **Leaf shape (`--leaf`)**: every card has one sharp corner (bottom left). "Myśl na dziś" and lists (Blog) stay without a card.
+  - `--cat-*` stays Tracker-only, in charts. Don't add a third card colour; if something new needs emphasis, it is either the screen's one field or a tinted card.
+
+## Proposal E: "Pokoje" (8.11.2026, preview `?uklad=e`, `css/pokoje.css`, `js/pokoje.js`)
+
+Answers Tymek's feedback that everything in the app blends into one and it's hard to "collect your thoughts". It is layout D plus clear boundaries between tabs; D stays the default until the team compares them. Scope: `<html data-uklad="d" data-pokoje>` (set by the inline script in `aplikacja.html`; `js/dom-uklad.js` builds Dom exactly like D). Logic is only rearranged, never duplicated: `js/pokoje.js` moves existing elements and adds new entry points.
+
+1. **The header stays.** Once the scene collapses into the band (`body.is-band`), the tab's name replaces the wordmark on every tab except Dom. Content disappears under a 1 px line with a short shadow (`.stage-fade`) instead of fading into the sky.
+2. **Every tab is a room.** Outside Dom the stage is lower (`--stage-compact`), and the ground has the tab's own tint, computed in the scene (`ROOM` in `js/home2-scene.js`; it writes `--ground`, so canvas and CSS stay in sync and the tint changes smoothly with the tab). Skrytka mixes in the warm light (`--plant-core`), Tracker is lighter and neutral (`--sheet`), Blog has a touch of `--primary`.
+3. **Writing in Skrytka is its own screen.** Skrytka shows "Napisz myśl" (the screen's one filled button) and the list. The button opens `#vault-form` full screen (`body.pk-writing`): close button, title, SOS, the text field, "Puść z wiatrem" and "Schowaj". The draft survives closing; save and release return to the list. The phone's back button, Escape and the close button all close it (a history entry is pushed while writing). "Zapisz myśl" on Dom opens it directly (`Skrytka.focus`). The crisis support box moves inside the writing screen.
+4. **Three heading levels on every tab:** page title (big, Bricolage) · chapter (`.pk-h2`, `.sub-title`, `.sheet .kicker`: 1.5rem Bricolage) · card (`.pk-h3`, `.insight h3`: 1.08rem Figtree 600). Chapters are separated by `--pk-gap-chapter` (48 px), cards inside a chapter by `--pk-gap-in` (12 px). Tracker has three chapters: "Ten tydzień" (summary), "Co zauważyliśmy" (insights + "Co Ci pomaga" as a card), "Zielnik" (one row; "Pokaż cały zielnik" shows the rest).
+5. **Dom below the first screen has three blocks:** "Dla Ciebie teraz", "Twój tydzień" (one card with a "Więcej w Trackerze" link) and "Myśl na dziś", with no dividing lines. The plant's name, colour, full screen and "Jak działa roślinka?" moved into one sheet, "Twoja roślinka" (`#plant-sheet`), opened from a single row at the end of Dom.
+
+Still open: Dom's weekly score is random demo data and doesn't match Tracker's fixed demo data, so the "Więcej w Trackerze" link makes the mismatch visible (proposal 6, not built yet). Not tested on a real phone.
 
 ## Visual direction: "Mała planeta" (redesign around the plant, branch `redesign/mala-planeta`)
 
@@ -63,6 +81,7 @@ The rules below still apply on top of this direction:
   - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
   - `?widok=statyczny` renders a page without animation and with demo data (for screenshots and team previews).
   - `?pora=rano|dzien|wieczor|noc` previews the sky at a given time of day.
+  - `?uklad=e` previews proposal E "Pokoje" (D with clearly separated tabs, see above). `UKLAD=e` works with the test tools too.
   - `?uklad=a|b|c` previews the earlier home-page layouts (A "Dziś jednym dotknięciem", B "Strona dnia", C "Wszystko pod kciukiem"), `?uklad=stary` the old home page with the "Podlej roślinkę" button. With `?uklad=a|b|c` a switcher appears at the top of Dom; `porownanie.html` shows D, A, B and C side by side. Layout D "Żywa planeta" is the default. `UKLAD=a|b|c` also works with `sprawdz-nakladanie.js` and `sprawdz-kontrast.js`.
 - Canvas scenes only animate while the tab is visible. When the browser tab is in the background (e.g. during automated testing), call `HomeScene.debugAdvance(sec)` / `Home2Scene.debugAdvance(sec)` in the console to step the scene forward manually.
 

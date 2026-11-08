@@ -4,7 +4,7 @@
  * Dla każdego widocznego tekstu liczy kontrast z tłem (półprzezroczyste tła są składane warstwa po warstwie,
  * aż do tła strony --bg). Próg WCAG AA: 4,5:1, duży tekst (od 24 px albo od 18,7 px pogrubiony) 3:1.
  * Gradienty tła pomija (liczy kolor pod nimi). Uruchom: node narzedzia/sprawdz-kontrast.js
- * Wersja strony głównej: UKLAD=a|b|c node narzedzia/sprawdz-kontrast.js
+ * Wersja strony głównej: UKLAD=a|b|c|e node narzedzia/sprawdz-kontrast.js (e: także ekran pisania w Skrytce)
  */
 const { chromium } = require('playwright');
 const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/aplikacja.html') + (process.env.UKLAD ? `?uklad=${process.env.UKLAD}&` : '?') + 'pora=dzien&';   // stała pora: wynik nie zależy od godziny (napisy na niebie sprawdza sprawdz-niebo.js)
@@ -55,6 +55,7 @@ function audit() {
       await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/${tab}`); await p.waitForTimeout(500);
       note(tab, await p.evaluate(audit));
       if (tab === 'blog') { await p.click('.post-open'); await p.waitForTimeout(200); note('blog rozwinięty', await p.evaluate(audit)); }
+      if (tab === 'skrytka' && process.env.UKLAD === 'e') { await p.click('#pk-write'); await p.waitForTimeout(300); note('pisanie', await p.evaluate(audit)); await p.click('#pk-write-close'); await p.waitForTimeout(200); }
       if (tab === 'skrytka') { await p.click('[data-pane="sloik"]'); await p.waitForTimeout(200); note('słoik', await p.evaluate(audit)); }
     }
     await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
@@ -70,7 +71,7 @@ function audit() {
     for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowRight');
     await p.waitForTimeout(400); note('podlewanie, niski nastrój', await p.evaluate(audit));
     // Żywa planeta: stany panelu na Domu (wybór liczby, po podlaniu, wsparcie przy niskim nastroju)
-    if (!process.env.UKLAD || process.env.UKLAD === 'd') {
+    if (!process.env.UKLAD || process.env.UKLAD === 'd' || process.env.UKLAD === 'e') {
       await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
       await p.click('#zy-water'); await p.waitForTimeout(300); note('panel: wybór', await p.evaluate(audit));
       await p.click('.zy-moods .du-mood[data-v="8"]'); await p.waitForTimeout(300); note('panel: podlane', await p.evaluate(audit));

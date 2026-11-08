@@ -1,0 +1,187 @@
+/*
+ * POKOJE (?uklad=e, <html data-uklad="d" data-pokoje>) — Żywa planeta z wyraźnie oddzielonymi zakładkami. Ładowany po zywa.css.
+ * Logika: js/pokoje.js, odcień gruntu każdej zakładki: js/home2-scene.js (ROOM).
+ *
+ *  1. Nagłówek zostaje: w zwiniętym pasku nazwa zakładki zamiast logo; treść chowa się pod krawędzią z cieniem, nie rozpływa w niebie.
+ *  2. Pokoje: poza Domem scena jest niższa, a grunt ma odcień zakładki (Skrytka ciepła, Tracker jasny, Blog w kolorze motywu).
+ *  3. Skrytka: pisanie to osobny ekran (pole, „Schowaj”, „Puść z wiatrem”), lista myśli zostaje pod przyciskiem „Napisz myśl”.
+ *  4. Trzy poziomy tytułów: strona (duży, Bricolage) · rozdział (średni, Bricolage) · karta (mały, Figtree 600).
+ *     Odstęp między rozdziałami jest wyraźnie większy niż między kartami w rozdziale.
+ *  5. Dom pod pierwszym ekranem: trzy bloki, każdy z jednym tytułem; ustawienia roślinki w arkuszu.
+ * Tokeny jak w całej aplikacji: --sp-*, --dur-*, --radius-*, --e1/--e2, kolory motywu.
+ */
+:root[data-pokoje] {
+  /* odstępy rozdziałów: między rozdziałami dużo, w rozdziale mało — oko samo grupuje treść */
+  --pk-gap-chapter: var(--sp-12);
+  --pk-gap-in: var(--sp-3);
+  --pk-edge: color-mix(in srgb, #0B1A1F 12%, transparent);
+}
+@media (prefers-color-scheme: dark) { :root[data-pokoje]:not([data-mode="light"]) { --pk-edge: rgba(0, 0, 0, .42); } }
+:root[data-pokoje][data-mode="dark"] { --pk-edge: rgba(0, 0, 0, .42); }
+
+/* ---------- 1. Nagłówek w pasku + wyraźna krawędź ---------- */
+.pk-title { display: none; }
+@media (max-width: 1023px) {
+  .pk-title {
+    display: block; position: absolute; left: var(--sp-5); top: calc(env(safe-area-inset-top) + var(--sp-3)); margin: 0;
+    height: 44px; line-height: 44px; max-width: 34vw; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    font-family: var(--font-serif); font-size: 1.4rem; font-weight: 500; letter-spacing: -.015em; color: var(--text);
+    opacity: 0; transform: translateY(6px); pointer-events: none;
+    transition: opacity var(--dur-fast) ease, transform var(--dur-base) var(--ease-out);
+  }
+  :root[data-pokoje][data-pora="noc"] .pk-title { color: #EEF2F6; }
+  :root[data-pokoje][data-pora="wieczor"] .pk-title { color: #FFF8F2; }
+  :root[data-pokoje] .app-top .brand { transition: opacity var(--dur-fast) ease, transform var(--dur-base) var(--ease-out); }
+  /* po zwinięciu sceny (poza Domem) logo ustępuje nazwie zakładki — zawsze wiadomo, gdzie jesteś */
+  :root[data-pokoje] body.is-band:not([data-tab="dom"]) .pk-title { opacity: 1; transform: none; }
+  :root[data-pokoje] body.is-band:not([data-tab="dom"]) .app-top .brand { opacity: 0; transform: translateY(-6px); }
+
+  /* krawędź zamiast mgiełki: cienka linia i krótki cień pod zwiniętą sceną; treść znika pod nią w całości */
+  :root[data-pokoje] .stage-fade {
+    height: var(--sp-3); background: linear-gradient(var(--pk-edge), transparent);
+    border-top: 1px solid var(--line);
+  }
+
+  /* ---------- 2. Pokoje: poza Domem scena jest niższa (roślinka + miejsce zakładki), treść zaczyna się wyżej ---------- */
+  :root[data-pokoje] { --stage-compact: clamp(150px, 22vh, 190px); }
+  @supports (height: 1svh) { :root[data-pokoje] { --stage-compact: clamp(150px, 22svh, 190px); } }
+}
+
+/* ---------- 3. Skrytka: pisanie na pełnym ekranie ---------- */
+/* przycisk „Napisz myśl”: jedyny pełny kolor w Skrytce */
+.pk-write { display: none; }
+:root[data-pokoje] .pk-write {
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-3); width: 100%; height: 58px; margin: 0 0 var(--sp-2);
+  border: 0; border-radius: var(--radius-md); color: #fff; cursor: pointer;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .08)), var(--primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 14px 26px -16px color-mix(in srgb, var(--primary) 80%, #000);
+  font: inherit; font-size: 1.05rem; font-weight: 600;
+  transition: transform var(--dur-base) var(--spring);
+}
+:root[data-pokoje] .pk-write svg { width: 20px; height: 20px; }
+:root[data-pokoje] .pk-write:active { transform: scale(.96); transition-duration: .1s; }
+:root[data-pokoje] .pk-write:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+
+/* pole do pisania nie stoi na liście: pojawia się dopiero po „Napisz myśl”, na całym ekranie */
+.pk-write-head { display: none; }
+:root[data-pokoje] body:not(.pk-writing) #vault-form { display: none; }
+:root[data-pokoje] body.pk-writing #vault-form {
+  position: fixed; z-index: 27; inset: 0; display: flex; flex-direction: column; margin: 0;
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-5) calc(env(safe-area-inset-bottom) + var(--sp-4));
+  border: 0; border-radius: 0; box-shadow: none; background: var(--ground);
+  animation: pk-write-in var(--dur-base) var(--ease-out) both;
+}
+:root[data-pokoje] body.pk-writing { overflow: hidden; }
+/* treść ma własną warstwę (z-index), więc na czas pisania cała podnosi się nad scenę, górny pasek i pasek zakładek */
+:root[data-pokoje] body.pk-writing .content { z-index: 27; }
+:root[data-pokoje] body.pk-writing :is(.tabbar, .as-fab) { visibility: hidden; }
+@keyframes pk-write-in { from { opacity: 0; transform: translateY(var(--sp-6)); } }
+:root[data-pokoje] .pk-writing .pk-write-head { display: flex; align-items: center; gap: var(--sp-3); }
+.pk-write-name { flex: 1; min-width: 0; }
+.pk-write-name h2 { margin: 0; font-family: var(--font-serif); font-size: 1.45rem; font-weight: 500; line-height: 1.2; letter-spacing: -.015em; color: var(--text); }
+.pk-write-name p { margin: 2px 0 0; font-size: .86rem; color: var(--text-muted); }
+.pk-x {
+  flex: none; display: grid; place-items: center; width: var(--tap, 44px); height: var(--tap, 44px); margin-left: calc(var(--sp-2) * -1);
+  padding: 0; border: 0; border-radius: 50%; background: none; color: var(--text); cursor: pointer;
+}
+.pk-x svg { width: 22px; height: 22px; }
+.pk-x:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+:root[data-pokoje] .pk-writing #vault-form .sos { flex: none; }
+/* pole zajmuje cały ekran: kartka, nie formularz */
+:root[data-pokoje] .pk-writing #vault-text {
+  flex: 1; min-height: 0; margin-top: var(--sp-4); padding: var(--sp-5); border-radius: var(--radius-lg);
+  background: var(--surface); box-shadow: var(--e1); font-size: 1.15rem; line-height: 1.65;
+}
+:root[data-pokoje] .pk-writing #vault-text:focus { box-shadow: var(--e1), 0 0 0 3px var(--ring); }
+:root[data-pokoje] .pk-writing #vault-form:focus-within { box-shadow: none; }
+:root[data-pokoje] .pk-writing #vault-alert { flex: none; margin-top: var(--sp-3); }
+:root[data-pokoje] .pk-writing .vault-bar { flex: none; margin-top: var(--sp-4); padding: 0; }
+:root[data-pokoje] .pk-writing .vault-bar .btn-primary { height: 52px; padding: 0 var(--sp-6); font-size: 1rem; }
+:root[data-pokoje] .pk-writing .vault-bar .quiet-btn { height: var(--tap, 44px); font-size: .95rem; color: var(--text-body); }
+@media (min-width: 1024px) {
+  /* komputer: kartka na środku, nie na całą szerokość */
+  :root[data-pokoje] body.pk-writing #vault-form { padding-left: max(var(--sp-8), calc(50vw - 340px)); padding-right: max(var(--sp-8), calc(50vw - 340px)); padding-top: var(--sp-10); padding-bottom: var(--sp-10); }
+}
+
+/* ---------- 4. Trzy poziomy tytułów ---------- */
+/* poziom 2: rozdział (to samo na każdej zakładce) */
+:root[data-pokoje] :is(.pk-h2, .sheet .kicker, .sub-title) {
+  margin: 0 0 var(--pk-gap-in); font-family: var(--font-serif); font-size: 1.5rem; font-weight: 500; line-height: 1.2;
+  letter-spacing: -.015em; text-transform: none; color: var(--text);
+}
+/* poziom 3: tytuł karty — inna czcionka i mniejszy, więc nie konkuruje z rozdziałem */
+:root[data-pokoje] :is(.pk-h3, .insight h3) {
+  margin: 0 0 var(--sp-2); font-family: var(--font); font-size: 1.08rem; font-weight: 600; line-height: 1.3; letter-spacing: 0; color: var(--text);
+}
+:root[data-pokoje] #vault-list-title { margin-top: var(--sp-10); }
+.pk-lead { margin: calc(var(--sp-2) * -1) 0 var(--sp-4); font-size: .95rem; line-height: 1.5; color: var(--text-body); }
+
+/* Tracker: rozdziały oddziela przestrzeń, karty w rozdziale stoją blisko */
+:root[data-pokoje] .pk-chapter + .pk-chapter { margin-top: var(--pk-gap-chapter); }
+:root[data-pokoje] .pk-chapter .tr-list { gap: var(--pk-gap-in); }
+:root[data-pokoje] .pk-chapter .tr-list + .pk-card { margin-top: var(--pk-gap-in); }
+:root[data-pokoje] .pk-card {
+  padding: var(--sp-5); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--e1);
+  animation: soft-in var(--dur-slow) var(--ease-out) both; animation-delay: 300ms;
+}
+:root[data-pokoje] .pk-card .helps-note { margin: 0 0 var(--sp-2); color: var(--text-body); }
+:root[data-pokoje] .pk-card .helps { margin: 0; padding: 0; background: none; box-shadow: none; border-radius: 0; }
+:root[data-pokoje] .herbarium.is-folded > :nth-child(n + 4) { display: none; }
+.pk-more, .pk-link {
+  display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--tap, 44px); margin-top: var(--sp-2); padding: 0 var(--sp-1);
+  border: 0; background: none; font: inherit; font-size: .95rem; font-weight: 600; color: var(--text); cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 2px; text-underline-offset: 4px;
+}
+.pk-link svg { width: 18px; height: 18px; }
+:is(.pk-more, .pk-link):focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+
+/* ---------- 5. Dom: trzy bloki ---------- */
+/* bloki rozdziela przestrzeń, nie linie; „Twój tydzień” to jedna karta z danymi, „Myśl na dziś” zostaje lekka */
+:root[data-pokoje] #view-dom .sec + .sec { margin-top: var(--pk-gap-chapter); padding-top: 0; border-top: 0; }
+:root[data-pokoje] #view-dom .zy-next { border-top: 0; }
+:root[data-pokoje] #view-dom #sec-week { padding: var(--sp-5); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--e1); }
+:root[data-pokoje] #sec-week .kicker { font-family: var(--font); font-size: 1.08rem; font-weight: 600; letter-spacing: 0; margin-bottom: var(--sp-2); }
+:root[data-pokoje] #sec-week .how { display: none; }
+:root[data-pokoje] #sec-week .trend { margin-bottom: 0; }
+:root[data-pokoje] #view-dom .sec-week { margin-top: var(--pk-gap-chapter); }
+:root[data-pokoje] .plant-foot { display: none; }
+
+/* „Twoja roślinka”: jeden cichy wiersz zamiast imienia i dwóch linków */
+.pk-plant-row { display: none; }
+:root[data-pokoje] .pk-plant-row {
+  display: flex; align-items: center; gap: var(--sp-3); width: 100%; min-height: 64px; margin-top: var(--pk-gap-chapter); padding: var(--sp-3) var(--sp-2);
+  border: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); border-radius: 0; background: none;
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+}
+:root[data-pokoje] .pk-plant-row > svg { flex: none; width: 20px; height: 20px; color: var(--text-muted); }
+.pk-plant-ico { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary-dark); }
+.pk-plant-ico svg { width: 22px; height: 22px; }
+.pk-plant-txt { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.pk-plant-txt b { font-size: 1rem; font-weight: 600; }
+.pk-plant-txt small { font-size: .88rem; color: var(--text-muted); }
+.pk-plant-row:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: var(--radius-sm); }
+@media (max-width: 1023px) { :root[data-pokoje] .pk-plant-row { margin-bottom: var(--sp-6); } }
+
+/* arkusz „Twoja roślinka” */
+.pk-sheet-acts { display: grid; gap: var(--sp-2); }
+.pk-act {
+  display: flex; align-items: center; gap: var(--sp-3); width: 100%; min-height: 64px; padding: var(--sp-3) var(--sp-4);
+  border: 0; border-radius: var(--radius-md); background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  font: inherit; color: var(--text); text-align: left; cursor: pointer;
+  transition: transform var(--dur-base) var(--spring), background-color var(--dur-fast);
+}
+.pk-act:active { transform: scale(.97); transition-duration: .1s; }
+.pk-act > svg { flex: none; width: 22px; height: 22px; color: var(--primary-dark); }
+.pk-act span { display: grid; gap: 2px; }
+.pk-act b { font-size: 1rem; font-weight: 600; }
+.pk-act small { font-size: .86rem; color: var(--text-muted); }
+.pk-act:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.pk-how { margin: 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-2); font-size: .93rem; line-height: 1.5; color: var(--text-body); }
+.pk-how b { color: var(--text); }
+#plant-sheet { max-height: 88vh; overflow-y: auto; }
+
+/* Mniej ruchu i ?widok */
+:root.is-static :is(.pk-title, .app-top .brand, .pk-write, .pk-act, .pk-card), :root.is-static body.pk-writing #vault-form { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  :is(.pk-title, .app-top .brand, .pk-write, .pk-act, .pk-card), body.pk-writing #vault-form { animation: none !important; transition: none !important; }
+}

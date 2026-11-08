@@ -31,7 +31,9 @@
 
   const params = new URLSearchParams(location.search);
   // window.UKLAD_DOMYSLNY: wersja wpisana na stałe (np. w pliku podglądu bez adresu z parametrem)
-  const U = (params.get('uklad') || window.UKLAD_DOMYSLNY || 'd').toLowerCase();   // domyślnie D
+  // E „Pokoje” to D z wyraźnie oddzielonymi zakładkami (js/pokoje.js): strona główna buduje się tak samo jak w D
+  const U0 = (params.get('uklad') || window.UKLAD_DOMYSLNY || 'd').toLowerCase();   // domyślnie D
+  const U = U0 === 'e' ? 'd' : U0;
   if (!['a', 'b', 'c', 'd'].includes(U) || !window.Podlewanie) return;
   document.documentElement.dataset.uklad = U;
 
