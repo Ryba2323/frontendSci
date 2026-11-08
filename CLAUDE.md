@@ -39,6 +39,8 @@ Built on "Mała planeta" below; it fixes the phone: the plant used to disappear 
   - **Warm (`--pole-warm`)**: suggestions and support ("Dla Ciebie teraz", "Spróbuj" in Tracker) use the same warm light as SOS and the fireflies.
   - **Leaf shape (`--leaf`)**: every card has one sharp corner (bottom left). "Myśl na dziś" and lists (Blog) stay without a card.
   - `--cat-*` stays Tracker-only, in charts. Don't add a third card colour; if something new needs emphasis, it is either the screen's one field or a tinted card.
+  - **Card backgrounds**: every card (and the field) has a pale background motif behind the text, one `::after` with several masks: a = leaves + flower, b = leaves + water drops, c = vine with a bud, d = leaf + petals. Lists alternate them; low cards (SOS, "Dla Ciebie teraz") use b/d so nothing sits under the text. `--k` scales the motif to the card. The ground under the content has a sparse pattern of a few pale leaves (`.content::before`).
+- **Desktop "Jeden świat" (`css/pulpit.css`, `<div class="stage" data-swiat>`)**: no split screen. The sky and planet span the whole width (the plant stands at `PLANT_X` in `js/home2-scene.js`), and the content, the tab bar and the check-in lie on a frosted, semi-transparent pane (`--tafla`, leaf-shaped corner) whose left edge catches the plant's light. Phones and tablets are unchanged.
 
 ## Proposal E: "Pokoje" (8.11.2026, preview `?uklad=e`, `css/pokoje.css`, `js/pokoje.js`)
 

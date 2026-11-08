@@ -1,0 +1,78 @@
+/*
+ * JEDEN ŚWIAT — wygląd aplikacji na komputerze (od 1024 px). Ładowany ostatni.
+ *
+ * Wcześniej ekran był przecięty na pół: po lewej niebo z roślinką, po prawej osobny, jasny świat z białą kartą,
+ * a między nimi widoczne, rozmyte przejście. Teraz to jeden świat:
+ *  • Niebo i planeta na całą szerokość (<div class="stage" data-swiat>, js/home2-scene.js — roślinka stoi w lewej części).
+ *  • Treść leży na niebie jako matowa tafla (półprzezroczysta, z rozmyciem), więc pod nią prześwituje pora dnia.
+ *  • Tafla ma kształt liścia: jeden ostry róg (lewy dolny), jak karty z css/pola.css.
+ *  • Lewa krawędź tafli łapie ciepłe światło od roślinki — jakby roślinka świeciła na interfejs.
+ *  • Pasek zakładek i ekran podlewania to ta sama tafla, żeby nigdzie nie wracał biały szew.
+ *  • Tafla wjeżdża z mgły przy otwarciu strony.
+ * Telefon i tablet bez zmian. W React Native (web): <BlurView> z expo-blur na tle sceny Skia.
+ */
+@media (min-width: 1024px) {
+  :root {
+    --tafla: color-mix(in srgb, var(--sheet) 76%, transparent);
+    --tafla-mocna: color-mix(in srgb, var(--sheet) 88%, transparent);
+    --tafla-brzeg: color-mix(in srgb, #fff 55%, transparent);
+    --tafla-swiatlo: color-mix(in srgb, var(--plant-glow) 85%, var(--plant-core) 15%);
+    --tafla-cien: 0 40px 80px -40px rgba(12, 30, 40, .45);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-mode="light"]) { --tafla: color-mix(in srgb, var(--sheet) 72%, transparent); --tafla-mocna: color-mix(in srgb, var(--sheet) 86%, transparent); --tafla-brzeg: color-mix(in srgb, var(--text) 14%, transparent); --tafla-swiatlo: color-mix(in srgb, var(--plant-core) 40%, transparent); --tafla-cien: 0 40px 80px -40px rgba(0, 0, 0, .7); }
+  }
+  :root[data-mode="dark"] { --tafla: color-mix(in srgb, var(--sheet) 72%, transparent); --tafla-mocna: color-mix(in srgb, var(--sheet) 86%, transparent); --tafla-brzeg: color-mix(in srgb, var(--text) 14%, transparent); --tafla-swiatlo: color-mix(in srgb, var(--plant-core) 40%, transparent); --tafla-cien: 0 40px 80px -40px rgba(0, 0, 0, .7); }
+
+  /* ---------- Świat: scena na całą szerokość, pod treścią ---------- */
+  .stage[data-swiat] { width: var(--page-w, 100vw); z-index: 0; }
+  .stage[data-swiat] #plant { -webkit-mask-image: none; mask-image: none; }
+  body::after { display: none; }                         /* światło roślinki rysuje teraz sama scena */
+  .content { z-index: 2; }
+  /* kilka listków z css/pola.css unosi się na niebie obok tafli — jaśniej, żeby było je widać na kolorze nieba */
+  :root[data-pola] .content::before { background: color-mix(in srgb, #fff 22%, transparent); }
+
+  /* ---------- Tafla z treścią ---------- */
+  .content .sheet {
+    position: relative;
+    background: var(--tafla);
+    -webkit-backdrop-filter: blur(26px) saturate(1.5); backdrop-filter: blur(26px) saturate(1.5);
+    border: 1px solid var(--tafla-brzeg);
+    border-radius: 44px 44px 44px 14px;
+    box-shadow:
+      inset 1.5px 0 0 color-mix(in srgb, var(--tafla-swiatlo) 90%, transparent),   /* krawędź od strony roślinki */
+      -28px 0 70px -40px var(--tafla-swiatlo),                                    /* światło roślinki pada na taflę */
+      var(--tafla-cien);
+    animation: tafla-in var(--dur-slow) var(--ease-out) .15s both;
+  }
+  @keyframes tafla-in { from { opacity: 0; transform: translateX(32px); filter: blur(10px); } }
+  /* bez obsługi rozmycia tafla jest prawie pełna, żeby tekst zawsze był czytelny */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .content .sheet { background: var(--tafla-mocna); } }
+
+  /* ---------- Pasek zakładek: ta sama tafla ---------- */
+  .tabbar {
+    background: var(--tafla-mocna) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+    border: 1px solid var(--tafla-brzeg);
+  }
+
+  /* ---------- Podlewanie: pytania na pływającej tafli w miejscu karty (bez prostej krawędzi przez środek ekranu) ---------- */
+  .ci-overlay {
+    top: var(--sp-6); bottom: var(--sp-6);
+    left: calc(var(--page-w, 100vw) / 2 + var(--sp-6)); right: calc(100vw - var(--page-w, 100vw) + var(--sp-6));
+    background: var(--tafla-mocna);
+    -webkit-backdrop-filter: blur(30px) saturate(1.4); backdrop-filter: blur(30px) saturate(1.4);
+    border: 1px solid var(--tafla-brzeg); border-radius: 44px 44px 44px 14px;
+    box-shadow: inset 1.5px 0 0 color-mix(in srgb, var(--tafla-swiatlo) 90%, transparent), var(--tafla-cien);
+  }
+  .ci-overlay .ci-actions { background: linear-gradient(to top, var(--tafla-mocna) 55%, transparent); }
+
+  /* górny pasek leży na niebie: przyciski jak małe tafle */
+  .app-top .sos, .app-top .color-btn {
+    background: var(--tafla-mocna);
+    -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) { .content .sheet { animation: none; } }
+.is-static .content .sheet { animation: none !important; }

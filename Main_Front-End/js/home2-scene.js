@@ -45,6 +45,10 @@
   if (!canvas || !canvas.getContext) { window.Home2Scene = { start() {}, water() {}, select() {}, isWatered: () => false }; return; }
   const ctx = canvas.getContext('2d');
   const closeUp = stage.hasAttribute('data-blisko');
+  // JEDEN ŚWIAT (komputer, <div class="stage" data-swiat>, css/pulpit.css): niebo i planeta na całą szerokość, roślinka w lewej części,
+  // treść leży na niebie jako matowa tafla — bez szwu między roślinką a interfejsem
+  const swiat = stage.hasAttribute('data-swiat');
+  const PLANT_X = .27;                                           // gdzie stoi roślinka (ułamek szerokości sceny)
   const zywa = document.documentElement.dataset.uklad === 'd';   // kierunek „Żywa planeta” (css/zywa.css)
   const fadeEl = document.getElementById('stage-fade');
 
@@ -592,7 +596,7 @@
     ctx.fillStyle = g; ctx.fillRect(0, 0, CW, Math.max(stageH, CH));
     if (night) {
       // księżyc w prawym górnym rogu: miękka poświata + tarcza
-      const mx = CW * .8, my = Math.max(84, stageH * .2), r = 14;
+      const mx = CW * (swiat && wide ? .42 : .8), my = Math.max(84, stageH * .2), r = 14;
       ctx.globalAlpha = 1 - st.band;                             // w zwiniętym pasku księżyc gaśnie, zamiast wystawać zza planety
       const glow = ctx.createRadialGradient(mx, my, 0, mx, my, r * 7);
       glow.addColorStop(0, 'rgba(255,244,214,.26)');
@@ -613,7 +617,7 @@
     }
     // słońce: od 6:00 (lewo, nisko) do 20:00 (prawo, nisko), w południe najwyżej
     const p = clamp((hour - 6) / 14);
-    const sx = CW * (.4 + .5 * p), sy = Math.max(70, stageH * (.46 - .3 * Math.sin(Math.PI * p)));
+    const sx = CW * (swiat && wide ? .06 + .36 * p : .4 + .5 * p), sy = Math.max(70, stageH * (.46 - .3 * Math.sin(Math.PI * p)));
     const warm = DAYPART === 'day' ? [255, 246, 220] : [255, 222, 186];
     ctx.globalAlpha = 1 - st.band;                               // w pasku słońce gaśnie jak księżyc
     const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(CW, stageH) * .45);
@@ -890,7 +894,7 @@
     if (wide) topReserve = Math.max(greetBottom + 30, H * .14);
     else if (closeUp) topReserve = lerp(lerp(Math.min(104, greetBottom), 58, st.greet), 84, f);   // „bliżej”: roślinka sięga nad powitanie (stoi obok niego)
     else topReserve = lerp(greetBottom, 58, st.greet);
-    baseX = closeUp && !wide ? CW * lerp(lerp(.57, .5, st.greet), .5, f) : CW / 2;
+    baseX = closeUp && !wide ? CW * lerp(lerp(.57, .5, st.greet), .5, f) : swiat && wide ? CW * PLANT_X : CW / 2;
     // roślinka stoi wyżej niż kiedyś, żeby nad kartą było widać kopułę planety (w pełnym ekranie nad kaflem i paskiem zakładek)
     baseY = stageH - (wide ? H * .2 : lerp(lerp(66, 150, f), 50, compact));
     S = clamp(Math.min((baseY - topReserve) / (FULL_H + 12), CW * lerp(.9, 1, f) / 78), .9, 7);

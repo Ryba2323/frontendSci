@@ -21,8 +21,6 @@
   --leaf: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--sp-2);
   --leaf-sm: var(--radius-md) var(--radius-md) var(--radius-md) 6px;
   --pole-shadow: 0 2px 6px color-mix(in srgb, var(--primary) 18%, transparent), 0 22px 40px -22px color-mix(in srgb, var(--primary) 85%, #000);
-  /* sylwetka liścia w rogu pola (maska, kolor z tła) */
-  --leaf-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M10 92C6 52 34 14 94 8c2 56-28 86-84 84z'/%3E%3C/svg%3E");
 }
 @media (prefers-color-scheme: dark) {
   :root[data-pola]:not([data-mode="light"]) {
@@ -65,13 +63,7 @@
   box-shadow: var(--pole-shadow), inset 0 1px 0 rgba(255, 255, 255, .14); color: var(--pole-ink);
   /* światło z góry, cień na dole: pole ma bryłę, a biały tekst nigdy nie traci kontrastu (dół tylko ciemnieje) */
 }
-/* sylwetka liścia wyrasta z prawego dolnego rogu */
-:root[data-pola] :is(#sec-week, .tr-sec.week-sum)::after {
-  content: ""; position: absolute; z-index: -1; right: -18px; bottom: -22px; width: 132px; height: 132px; pointer-events: none;
-  background: color-mix(in srgb, #fff 14%, transparent);
-  -webkit-mask: var(--leaf-mask) center / contain no-repeat; mask: var(--leaf-mask) center / contain no-repeat;
-  transform: scaleX(-1) rotate(6deg);   /* nasada w rogu, czubek liścia celuje w środek karty */
-}
+/* tło pola (liście i kwiatek) jest niżej, razem z tłem kart: „TŁO KARTY” */
 /* Dom: tydzień to osobne pole, a nie kolejna sekcja za linią */
 :root[data-pola] #view-dom #sec-week { margin-top: var(--sp-10); border-top: 0; }
 :root[data-pola] #view-dom #sec-week + .sec { border-top: 0; }
@@ -98,39 +90,96 @@
 /* Mniej ruchu: pola nie mają animacji, nic do wyłączania. Wysoki kontrast: pole zostaje pełnym kolorem, bez gradientu. */
 @media (prefers-contrast: more) { :root[data-pola] :is(#sec-week, .tr-sec.week-sum) { background: var(--pole); } }
 
-/* ---------- LISTEK NA KARCIE: każdy box ma w rogu mały kiełek, żeby nie był mdły ----------
-   Ten sam dwukolorowy liść co na gałązce tygodnia (js/dom-uklad.js, LEAF): maska w kształcie liścia, a gradient dzieli go
-   wzdłuż nerwu na jasną i ciemną połowę. Leży pod treścią (isolation + z-index), więc nigdy nie zasłania tekstu.
-   Do tego cienka obwódka w kolorze roślinki: karta odcina się od gruntu także na jasnym tle.
-   Pole (#sec-week, tydzień w Trackerze) ma już swój duży liść, małe przyciski (chipy, „Podlane”) zostają bez listka. */
+/* ---------- TŁO KARTY: liście, kwiatki, krople i płatki ----------
+   Jak liść w polu „Twój tydzień”, tylko bogaciej i za każdym razem trochę inaczej. Cztery motywy przeplatają się na listach:
+     a — kiełek: duży liść z prawego dolnego rogu, dwa mniejsze i kwiatek w górnym rogu,
+     b — po deszczu: liście z lewego dolnego rogu i dwie krople wody (podlewanie),
+     c — pnącze: gałązka z listkami wzdłuż dołu karty, na końcu pączek; w rogu wystaje liść,
+     d — płatki: liść w rogu i trzy opadłe płatki.
+   Liście mają nerw (dwie połówki z przerwą). Kwiatek, krople i płatki mają własny kolor (koła tła pod nimi).
+   Jedna warstwa (::after) z kilkoma maskami, przycięta do karty, pod treścią (isolation + z-index) — nigdy nie zasłania tekstu.
+   --k skaluje motyw do wielkości karty. Do tego cienka obwódka w kolorze roślinki, żeby karta nie zlewała się z gruntem.
+   W React Native: komponent <CardDecor variant="a|b|c|d"> (react-native-svg) w tle karty. */
 :root[data-pola] {
-  --leaf-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7.5 18-16 18z'/%3E%3C/svg%3E");
-  --leaf-a: color-mix(in srgb, var(--plant-leaf-2) 45%, transparent);
-  --leaf-b: color-mix(in srgb, var(--primary) 34%, transparent);
+  --d-br: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/svg%3E");
+  --d-brup: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg transform='rotate(28 12 12)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3C/svg%3E");
+  --d-side: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg transform='translate(24 0) scale(-1 1) rotate(10 12 12)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3C/svg%3E");
+  --d-bl: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/svg%3E");
+  --d-blup: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg transform='rotate(-24 12 12)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3C/svg%3E");
+  --d-flower: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='6.3' rx='3.1' ry='4.5' transform='rotate(0 12 12)'/%3E%3Cellipse cx='12' cy='6.3' rx='3.1' ry='4.5' transform='rotate(72 12 12)'/%3E%3Cellipse cx='12' cy='6.3' rx='3.1' ry='4.5' transform='rotate(144 12 12)'/%3E%3Cellipse cx='12' cy='6.3' rx='3.1' ry='4.5' transform='rotate(216 12 12)'/%3E%3Cellipse cx='12' cy='6.3' rx='3.1' ry='4.5' transform='rotate(288 12 12)'/%3E%3Ccircle cx='12' cy='12' r='2.1'/%3E%3C/svg%3E");
+  --d-drop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5c3.6 4.4 6.2 7.8 6.2 11.1a6.2 6.2 0 0 1-12.4 0c0-3.3 2.6-6.7 6.2-11.1z'/%3E%3C/svg%3E");
+  --d-vine: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 24'%3E%3Cpath d='M2 22C16 20 26 13 40 12S56 7 62 3' fill='none' stroke='black' stroke-width='1.4' stroke-linecap='round'/%3E%3Cg transform='translate(10 6) scale(0.55) rotate(-30 12 21)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3Cg transform='translate(20 8) scale(.5) rotate(25 12 21)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3Cg transform='translate(33 -2) scale(0.5) rotate(-15 12 21)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3Cg transform='translate(42 -1) scale(.42) rotate(30 12 21)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3C/svg%3E");
+  --d-petals: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cellipse cx='10' cy='10' rx='3' ry='6' transform='rotate(35 10 10)'/%3E%3Cellipse cx='34' cy='22' rx='2.4' ry='5' transform='rotate(-50 34 22)'/%3E%3Cellipse cx='18' cy='34' rx='2' ry='4.2' transform='rotate(80 18 34)'/%3E%3C/svg%3E");
+  --deco-leaf: color-mix(in srgb, var(--primary) 13%, transparent);
+  --deco-bloom: color-mix(in srgb, var(--plant-flower) 50%, transparent);
+  --deco-drop: color-mix(in srgb, var(--accent-light) 60%, transparent);
   --card-edge: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
 }
-:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest, .sos-item, .sos-breath) {
-  position: relative; isolation: isolate;
+@media (prefers-color-scheme: dark) {
+  :root[data-pola]:not([data-mode="light"]) { --deco-leaf: color-mix(in srgb, var(--plant-leaf-2) 13%, transparent); --deco-bloom: color-mix(in srgb, var(--plant-flower) 38%, transparent); --deco-drop: color-mix(in srgb, var(--accent-light) 40%, transparent); }
+}
+:root[data-pola][data-mode="dark"] { --deco-leaf: color-mix(in srgb, var(--plant-leaf-2) 13%, transparent); --deco-bloom: color-mix(in srgb, var(--plant-flower) 38%, transparent); --deco-drop: color-mix(in srgb, var(--accent-light) 40%, transparent); }
+
+:root[data-pola] :where(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest, .sos-item, .sos-breath, #sec-week, .tr-sec.week-sum) {
+  --k: 1; position: relative; isolation: isolate;
+  --deco-mask-a:
+    var(--d-br) right calc(-26px * var(--k)) bottom calc(-34px * var(--k)) / calc(150px * var(--k)) calc(150px * var(--k)) no-repeat,
+    var(--d-brup) right calc(86px * var(--k)) bottom calc(-30px * var(--k)) / calc(88px * var(--k)) calc(88px * var(--k)) no-repeat,
+    var(--d-side) right calc(150px * var(--k)) bottom calc(-14px * var(--k)) / calc(46px * var(--k)) calc(46px * var(--k)) no-repeat,
+    var(--d-flower) right calc(22px * var(--k)) top calc(14px * var(--k)) / calc(30px * var(--k)) calc(30px * var(--k)) no-repeat;
+  --deco-bg-a: radial-gradient(circle at calc(100% - calc(37px * var(--k))) calc(29px * var(--k)), var(--deco-bloom) calc(15px * var(--k)), transparent calc(calc(15px * var(--k)) + 1px)), linear-gradient(var(--deco-leaf), var(--deco-leaf));
+  --deco-mask-b:
+    var(--d-bl) left calc(-30px * var(--k)) bottom calc(-38px * var(--k)) / calc(140px * var(--k)) calc(140px * var(--k)) no-repeat,
+    var(--d-blup) left calc(84px * var(--k)) bottom calc(-26px * var(--k)) / calc(70px * var(--k)) calc(70px * var(--k)) no-repeat,
+    var(--d-drop) right calc(20px * var(--k)) top calc(12px * var(--k)) / calc(22px * var(--k)) calc(22px * var(--k)) no-repeat,
+    var(--d-drop) right calc(48px * var(--k)) top calc(32px * var(--k)) / calc(14px * var(--k)) calc(14px * var(--k)) no-repeat;
+  --deco-bg-b: radial-gradient(circle at calc(100% - calc(31px * var(--k))) calc(24px * var(--k)), var(--deco-drop) calc(12px * var(--k)), transparent calc(calc(12px * var(--k)) + 1px)), radial-gradient(circle at calc(100% - calc(55px * var(--k))) calc(40px * var(--k)), var(--deco-drop) calc(8px * var(--k)), transparent calc(calc(8px * var(--k)) + 1px)), linear-gradient(var(--deco-leaf), var(--deco-leaf));
+  --deco-mask-c:
+    var(--d-vine) left calc(10px * var(--k)) bottom calc(4px * var(--k)) / calc(200px * var(--k)) calc(75px * var(--k)) no-repeat,
+    var(--d-flower) left calc(196px * var(--k)) bottom calc(62px * var(--k)) / calc(26px * var(--k)) calc(26px * var(--k)) no-repeat,
+    var(--d-side) right calc(-14px * var(--k)) top calc(-10px * var(--k)) / calc(70px * var(--k)) calc(70px * var(--k)) no-repeat;
+  --deco-bg-c: radial-gradient(circle at calc(209px * var(--k)) calc(100% - calc(75px * var(--k))), var(--deco-bloom) calc(14px * var(--k)), transparent calc(calc(14px * var(--k)) + 1px)), linear-gradient(var(--deco-leaf), var(--deco-leaf));
+  --deco-mask-d:
+    var(--d-br) right calc(-22px * var(--k)) bottom calc(-30px * var(--k)) / calc(126px * var(--k)) calc(126px * var(--k)) no-repeat,
+    var(--d-side) right calc(96px * var(--k)) bottom calc(-12px * var(--k)) / calc(50px * var(--k)) calc(50px * var(--k)) no-repeat,
+    var(--d-petals) right calc(18px * var(--k)) top calc(10px * var(--k)) / calc(60px * var(--k)) calc(60px * var(--k)) no-repeat;
+  --deco-bg-d: radial-gradient(circle at calc(100% - calc(48px * var(--k))) calc(40px * var(--k)), var(--deco-bloom) calc(31px * var(--k)), transparent calc(calc(31px * var(--k)) + 1px)), linear-gradient(var(--deco-leaf), var(--deco-leaf));
+  --deco-mask: var(--deco-mask-a); --deco-bg: var(--deco-bg-a);
 }
 :root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest) { box-shadow: var(--e1, none), var(--card-edge); }
-:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest, .sos-item, .sos-breath)::after {
-  content: ""; position: absolute; z-index: -1; top: var(--sp-3); right: var(--sp-3); width: 30px; height: 30px; pointer-events: none;
-  background: linear-gradient(135deg, var(--leaf-a) 50%, var(--leaf-b) 50%);
-  -webkit-mask: var(--leaf-full) center / contain no-repeat; mask: var(--leaf-full) center / contain no-repeat;
-  transform: rotate(-6deg);
+:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest, .sos-item, .sos-breath, #sec-week, .tr-sec.week-sum)::after {
+  content: ""; position: absolute; z-index: -1; inset: 0; width: auto; height: auto; border-radius: inherit; pointer-events: none; transform: none;
+  background: var(--deco-bg);
+  -webkit-mask: var(--deco-mask); mask: var(--deco-mask);
 }
-/* każdy listek trochę inny, jak na prawdziwej gałązce */
-:root[data-pola] :is(.insight, .vault-item, .post):nth-child(2n)::after { transform: rotate(10deg) scale(.86); }
-:root[data-pola] :is(.insight, .vault-item, .post):nth-child(3n)::after { transform: rotate(-18deg) scale(.92); }
-/* małe karteczki w Skrytce: mniejszy listek */
-:root[data-pola] .vault-item::after { width: 22px; height: 22px; top: var(--sp-2); right: var(--sp-2); }
-/* „Dla Ciebie teraz” jest w ciepłym świetle: listek w kolorze serca kwiatu */
-:root[data-pola] .du-suggest::after { --leaf-a: color-mix(in srgb, var(--plant-core) 45%, transparent); --leaf-b: color-mix(in srgb, var(--plant-core) 75%, var(--primary) 10%); top: var(--sp-2); right: var(--sp-10); }
-/* SOS: listek przy telefonie pomocowym w drugą stronę, żeby lista nie wyglądała jak z szablonu */
-:root[data-pola] .sos-list li:nth-child(2n) .sos-item::after { transform: rotate(10deg) scale(.86); }
-/* Pokoje (?uklad=e): „Co Ci pomaga” leży wewnątrz karty — jeden listek i jedna obwódka na kartę wystarczą */
+/* który motyw gdzie: na listach po kolei a → b → c → d, pojedyncze karty mają swój */
+:root[data-pola] :is(.insight, .vault-item, .post, .sos-list li > *):nth-child(4n + 2) { --deco-mask: var(--deco-mask-b); --deco-bg: var(--deco-bg-b); }
+:root[data-pola] :is(.insight, .vault-item, .post, .sos-list li > *):nth-child(4n + 3) { --deco-mask: var(--deco-mask-c); --deco-bg: var(--deco-bg-c); }
+:root[data-pola] :is(.insight, .vault-item, .post, .sos-list li > *):nth-child(4n + 4) { --deco-mask: var(--deco-mask-d); --deco-bg: var(--deco-bg-d); }
+/* niskie karty (SOS, „Dla Ciebie teraz”): tylko motywy z akcentem w rogu, żeby pączek pnącza nie wchodził pod tekst */
+:root[data-pola] .sos-list li:nth-child(2n + 1) .sos-item, :root[data-pola] :is(.du-suggest, .sos-breath), :root[data-pola] .helps, :root[data-pola] .tr-sec.week-sum { --deco-mask: var(--deco-mask-b); --deco-bg: var(--deco-bg-b); }
+:root[data-pola] .sos-list li:nth-child(2n) .sos-item { --deco-mask: var(--deco-mask-d); --deco-bg: var(--deco-bg-d); }
+/* pole w kolorze roślinki: to samo tło w bieli, kwiatek i krople w jasnych kolorach */
+:root[data-pola] :where(#sec-week, .tr-sec.week-sum) { --k: 1.1; --deco-leaf: color-mix(in srgb, #fff 14%, transparent); --deco-bloom: color-mix(in srgb, var(--plant-flower-tip) 42%, transparent); --deco-drop: color-mix(in srgb, #fff 30%, transparent); }
+/* mniejsze karty: mniejszy motyw */
+:root[data-pola] .vault-item { --k: .62; }
+:root[data-pola] :is(.du-suggest, .sos-item, .sos-breath) { --k: .58; }
+/* „Dla Ciebie teraz” jest w ciepłym świetle: liście w kolorze serca kwiatu */
+:root[data-pola] .du-suggest { --deco-leaf: color-mix(in srgb, var(--plant-core) 30%, transparent); }
+/* Pokoje (?uklad=e): „Co Ci pomaga” leży wewnątrz karty — jedno tło i jedna obwódka na kartę wystarczą */
 :root[data-pola] .pk-card .helps { box-shadow: none; }
 :root[data-pola] .pk-card .helps::after { display: none; }
-/* miejsce na listek: data na karteczce i opis w SOS nie wchodzą pod niego */
+/* miejsce na kwiatek: data na karteczce i opis w SOS nie wchodzą pod niego */
 :root[data-pola] .vault-item .vault-when { padding-right: var(--sp-6); }
 :root[data-pola] :is(.sos-item, .sos-breath) { padding-right: var(--sp-10); }
+
+/* ---------- TŁO APLIKACJI: grunt pod treścią ----------
+   Kilka bladych listków i nasionek, rzadko rozrzuconych (kafel 420×760). Przewija się razem z treścią (jak faktura gruntu),
+   więc nic nie miga ani nie pływa. */
+:root[data-pola] .content::before {
+  content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 760'%3E%3Cg transform='translate(30 70) scale(2.4) rotate(-20 12 12)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3Cg transform='translate(300 300) scale(1.6) rotate(15 12 12)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3Cg transform='translate(110 560) scale(1.9) rotate(150 12 12)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3Cg transform='translate(330 640) scale(1.1) rotate(-30 12 12)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3Ccircle cx='220' cy='150' r='2.2'/%3E%3Ccircle cx='60' cy='420' r='1.8'/%3E%3C/svg%3E") 0 0 / 420px 760px repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 760'%3E%3Cg transform='translate(30 70) scale(2.4) rotate(-20 12 12)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3Cg transform='translate(300 300) scale(1.6) rotate(15 12 12)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3Cg transform='translate(110 560) scale(1.9) rotate(150 12 12)'%3E%3Cpath d='M4.74 20.77C3.24 10.27 9.74 3.77 20.74 2.77z'/%3E%3Cpath d='M5.26 21.23 21.26 3.23c-.5 11-7.5 18-16 18z'/%3E%3C/g%3E%3Cg transform='translate(330 640) scale(1.1) rotate(-30 12 12)'%3E%3Cpath d='M19.26 20.77C20.76 10.27 14.26 3.77 3.26 2.77z'/%3E%3Cpath d='M18.74 21.23 2.74 3.23c.5 11 7.5 18 16 18z'/%3E%3C/g%3E%3Ccircle cx='220' cy='150' r='2.2'/%3E%3Ccircle cx='60' cy='420' r='1.8'/%3E%3C/svg%3E") 0 0 / 420px 760px repeat;
+}
+@media (prefers-color-scheme: dark) { :root[data-pola]:not([data-mode="light"]) .content::before { background: color-mix(in srgb, var(--plant-leaf-2) 8%, transparent); } }
+:root[data-pola][data-mode="dark"] .content::before { background: color-mix(in srgb, var(--plant-leaf-2) 8%, transparent); }
