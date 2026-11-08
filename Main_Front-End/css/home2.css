@@ -396,10 +396,10 @@ body[data-tab]:not([data-tab="dom"])::before { opacity: 0; }
       radial-gradient(48% 72% at 25% 60%, color-mix(in srgb, var(--plant-glow) calc(80% * var(--aura)), transparent), transparent 72%),
       radial-gradient(26% 40% at 25% 42%, color-mix(in srgb, var(--plant-flower) calc(25% * var(--aura)), transparent), transparent 70%);
     transition: width var(--dur-slow) var(--ease-in-out);
-    animation: plant-light 9s ease-in-out infinite alternate;
+    /* bez pulsowania: światło prześwitywało przez miękką krawędź sceny i na środku ekranu migała smuga */
+    opacity: .9;
   }
 }
-@keyframes plant-light { from { opacity: .75; } to { opacity: 1; } }
 @keyframes aura-a { to { transform: translate(6%, -4%) rotate(8deg) scale(1.08); } }
 .is-static body::before, .is-static body::after { animation: none !important; }
 

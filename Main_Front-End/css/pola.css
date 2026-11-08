@@ -97,3 +97,40 @@
 
 /* Mniej ruchu: pola nie mają animacji, nic do wyłączania. Wysoki kontrast: pole zostaje pełnym kolorem, bez gradientu. */
 @media (prefers-contrast: more) { :root[data-pola] :is(#sec-week, .tr-sec.week-sum) { background: var(--pole); } }
+
+/* ---------- LISTEK NA KARCIE: każdy box ma w rogu mały kiełek, żeby nie był mdły ----------
+   Ten sam dwukolorowy liść co na gałązce tygodnia (js/dom-uklad.js, LEAF): maska w kształcie liścia, a gradient dzieli go
+   wzdłuż nerwu na jasną i ciemną połowę. Leży pod treścią (isolation + z-index), więc nigdy nie zasłania tekstu.
+   Do tego cienka obwódka w kolorze roślinki: karta odcina się od gruntu także na jasnym tle.
+   Pole (#sec-week, tydzień w Trackerze) ma już swój duży liść, małe przyciski (chipy, „Podlane”) zostają bez listka. */
+:root[data-pola] {
+  --leaf-full: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7.5 18-16 18z'/%3E%3C/svg%3E");
+  --leaf-a: color-mix(in srgb, var(--plant-leaf-2) 45%, transparent);
+  --leaf-b: color-mix(in srgb, var(--primary) 34%, transparent);
+  --card-edge: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest, .sos-item, .sos-breath) {
+  position: relative; isolation: isolate;
+}
+:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest) { box-shadow: var(--e1, none), var(--card-edge); }
+:root[data-pola] :is(.insight, .helps, .pk-card, .vault-item, .post.is-open, .du-suggest, .sos-item, .sos-breath)::after {
+  content: ""; position: absolute; z-index: -1; top: var(--sp-3); right: var(--sp-3); width: 30px; height: 30px; pointer-events: none;
+  background: linear-gradient(135deg, var(--leaf-a) 50%, var(--leaf-b) 50%);
+  -webkit-mask: var(--leaf-full) center / contain no-repeat; mask: var(--leaf-full) center / contain no-repeat;
+  transform: rotate(-6deg);
+}
+/* każdy listek trochę inny, jak na prawdziwej gałązce */
+:root[data-pola] :is(.insight, .vault-item, .post):nth-child(2n)::after { transform: rotate(10deg) scale(.86); }
+:root[data-pola] :is(.insight, .vault-item, .post):nth-child(3n)::after { transform: rotate(-18deg) scale(.92); }
+/* małe karteczki w Skrytce: mniejszy listek */
+:root[data-pola] .vault-item::after { width: 22px; height: 22px; top: var(--sp-2); right: var(--sp-2); }
+/* „Dla Ciebie teraz” jest w ciepłym świetle: listek w kolorze serca kwiatu */
+:root[data-pola] .du-suggest::after { --leaf-a: color-mix(in srgb, var(--plant-core) 45%, transparent); --leaf-b: color-mix(in srgb, var(--plant-core) 75%, var(--primary) 10%); top: var(--sp-2); right: var(--sp-10); }
+/* SOS: listek przy telefonie pomocowym w drugą stronę, żeby lista nie wyglądała jak z szablonu */
+:root[data-pola] .sos-list li:nth-child(2n) .sos-item::after { transform: rotate(10deg) scale(.86); }
+/* Pokoje (?uklad=e): „Co Ci pomaga” leży wewnątrz karty — jeden listek i jedna obwódka na kartę wystarczą */
+:root[data-pola] .pk-card .helps { box-shadow: none; }
+:root[data-pola] .pk-card .helps::after { display: none; }
+/* miejsce na listek: data na karteczce i opis w SOS nie wchodzą pod niego */
+:root[data-pola] .vault-item .vault-when { padding-right: var(--sp-6); }
+:root[data-pola] :is(.sos-item, .sos-breath) { padding-right: var(--sp-10); }
