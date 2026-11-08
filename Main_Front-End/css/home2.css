@@ -65,16 +65,28 @@ button, a { touch-action: manipulation; }
 .brand { display: inline-flex; align-items: flex-end; gap: var(--sp-1); height: 36px; animation: fade-in var(--dur-slow) ease both; }
 .brand img { display: block; height: auto; pointer-events: none; user-select: none; }
 .brand-mascot { width: 38px; margin-bottom: 2px; }
-/* sam napis (aplikacja.html): postać z logo zostaje dla Asystenta i pustych ekranów */
-.brand.is-word { align-items: center; }
-.brand.is-word .brand-word { width: 82px; }
-.brand-word { width: 70px; }
-.brand-word.is-dark { display: none; }
-:root[data-mode="dark"] .brand-word.is-light { display: none; }
-:root[data-mode="dark"] .brand-word.is-dark { display: block; }
+/* Niebieski napis dobiera odcień do jasności nieba. */
+.brand.is-word {
+  --wordmark-on-light: #0e2b47;
+  --wordmark-on-dark: #eff7ff;
+  align-items: center;
+  color: light-dark(var(--wordmark-on-light), var(--wordmark-on-dark));
+}
+span.brand-word {
+  font: 500 30px/1 "Bricolage Grotesque", var(--font);
+  letter-spacing: -.04em;
+  -webkit-text-stroke: var(--wordmark-halo, 0 transparent);
+  paint-order: stroke fill;
+}
+/* Starszy podgląd strony głównej nadal korzysta z dwóch plików z logo. */
+img.brand-word { width: 70px; }
+.brand.is-word img.brand-word { width: 82px; }
+img.brand-word.is-dark { display: none; }
+:root[data-mode="dark"] img.brand-word.is-light { display: none; }
+:root[data-mode="dark"] img.brand-word.is-dark { display: block; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-mode="light"]) .brand-word.is-light { display: none; }
-  :root:not([data-mode="light"]) .brand-word.is-dark { display: block; }
+  :root:not([data-mode="light"]) img.brand-word.is-light { display: none; }
+  :root:not([data-mode="light"]) img.brand-word.is-dark { display: block; }
 }
 .top-actions { display: flex; align-items: center; gap: var(--sp-2); }
 /* Kolor roślinki: kółko w barwach aktualnego motywu */

@@ -19,9 +19,10 @@ body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)
 }
 /* postać z logo wygląda zza górnej krawędzi dymka — łapki opiera na krawędzi, jak w logo */
 .as-mascot { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; -webkit-user-drag: none; }
-.as-fab-peek { position: absolute; left: 50%; top: -17px; width: 46px; margin-left: -24px; transform-origin: 50% 100%; animation: as-peek 6s ease-in-out 1.4s infinite; }
-@keyframes as-peek { 0%, 70%, 100% { transform: translateY(0); } 78% { transform: translateY(-4px) rotate(-3deg); } 86% { transform: translateY(0) rotate(2deg); } }
-.as-fab:hover .as-fab-peek { animation: as-bob 1.2s ease-in-out infinite; }
+.as-fab-peek { position: absolute; left: 50%; top: -22px; width: 46px; margin-left: -22px; transform-origin: 48% 82%; animation: as-peek 6s ease-in-out 1.4s infinite; }
+@keyframes as-peek { 0%, 70%, 100% { transform: none; } 78% { transform: rotate(-3deg); } 86% { transform: rotate(2deg); } }
+.as-fab:hover .as-fab-peek { animation: as-lean 1.2s ease-in-out infinite; }
+@keyframes as-lean { 50% { transform: scaleY(1.04) rotate(-2deg); } }
 .as-fab:active { transform: scale(.92); }
 .as-fab:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
 .as-fab.is-catch { animation: as-catch var(--dur-slow) var(--ease-spring); }
@@ -38,28 +39,24 @@ body[data-tab="blog"] .as-fab { bottom: calc(146px + env(safe-area-inset-bottom)
   body .fab svg { width: 22px; height: 22px; }
 }
 
-/* ---------- Ekran rozmowy: wyrasta kołem z miejsca otwarcia ---------- */
+/* ---------- Matowa tafla: rozmowa wyrasta kołem z miejsca otwarcia ---------- */
 .as {
+  --as-film: color-mix(in srgb, var(--sheet) 94%, var(--primary));
+  --as-glass: color-mix(in srgb, var(--as-film) 90%, transparent);
+  --as-bar: color-mix(in srgb, var(--sheet) 86%, transparent);
   position: fixed; inset: 0; z-index: 26; display: flex; flex-direction: column;
-  background: var(--bg); overflow: hidden;
+  background: var(--as-film); overflow: hidden;
   clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%));
   transition: clip-path var(--dur-slow) var(--ease-in-out);
 }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .as {
+    background: var(--as-glass);
+    -webkit-backdrop-filter: blur(26px) saturate(1.2);
+    backdrop-filter: blur(26px) saturate(1.2);
+  }
+}
 .as.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); }
-/* światła tła rozmowy: te same co w aplikacji, powoli dryfują; nagłówek i pole są przezroczyste, więc ich nie ucinają */
-.as::before {
-  content: ""; position: absolute; z-index: 0; inset: -20%; pointer-events: none;
-  background: var(--glow); will-change: transform;
-  animation: aura-a 50s ease-in-out infinite alternate;
-}
-.as > * { position: relative; z-index: 1; }
-
-/* Strumienie kolorów roślinki (js/asystent.js, Flow): wstęgi na canvasie w niskiej rozdzielczości, rozmycie robi z nich
-   miękkie smugi. Canvas wystaje poza ekran rozmowy, żeby rozmycie nie wygaszało brzegów. */
-.as > .as-flow {
-  position: absolute; z-index: 0; top: -40px; left: -40px;
-  width: calc(100% + 80px); height: calc(100% + 80px); pointer-events: none; filter: blur(11px);
-}
 body.as-open { overflow: hidden; }
 @media (max-width: 1023px) { body.as-open .tabbar { transform: translateY(120%); } }
 /* tablet: pasek pływa na środku (translateX(-50%)) — chowa się w dół bez odskakiwania w bok */
@@ -70,7 +67,7 @@ body.as-open .fab { display: none; }
 .as-top {
   display: flex; align-items: center; gap: var(--sp-3);
   padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-4) var(--sp-3);
-  background: none;
+  background: var(--as-bar); border-bottom: 1px solid var(--line);
 }
 .as-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--sp-3); }
 .as-who b { display: block; font-size: 1rem; font-weight: 800; }
@@ -99,8 +96,8 @@ body.as-open .fab { display: none; }
 .as-hop { display: block; width: 100%; height: auto; pointer-events: none; user-select: none; animation: as-hop var(--dur-slow) var(--ease-out) .25s both; }
 @keyframes as-hop { 0% { opacity: 0; transform: translateY(26px) scale(.85); } 45% { opacity: 1; transform: translateY(-8px) scale(1.03); } 70% { transform: translateY(2px) scale(.99); } 100% { transform: none; } }
 .as-msg.is-bot { background: var(--surface); border-bottom-left-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
-/* odpowiedź użytkownika: jasne tło z akcentem + zwykły tekst (czytelne w każdym motywie) */
-.as-msg.is-me { align-self: flex-end; background: rgba(var(--primary-rgb), .14); border-bottom-right-radius: 6px; }
+/* Dymki mają pełne tło. Odcień odpowiedzi użytkownika pochodzi z motywu. */
+.as-msg.is-me { align-self: flex-end; background: color-mix(in srgb, var(--surface) 86%, var(--primary)); border-bottom-right-radius: 6px; }
 .as-quote { align-self: flex-end; max-width: 82%; padding: var(--sp-3) var(--sp-4) var(--sp-3); border-radius: 20px 20px 6px 20px; background: var(--surface); border: 1px solid var(--line); animation: as-quote-in var(--dur-slow) var(--ease-spring) both; }
 @keyframes as-quote-in { from { opacity: 0; transform: translate(30px, 60px) scale(.4) rotate(8deg); } }
 .as-quote span { display: flex; align-items: center; gap: var(--sp-1); font-size: .72rem; font-weight: 700; color: var(--text-muted); }
@@ -112,14 +109,14 @@ body.as-open .fab { display: none; }
 .as-dots i:nth-child(2) { animation-delay: .15s; }
 .as-dots i:nth-child(3) { animation-delay: .3s; }
 @keyframes as-dot { 30% { opacity: 1; transform: translateY(-3px); } }
-/* Propozycje odpowiedzi: po stronie użytkownika (prawo), obrys w kolorze motywu, półprzezroczyste */
+/* Propozycje odpowiedzi: po stronie użytkownika, z obrysem w kolorze motywu. */
 .as-quick { align-self: flex-end; max-width: 92%; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--sp-2); animation: soft-in var(--dur-slow) var(--ease-out) .2s both; }
-.as-quick .chip { height: 36px; padding: 0 var(--sp-4); background: var(--glass); border-color: rgba(var(--primary-rgb), .5); color: var(--primary-dark); font-weight: 600; }
-.as-quick .chip:hover { background: rgba(var(--primary-rgb), .12); border-color: var(--primary); }
+.as-quick .chip { height: 36px; padding: 0 var(--sp-4); background: var(--surface); border-color: rgba(var(--primary-rgb), .5); color: var(--primary-dark); font-weight: 600; }
+.as-quick .chip:hover { background: color-mix(in srgb, var(--surface) 88%, var(--primary)); border-color: var(--primary); }
 .as-crisis { display: grid; gap: var(--sp-2); animation: soft-in var(--dur-slow) var(--ease-out) both; }
 .as-crisis .support-call { display: flex; }
 
-.as-compose { display: flex; align-items: flex-end; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom)); background: none; }
+.as-compose { display: flex; align-items: flex-end; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3) calc(var(--sp-3) + env(safe-area-inset-bottom)); background: var(--as-bar); border-top: 1px solid var(--line); }
 .as-compose textarea {
   flex: 1; min-width: 0; min-height: 46px; max-height: 120px; padding: var(--sp-3) var(--sp-4); resize: none;
   border: 1.5px solid var(--line); border-radius: 23px; background: var(--surface);
@@ -141,7 +138,6 @@ body.as-open .fab { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .as, .vault-item.is-folding { transition: none; }
-  .as::before { animation: none; }
   .as-msg, .as-quote, .as-quick, .as-crisis, .as-dots i, .as-fab, .as-mini, .as-fab-peek, .as-mascot, .as-hop { animation: none !important; }
 }
 
@@ -149,16 +145,16 @@ body.as-open .fab { display: none; }
    żeby nic nie było pod panelem. --as-w to szerokość panelu, --page-w to to, co zostaje dla strony. */
 @media (min-width: 1024px) {
   :root { --as-w: clamp(380px, 32vw, 460px); --page-w: 100vw; --gutter: 112px; }
-  body.as-open { --page-w: calc(100vw - var(--as-w) - 16px); --gutter: 48px; overflow: auto; }
-  /* osobne okienko: pływająca karta z własnym, jednolitym tłem (bez świateł strony), nagłówek i pole jak w karcie */
+  body.as-open { --page-w: calc(100vw - var(--as-w) - var(--as-inset, var(--sp-4))); --gutter: 48px; overflow: auto; }
+  /* Pływające okienko korzysta z tej samej tafli co karty na planecie. */
   .as {
-    top: 16px; right: 16px; bottom: 16px; left: auto; width: var(--as-w);
-    background: var(--sheet); border: 1.5px solid var(--line); border-radius: var(--radius-lg);
+    --as-glass: var(--tafla);
+    top: 16px; right: var(--as-inset, var(--sp-4)); bottom: 16px; left: auto; width: var(--as-w);
+    border: 1px solid var(--tafla-brzeg); border-radius: var(--radius-lg);
     box-shadow: var(--shadow-float);
   }
-  .as::before { display: none; }
-  .as-top { background: var(--surface); border-bottom: 1px solid var(--line); padding-top: var(--sp-3); }
-  .as-compose { background: var(--surface); border-top: 1px solid var(--line); padding-bottom: var(--sp-3); }
+  .as-top { padding-top: var(--sp-3); }
+  .as-compose { padding-bottom: var(--sp-3); }
   body.as-open .tabbar { transform: translateX(-50%); }
   /* przy otwartym panelu pasek jest węższy: podpis tylko przy bieżącej zakładce, reszta to ikony */
   body.as-open .tab:not([aria-current="page"]) { gap: 0; padding: 0 var(--sp-1); font-size: 0; }

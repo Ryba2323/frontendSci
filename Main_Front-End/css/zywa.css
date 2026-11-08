@@ -387,8 +387,10 @@
 /* ---------- Pory dnia: wieczorem niebo jest ciemne u góry, więc napisy są jasne (jak nocą) ---------- */
 :root[data-uklad="d"][data-pora="wieczor"] .stage-greet h1 { color: #FFF8F2; }
 :root[data-uklad="d"][data-pora="wieczor"] .greet-date { color: rgba(255, 248, 242, .88); }
-:root[data-uklad="d"][data-pora="wieczor"] .brand-word.is-light { display: none; }
-:root[data-uklad="d"][data-pora="wieczor"] .brand-word.is-dark { display: block; }
+:root[data-uklad="d"][data-pora="wieczor"] .brand.is-word {
+  color: var(--wordmark-on-dark);
+  --wordmark-halo: 2px var(--wordmark-on-light);
+}
 
 /* ---------- Tracker: wykresy mają się dać odczytać od razu ---------- */
 /* Każdy blok to osobna karta: najpierw wniosek, pod nim wyraźny wykres z liczbami */

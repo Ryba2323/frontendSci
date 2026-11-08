@@ -1,5 +1,5 @@
 /*
- * Kontrast napisów na niebie (Playwright): powitanie i data stoją na canvasie z niebem, którego zwykły test kontrastu
+ * Kontrast napisów na niebie (Playwright): znak ReLeaf, powitanie i data stoją na canvasie z niebem, którego zwykły test kontrastu
  * nie widzi. Dla 4 pór dnia × 6 motywów × jasny/nocny × telefon/komputer bierze piksele nieba pod linijkami tekstu
  * i liczy najgorszy kontrast (bez poświaty text-shadow, którą nocą dostaje tekst — to zapas).
  * Uruchom: node narzedzia/sprawdz-niebo.js   (próg 4,5:1, nagłówek od 24 px — 3:1)
@@ -19,18 +19,25 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
       const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
       const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
       const pageBg = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number);
-      return ['#greet-title', '#greet-date'].map(sel => {
+      return ['#greet-title', '#greet-date', '.brand-word'].map(sel => {
         const el = document.querySelector(sel), st = getComputedStyle(el), fg = st.color.match(/[\d.]+/g).map(Number);
+        const isWordmark = sel === '.brand-word';
+        // Jasne litery mają ciemną obwódkę również wtedy, gdy pod nimi przeleci jasny element sceny.
+        if (isWordmark && parseFloat(st.webkitTextStrokeWidth) >= 2 && st.paintOrder.startsWith('stroke')) {
+          const inkContrast = ratio(fg, st.webkitTextStrokeColor.match(/[\d.]+/g).map(Number));
+          return inkContrast < 4.5 ? `${sel} ${inkContrast.toFixed(2)} < 4.5 na obwódce` : null;
+        }
         // tylko linijki tekstu (Range), nie całe pole elementu
         const rg = document.createRange(); rg.selectNodeContents(el);
-        const rects = [...rg.getClientRects()].filter(q => q.width > 2); let min = 99;
+        const rects = [...rg.getClientRects()].filter(q => q.width > 2);
+        let min = 99;
         for (const er of rects) for (let i = 0; i < 16; i++) {
           const x = (er.left + (i % 8 + .5) / 8 * er.width - cr.left) * k, y = (er.top + (Math.floor(i / 8) + .5) / 2 * er.height - cr.top) * k;
           const d = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
           const a = d[3] / 255, bg = [0, 1, 2].map(j => d[j] * a + pageBg[j] * (1 - a));
           min = Math.min(min, ratio(fg, bg));
         }
-        const need = parseFloat(st.fontSize) >= 24 ? 3 : 4.5;
+        const need = !isWordmark && parseFloat(st.fontSize) >= 24 ? 3 : 4.5;
         return min < need ? `${sel} ${min.toFixed(2)} < ${need}` : null;
       }).filter(Boolean);
     });

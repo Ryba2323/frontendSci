@@ -26,6 +26,11 @@
 
   /* ---------- Świat: scena na całą szerokość, pod treścią ---------- */
   .stage[data-swiat] { width: var(--page-w, 100vw); z-index: 0; }
+  /* Niebo zostaje za oknem Asystenta. Do lewej części przesuwa się tylko planeta. */
+  :root[data-uklad="d"] .stage[data-swiat] {
+    width: 100vw;
+    padding-right: calc(100vw - var(--page-w, 100vw));
+  }
   .stage[data-swiat] #plant { -webkit-mask-image: none; mask-image: none; }
   body::after { display: none; }                         /* światło roślinki rysuje teraz sama scena */
   .content { z-index: 2; }
@@ -45,7 +50,7 @@
       var(--tafla-cien);
     animation: tafla-in var(--dur-slow) var(--ease-out) .15s both;
   }
-  @keyframes tafla-in { from { opacity: 0; transform: translateX(32px); filter: blur(10px); } }
+  @keyframes tafla-in { from { opacity: 0; transform: translateX(var(--tafla-in-x, 32px)); filter: blur(10px); } }
   /* bez obsługi rozmycia tafla jest prawie pełna, żeby tekst zawsze był czytelny */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .content .sheet { background: var(--tafla-mocna); } }
 

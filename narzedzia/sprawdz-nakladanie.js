@@ -26,7 +26,12 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
         if (wide && vis(stage) && canvas && R(canvas).width > R(stage).width + 1) bad.push(`roślinka szersza niż scena (${R(canvas).width|0} > ${R(stage).width|0})`);
         if (open && wide) {
           const L = R(as).left;
-          for (const s of ['.app-top .top-actions', '.stage-greet', '#stage', '#plant', '.view:not([hidden])', '.tabbar', '.toast'])
+          const targets = ['.app-top .top-actions', '.stage-greet', '.view:not([hidden])', '.tabbar', '.toast'];
+          // W Żywej planecie niebo celowo biegnie za oknem Asystenta.
+          if (document.documentElement.dataset.uklad === 'd' && stage?.hasAttribute('data-swiat')) {
+            if (!vis(canvas) || R(canvas).width < innerWidth - 1) bad.push('niebo nie sięga za panel Asystenta');
+          } else targets.push('#stage', '#plant');
+          for (const s of targets)
             { const el = q(s); if (vis(el) && R(el).right > L + 1 && R(el).width) bad.push(`${s} wchodzi pod panel (${R(el).right|0} > ${L|0})`); }
         }
         const pairs = [['.app-top .top-actions', '.stage-greet'], ['.app-top .logo-ph', '.stage-greet'], ['#as-fab', '.tabbar'], ['#as-fab', '.fab'], ['#as-fab', '.app-top .top-actions'], ['.as-top .sos', '.as-who']];

@@ -71,11 +71,15 @@
 /* nocą pod jasnym tekstem miękka, ciemna poświata — gdy obok wyrośnie jasny kwiat, napis nadal jest czytelny */
 :root[data-pora="noc"] .stage-greet > * { text-shadow: 0 0 3px rgb(16, 24, 42), 0 0 14px rgba(16, 24, 42, .9); }
 :root[data-pora="noc"] .greet-date { color: rgba(238, 242, 246, .82); }
-:root[data-pora="noc"] .brand-word.is-light { display: none; }
-:root[data-pora="noc"] .brand-word.is-dark { display: block; }
+:root[data-pora="noc"] .brand.is-word {
+  color: var(--wordmark-on-dark);
+  --wordmark-halo: 2px var(--wordmark-on-light);
+}
 /* jasny tryb o prawdziwej nocy: gdy pasek dostaje jasne tło karty, wraca ciemny napis */
-:root.noc-jasny .app-top.is-solid .brand-word.is-light { display: block; }
-:root.noc-jasny .app-top.is-solid .brand-word.is-dark { display: none; }
+:root.noc-jasny .app-top.is-solid .brand.is-word {
+  color: var(--wordmark-on-light);
+  --wordmark-halo: 0 transparent;
+}
 
 :root[data-pora="noc"] .sos {
   border-color: color-mix(in srgb, var(--plant-core) 75%, transparent);

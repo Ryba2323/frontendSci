@@ -1,0 +1,175 @@
+/* Przewijamy dokument, żeby scena, gesty i pamięć pozycji zakładek nadal działały. */
+@media (min-width: 1024px) and (min-height: 360px) {
+  .has-releaf-scrollbar { scrollbar-width: none; }
+  .has-releaf-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Pasek sięga pod przyciski. Wspólny margines zostawia im miejsce obok niego. */
+  :root[data-uklad="d"] { --tafla-in-x: var(--sp-2); }
+  :root[data-uklad="d"] body:not(.as-open) { --gutter: calc(2 * var(--sp-16)); }
+  :root.has-releaf-scrollbar body { --as-inset: calc(44px + 2 * var(--sp-2)); }
+  :root[data-uklad="d"] body :is(.as-fab, .fab) { right: calc(var(--sp-16) - var(--sp-1)); }
+}
+
+.releaf-scrollbar {
+  --rl-primary: var(--primary);
+  --rl-accent: light-dark(var(--rl-primary), color-mix(in srgb, var(--rl-primary) 55%, white));
+  --rl-sheet: var(--sheet);
+  --rl-track: color-mix(in srgb, var(--rl-accent) 19%, transparent);
+  --handle-h: 72px;
+  --leaf-light: color-mix(in srgb, var(--rl-accent) 45%, #e3f5ed);
+  --leaf-mid: color-mix(in srgb, var(--rl-accent) 76%, #b0e2db);
+  --leaf-deep: color-mix(in srgb, var(--rl-primary) 88%, #244b46);
+  --leaf-edge: color-mix(in srgb, var(--leaf-deep) 62%, #101923);
+  --vein: color-mix(in srgb, var(--leaf-light) 72%, transparent);
+  position: fixed;
+  z-index: 5;
+  top: var(--sp-8);
+  right: var(--sp-2);
+  bottom: var(--sp-6);
+  width: 44px;
+}
+@media (max-width: 1199px) {
+  /* Na wąskim komputerze dolne zakładki sięgają do prowadnicy. */
+  .releaf-scrollbar { bottom: calc(var(--sp-16) + var(--sp-6)); }
+}
+.releaf-scrollbar .rl-guide { position: absolute; inset: 0 auto 0 21px; }
+.releaf-scrollbar .rl-handle {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 32px;
+  height: var(--handle-h);
+  pointer-events: none;
+}
+.releaf-scrollbar .rl-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  opacity: 0;
+  cursor: grab;
+  touch-action: none;
+}
+.releaf-scrollbar .rl-range:active { cursor: grabbing; }
+.releaf-scrollbar:not(.is-pointer-focused):has(.rl-range:focus-visible) { outline: 2px solid var(--rl-accent); outline-offset: -3px; border-radius: 12px; }
+body:is(.ci-open, .sheet-open, .plant-full, .pk-writing) .releaf-scrollbar { visibility: hidden; }
+
+/* Uchwyt z eksportu: kształt liścia, żyłki i kropla rosy. */
+.releaf-scrollbar .rl-guide {
+  width: 3px;
+  left: 20.5px;
+  background: linear-gradient(180deg,transparent,var(--rl-track) 8%,color-mix(in srgb,var(--rl-accent) 29%,transparent) 50%,var(--rl-track) 92%,transparent);
+  box-shadow: 1px 0 0 color-mix(in srgb,var(--rl-sheet) 45%,transparent);
+  border-radius: 50%;
+}
+.releaf-scrollbar .rl-handle {
+  background: none;
+  border-radius: 0;
+  transform: translateX(-50%) rotate(22deg);
+  transform-origin: 50% 60px;
+  transition: none;
+  will-change: transform;
+  filter: drop-shadow(0 0 1px var(--leaf-edge))
+          drop-shadow(0 0 2px color-mix(in srgb, var(--accent-light) 85%, transparent))
+          drop-shadow(1px 3px 3px color-mix(in srgb, var(--leaf-edge) 40%, transparent));
+}
+.releaf-scrollbar .rl-handle:before {
+  content: '';
+  position: absolute;
+  inset: -12px -10px;
+  background: radial-gradient(ellipse,color-mix(in srgb,var(--leaf-mid) 28%,transparent),transparent 68%);
+  opacity: .65;
+  transition: opacity var(--dur-fast), transform var(--dur-base);
+  transform: scale(.9);
+}
+.releaf-scrollbar .rl-handle:after {
+  content: '';
+  position: absolute;
+  top: 56px;
+  left: 15px;
+  width: 2px;
+  height: 15px;
+  background: linear-gradient(90deg,var(--leaf-light),var(--leaf-deep));
+  border-radius: 0 0 2px 2px;
+}
+.releaf-scrollbar .rl-leaf-skin {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 32px;
+  height: 62px;
+  overflow: hidden;
+  clip-path: path('M 16 0 C 19 8 29 14 31 27 C 34 42 25 54 16 62 C 6 54 -1 42 1 29 C 2 16 12 7 16 0 Z');
+  background: radial-gradient(ellipse at 23% 33%,color-mix(in srgb,var(--leaf-light) 85%,transparent),transparent 64%),linear-gradient(90deg,var(--leaf-light) 0%,var(--leaf-mid) 46%,var(--rl-accent) 51%,var(--leaf-deep) 100%);
+}
+.releaf-scrollbar .rl-leaf-skin:before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  bottom: 0;
+  left: 15px;
+  width: 2px;
+  background: linear-gradient(90deg,var(--vein),color-mix(in srgb,var(--leaf-deep) 24%,transparent));
+  clip-path: polygon(50% 0,100% 100%,0 100%);
+}
+.releaf-scrollbar .rl-leaf-skin:after {
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 17px;
+  width: 4px;
+  height: 5px;
+  border-radius: 55% 45% 50% 50%;
+  background: radial-gradient(circle at 28% 22%,#ffffffd9,transparent 42%),linear-gradient(135deg,#ffffff55,#ffffff11);
+  box-shadow: 0 1px 2px #173e4430,inset -.5px -.5px .5px #ffffff88;
+  transform: rotate(-14deg);
+}
+.releaf-scrollbar .rl-vein {
+  position: absolute;
+  height: 5px;
+  width: 12px;
+  border-bottom: 1px solid var(--vein);
+  transform-origin: right bottom;
+  border-radius: 0 0 0 80%;
+  opacity: .7;
+}
+.releaf-scrollbar .rl-vein:nth-child(1){left:4px;top:19px;transform:rotate(40deg)}
+.releaf-scrollbar .rl-vein:nth-child(2) {
+  left: 2px;
+  top: 31px;
+  transform: rotate(36deg);
+  width: 14px;
+}
+.releaf-scrollbar .rl-vein:nth-child(3){left:4px;top:43px;transform:rotate(36deg)}
+.releaf-scrollbar .rl-vein:nth-child(4) {
+  left: 16px;
+  top: 19px;
+  transform: rotate(-40deg);
+  transform-origin: left bottom;
+  border-radius: 0 0 80% 0;
+}
+.releaf-scrollbar .rl-vein:nth-child(5) {
+  left: 16px;
+  top: 31px;
+  transform: rotate(-36deg);
+  transform-origin: left bottom;
+  border-radius: 0 0 80% 0;
+  width: 14px;
+}
+.releaf-scrollbar .rl-vein:nth-child(6) {
+  left: 16px;
+  top: 43px;
+  transform: rotate(-36deg);
+  transform-origin: left bottom;
+  border-radius: 0 0 80% 0;
+}
+.releaf-scrollbar:hover .rl-handle:before,.releaf-scrollbar.is-moving .rl-handle:before{opacity:1;transform:scale(1.15)}
+
+@media (prefers-reduced-motion: reduce) {
+  .releaf-scrollbar .rl-handle::before { transition: none; }
+}
+.is-static .releaf-scrollbar .rl-handle::before { transition: none; }
