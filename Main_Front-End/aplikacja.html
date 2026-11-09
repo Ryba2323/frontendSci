@@ -14,12 +14,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
   <!-- Napis ReLeaf: tylko litery z nazwy, kilka kB -->
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
+  <!-- Ścieżka: Fraunces (tytuły, duże liczby, osobiste treści) -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
 
-  <!-- Kierunek „Żywa planeta” (domyślny; ?uklad=a|b|c|stary — poprzednie wersje). Musi być ustawiony przed pierwszym rysowaniem.
-       Pola koloru (css/pola.css) są włączone w D i E; ?pola=0 pokazuje wersję bez nich.
-       ?uklad=e — „Pokoje”: Żywa planeta + wyraźnie oddzielone zakładki (css/pokoje.css, js/pokoje.js), propozycja do porównania. -->
-  <script>(function () { var u = new URLSearchParams(location.search).get('uklad'); if (!u || u === 'd' || u === 'e') document.documentElement.dataset.uklad = 'd'; if (u === 'e') document.documentElement.setAttribute('data-pokoje', ''); if (document.documentElement.dataset.uklad === 'd' && new URLSearchParams(location.search).get('pola') !== '0') document.documentElement.setAttribute('data-pola', ''); })();</script>
+  <!-- Kierunek „Ścieżka” (domyślny na tej gałęzi, css/sciezka.css + js/sciezka.js): planeta z bliska, tekst leży na niebie,
+       tydzień to pasmo wzgórz, nocą księżyce. Zbudowany na mechanice „Żywej planety” (data-uklad="d"), więc funkcje są te same.
+       ?uklad=d — poprzednia „Żywa planeta” (z polami koloru, ?pola=0 bez nich) · ?uklad=e — „Pokoje” · ?uklad=a|b|c|stary — starsze wersje.
+       Musi być ustawiony przed pierwszym rysowaniem. -->
+  <script>(function () { var q = new URLSearchParams(location.search), u = q.get('uklad'), r = document.documentElement; if (!u || u === 'd' || u === 'e' || u === 'f') r.dataset.uklad = 'd'; if (!u || u === 'f') r.setAttribute('data-sciezka', ''); if (u === 'e') r.setAttribute('data-pokoje', ''); if ((u === 'd' || u === 'e') && q.get('pola') !== '0') r.setAttribute('data-pola', ''); })();</script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/home2.css">
   <link rel="stylesheet" href="css/checkin.css">
@@ -39,6 +42,8 @@
   <!-- Komputer: jeden świat — niebo na całą szerokość, treść na matowej tafli (ładowany ostatni) -->
   <link rel="stylesheet" href="css/pulpit.css">
   <link rel="stylesheet" href="css/scrollbar.css">
+  <!-- Ścieżka: wygląd całej aplikacji w kierunku „Ścieżka dookoła planety” (ładowany ostatni, działa tylko z <html data-sciezka>) -->
+  <link rel="stylesheet" href="css/sciezka.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
 
@@ -60,6 +65,7 @@
   <script src="js/asystent.js" defer></script>
   <script src="js/dom-uklad.js" defer></script>
   <script src="js/pokoje.js" defer></script>
+  <script src="js/sciezka.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="js/scrollbar.js" defer></script>
 </head>
@@ -72,6 +78,9 @@
   Komputer: planeta zawsze w lewej połowie, zakładki zmieniają treść po prawej, pasek pływa na dole.
   „Podlej roślinkę” → pytania (js/checkin.js) wylewają się z przycisku → po ostatnim zwijają się do roślinki i pada deszcz.
 -->
+
+<!-- Ścieżka: niebo (gradient pory dnia, gwiazdy) leży POD treścią, a planeta z roślinką (canvas #plant) NAD nią -->
+<canvas class="sky" id="sky" aria-hidden="true"></canvas>
 
 <!-- Scena z roślinką (js/home2-scene.js) -->
 <div class="stage" id="stage" data-blisko data-swiat>

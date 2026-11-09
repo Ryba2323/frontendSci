@@ -1,0 +1,343 @@
+/*
+ * ŚCIEŻKA — „Ścieżka dookoła planety” (<html data-uklad="d" data-sciezka>, domyślna na tej gałęzi). Ładowana ostatnia.
+ * Poprzedni wygląd („Żywa planeta”): ?uklad=d. Mechanika zostaje ta sama (js/dom-uklad.js, window.Podlewanie), zmienia się wygląd.
+ *
+ * Zasady:
+ *  • NIEBO JEST TŁEM. Treść leży prosto na niebie, bez kart, cieni i tafli. Niebo (canvas #sky) jest pod treścią,
+ *    a planeta z roślinką (canvas #plant) nad nią: tekst przewija się w górę nieba i zachodzi za horyzont.
+ *  • PLANETA JEST NAWIGACJĄ. Dół ekranu to grunt planety (--planet): leżą na nim zakładki, a na Domu także dni tygodnia
+ *    i „Podlej roślinkę”. Nic nie pływa nad treścią.
+ *  • TYDZIEŃ TO WZGÓRZA. Pasmo za roślinką rysuje scena; pod każdym wzgórzem stoi przycisk dnia (kolumny --sc-col).
+ *  • DOM TO JEDNA ŚCIEŻKA: dziś (roślinka) → Twój tydzień → Dla Ciebie teraz → Myśl na dziś. Kropkowana linia łączy przystanki.
+ *  • CIEMNE NIEBO = CIEMNA APLIKACJA (js/theme.js): wieczorem i nocą tekst jest jasny, nocą na niebie są trzy księżyce.
+ *  • Kolory z tokenów. --ground to teraz kolor nieba pod treścią, --planet kolor gruntu; oba zapisuje scena (js/home2-scene.js, scPaint).
+ *  • Kształty: przyciski i znaczniki to „kamyki” (pełne zaokrąglenie), pola tekstu 20 px. Tytuły: Fraunces, reszta: Figtree.
+ * W React Native: dwie warstwy Skii pod i nad <ScrollView>, --planet / --ground w konfiguracji NativeWind.
+ */
+.sky { display: none; }
+:root[data-sciezka] .sky { display: block; position: fixed; z-index: 0; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+
+:root[data-sciezka][data-uklad="d"] {
+  --font-serif: "Fraunces", "Bricolage Grotesque", Georgia, serif;
+  --sc-tab: calc(66px + env(safe-area-inset-bottom));
+  --sc-dock: 150px;
+  --sc-top: calc(env(safe-area-inset-top) + 68px);
+  --sc-land: 190px;                       /* krajobraz przy horyzoncie: planeta z mgiełką nad paskiem zakładek */
+  --tab-h: var(--sc-tab);
+  /* wartości na pierwszą klatkę; potem liczy je scena */
+  --ground: oklch(from var(--primary) .95 .034 h);
+  --sky-top: oklch(from var(--primary) .925 .048 h);
+  --planet: oklch(from var(--plant-leaf-2) .84 .08 h);
+  --line: color-mix(in srgb, var(--text) 18%, transparent);
+  --track: color-mix(in srgb, var(--text) 12%, transparent);
+  --veil: color-mix(in srgb, var(--surface) 62%, transparent);   /* pola tekstu i jedyne „płytki”: półprzezroczyste, niebo prześwituje */
+  --sc-bar: color-mix(in srgb, var(--primary) 72%, transparent);  /* słupki wykresów na niebie; nocą jaśniejsze, żeby było je widać */
+  --sc-bar-now: var(--primary);
+  --radius-sm: 999px;
+  --radius-md: 999px;
+  --radius-lg: 22px;
+  --e1: none;
+  scroll-padding-top: calc(var(--sc-top) + var(--sp-4));
+  scroll-padding-bottom: calc(var(--sc-tab) + var(--sc-land) + var(--sp-4));
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-sciezka][data-uklad="d"]:not([data-mode="light"]) { --ground: oklch(.205 .055 265); --sky-top: oklch(.17 .05 265); --planet: oklch(from var(--plant-leaf-2) .255 .04 h); --veil: color-mix(in srgb, var(--surface) 55%, transparent); --e1: none; --sc-bar: color-mix(in srgb, var(--plant-leaf-1) 80%, transparent); --sc-bar-now: var(--plant-leaf-3); }
+}
+:root[data-sciezka][data-uklad="d"][data-mode="dark"] { --ground: oklch(.205 .055 265); --sky-top: oklch(.17 .05 265); --planet: oklch(from var(--plant-leaf-2) .255 .04 h); --veil: color-mix(in srgb, var(--surface) 55%, transparent); --e1: none; --sc-bar: color-mix(in srgb, var(--plant-leaf-1) 80%, transparent); --sc-bar-now: var(--plant-leaf-3); }
+
+/* ================================================================
+   Świat: niebo pod treścią, planeta nad treścią
+   ================================================================ */
+:root[data-sciezka][data-uklad="d"], :root[data-sciezka][data-uklad="d"] body { background: var(--ground); }
+:root[data-sciezka][data-uklad="d"] body::before, :root[data-sciezka][data-uklad="d"] body::after { display: none; }
+:root[data-sciezka][data-uklad="d"] .stage {
+  top: 0; bottom: 0; height: auto !important; width: 100%; z-index: 3; overflow: hidden;
+  background: none; pointer-events: none; transform: none !important; opacity: 1 !important; will-change: auto;
+}
+:root[data-sciezka][data-uklad="d"] .stage::after { display: none; }
+/* roślinka na cały ekran: scena zostaje nad treścią, inaczej przycisk wyjścia chowa się pod <main> */
+:root[data-sciezka][data-uklad="d"] body.plant-full .stage { z-index: 3; }
+:root[data-sciezka][data-uklad="d"] body.plant-full .stage-fade { display: block; }
+:root[data-sciezka][data-uklad="d"] #plant { -webkit-mask-image: none; mask-image: none; }
+:root[data-sciezka][data-uklad="d"] .plant-zoom { pointer-events: auto; }
+:root[data-sciezka][data-uklad="d"] .content { z-index: 2; pointer-events: auto; }
+/* tekst chowa się też pod górnym paskiem: miękko, w kolor nieba */
+:root[data-sciezka][data-uklad="d"] .stage-fade {
+  display: block; position: fixed; z-index: 3; left: 0; right: 0; top: 0; height: calc(var(--sc-top) + var(--sp-8));
+  opacity: 1 !important; transform: none !important; pointer-events: none;
+  background: linear-gradient(var(--sky-top) 42%, color-mix(in srgb, var(--sky-top) 0%, transparent));
+}
+
+/* treść: bez karty, prosto na niebie */
+:root[data-sciezka][data-uklad="d"] .sheet,
+:root[data-sciezka][data-uklad="d"] .content .sheet {
+  background: none; box-shadow: none; border: 0; border-radius: 0; animation: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  max-width: 600px; padding: 0 var(--sp-5);
+}
+:root[data-sciezka][data-uklad="d"] .view { padding-bottom: calc(var(--sc-tab) + var(--sc-land) + var(--sp-10)); }
+
+/* ---------- Typografia ---------- */
+:root[data-sciezka][data-uklad="d"] :is(.view-head h1, .stage-greet h1, .sec h2, .sub-title, .list-head h2, .sheet .kicker, .insight h3, .score-num strong, .sum-head b, .sos-title, .ci-q, .empty-title) {
+  font-family: var(--font-serif); font-weight: 400; letter-spacing: -.02em; font-optical-sizing: auto;
+}
+:root[data-sciezka][data-uklad="d"] .view-head h1 { font-size: clamp(2.6rem, 11vw, 3.4rem); line-height: 1; font-weight: 350; }
+:root[data-sciezka][data-uklad="d"] .view-lead { max-width: 30ch; margin: var(--sp-3) 0 var(--sp-8); font-size: 1.02rem; line-height: 1.5; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .sheet .kicker,
+:root[data-sciezka][data-uklad="d"] .sub-title,
+:root[data-sciezka][data-uklad="d"] .list-head h2 { font-size: 1.7rem; line-height: 1.15; color: var(--text); }
+:root[data-sciezka][data-uklad="d"] .stage-greet h1 { font-size: 2.05rem; line-height: 1.08; white-space: normal; font-weight: 350; text-wrap: balance; }
+:root[data-sciezka][data-uklad="d"] .greet-date { font-size: .82rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .stage-greet { max-width: 70%; text-shadow: none; }
+:root[data-sciezka][data-uklad="d"] .stage-greet > * { text-shadow: none; }
+:root[data-sciezka][data-uklad="d"] .stage-greet h1 { color: var(--text); }
+
+/* ================================================================
+   Górny pasek na niebie
+   ================================================================ */
+:root[data-sciezka][data-uklad="d"] .app-top { pointer-events: none; background: none !important; box-shadow: none !important; }
+:root[data-sciezka][data-uklad="d"] .app-top > * { pointer-events: auto; }
+:root[data-sciezka][data-uklad="d"] :is(.sos, .color-btn) {
+  border-radius: 999px; background: var(--veil); box-shadow: inset 0 0 0 1px var(--line);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+:root[data-sciezka][data-uklad="d"][data-pora="noc"] .sos,
+:root[data-sciezka][data-uklad="d"][data-pora="wieczor"] .sos {
+  animation: none; color: var(--text);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--plant-core) 80%, transparent), 0 0 22px 2px color-mix(in srgb, var(--plant-core) 32%, transparent);
+}
+
+/* ================================================================
+   Pasek zakładek leży na planecie
+   ================================================================ */
+:root[data-sciezka][data-uklad="d"] .tabbar {
+  left: 0; right: 0; bottom: 0; width: auto; height: var(--sc-tab); transform: none;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 132px)); justify-content: center; gap: 0;
+  padding: 6px var(--sp-2) calc(6px + env(safe-area-inset-bottom));
+  border: 0; border-radius: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
+  /* grunt rysuje scena; pełny kolor pod podpisami zostaje na wypadek braku canvasu */
+  background: linear-gradient(color-mix(in srgb, var(--planet) 0%, transparent), var(--planet) 60%) !important;
+}
+:root[data-sciezka][data-uklad="d"] body.ci-open .tabbar { transform: translateY(130%); }
+@media (max-width: 1023px) { :root[data-sciezka][data-uklad="d"] body.as-open .tabbar { transform: translateY(130%); } }
+:root[data-sciezka][data-uklad="d"] .tab {
+  position: relative; z-index: 1; flex-direction: column; gap: 1px; height: 54px; padding: 0; justify-content: center;
+  border-radius: 20px; background: none; font-size: .72rem; font-weight: 500; color: var(--text-body);
+}
+:root[data-sciezka][data-uklad="d"] .tab-ico { width: 44px; height: 26px; background: none; }
+:root[data-sciezka][data-uklad="d"] .tab-ico::before { display: none; }
+:root[data-sciezka][data-uklad="d"] .tab[aria-current="page"] { color: var(--text); font-weight: 700; background: none; }
+:root[data-sciezka][data-uklad="d"] .tab[aria-current="page"] .tab-label { color: var(--text); }
+/* znacznik bieżącej zakładki: kamyk, który przetacza się między miejscami */
+:root[data-sciezka][data-uklad="d"] .zy-tab-ind {
+  display: block; position: absolute; z-index: 0; top: 6px; bottom: calc(6px + env(safe-area-inset-bottom));
+  left: calc(50% - var(--sc-tabw) * 2.5); width: var(--sc-tabw); --sc-tabw: min((100vw - var(--sp-4)) / 5, 132px);
+  border-radius: 24px 28px 22px 26px;
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 26%, transparent);
+  transform: translateX(calc(var(--ti, 0) * 100%)); transition: transform var(--dur-base) var(--spring-soft);
+}
+
+/* ================================================================
+   Dom, przystanek „dziś”: dni tygodnia i podlewanie leżą na planecie pod roślinką
+   ================================================================ */
+:root[data-sciezka][data-uklad="d"] #zy-panel {
+  position: fixed; z-index: 6; left: 50%; bottom: var(--sc-tab); width: calc(var(--sc-col, 48px) * 7); height: var(--sc-dock); margin: 0;
+  opacity: calc(var(--h, 1) * 2.6 - 1.6);
+  transform: translate(-50%, calc((1 - var(--h, 1)) * 46px));
+}
+:root[data-sciezka][data-uklad="d"] #zy-panel.sc-away { visibility: hidden; pointer-events: none; }
+:root[data-sciezka][data-uklad="d"] body.plant-full #zy-panel { opacity: 0; visibility: hidden; }
+/* panel jest poza <main> (js/sciezka.js), więc poza Domem i pod pełnoekranowymi warstwami chowamy go sami */
+:root[data-sciezka][data-uklad="d"] body:not([data-tab="dom"]) #zy-panel { display: none; }
+:root[data-sciezka][data-uklad="d"] .zy-face { gap: 0; transform: none; }
+:root[data-sciezka][data-uklad="d"] .zy-week { flex: none; height: 44px; margin: 0; gap: 0; }
+:root[data-sciezka][data-uklad="d"] .zy-week::before, :root[data-sciezka][data-uklad="d"] .zy-week::after { display: none; }
+:root[data-sciezka][data-uklad="d"] .zy-day { min-height: 44px; min-width: 0; border-radius: 16px; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .zy-day i { display: none; }
+:root[data-sciezka][data-uklad="d"] .zy-day span { top: 9px; font-size: .86rem; font-weight: 500; }
+:root[data-sciezka][data-uklad="d"] .zy-day.is-today span { font-weight: 700; color: var(--text); }
+:root[data-sciezka][data-uklad="d"] .zy-day[aria-pressed="true"] span { text-decoration: none; font-weight: 700; color: var(--text); }
+:root[data-sciezka][data-uklad="d"] .zy-day[aria-pressed="true"]::before {
+  content: ""; position: absolute; left: 50%; top: 4px; width: 38px; height: 28px; margin-left: -19px;
+  border-radius: 14px 16px 13px 15px; background: color-mix(in srgb, var(--plant-core) 55%, transparent);
+}
+:root[data-sciezka][data-uklad="d"] .zy-day span { z-index: 1; }
+
+:root[data-sciezka][data-uklad="d"] .zy-water {
+  height: 56px; margin-top: 2px; border-radius: 30px 34px 30px 32px; font-size: 1.1rem; font-weight: 600;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .1)), var(--primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 10px 20px -14px color-mix(in srgb, var(--primary) 70%, #000);
+}
+:root[data-sciezka][data-uklad="d"] .zy-done { height: 56px; margin-top: 2px; padding: 0 var(--sp-1) 0 var(--sp-2); border-radius: 30px; background: color-mix(in srgb, var(--text) 8%, transparent); box-shadow: none; }
+:root[data-sciezka][data-uklad="d"] .zy-change { border-radius: 999px; }
+:root[data-sciezka][data-uklad="d"] .zy-f-low { justify-content: center; gap: var(--sp-2); }
+:root[data-sciezka][data-uklad="d"] .zy-help { border-radius: 26px 28px 24px 27px; background: color-mix(in srgb, var(--plant-core) 30%, var(--planet)); border-color: color-mix(in srgb, var(--plant-core) 80%, var(--text) 12%); }
+:root[data-sciezka][data-uklad="d"] .zy-low-line { color: var(--text-body); }
+/* „dalej ścieżką”: prowadzi do pierwszego przystanku pod horyzontem */
+.sc-more { display: none; }
+:root[data-sciezka][data-uklad="d"] .sc-more {
+  display: inline-flex; align-self: center; align-items: center; gap: var(--sp-1); min-height: 40px; padding: 0 var(--sp-3);
+  border: 0; border-radius: 999px; background: none; font: inherit; font-size: .88rem; font-weight: 500; color: var(--text-body); cursor: pointer;
+}
+:root[data-sciezka][data-uklad="d"] .sc-more svg { width: 16px; height: 16px; }
+:root[data-sciezka][data-uklad="d"] .sc-more:focus-visible { outline: 3px solid var(--ring); outline-offset: 0; }
+:root[data-sciezka][data-uklad="d"] .zy-panel[data-state="done"] .sc-more { margin-top: 0; }
+
+/* ================================================================
+   Dom pod horyzontem: jedna ścieżka z przystankami
+   ================================================================ */
+:root[data-sciezka][data-uklad="d"] #view-dom { position: relative; padding-left: calc(var(--sp-5) + 30px); padding-right: var(--sp-5); min-height: 0; }
+:root[data-sciezka][data-uklad="d"] #view-dom::before {
+  content: ""; position: absolute; left: calc(var(--sp-5) + 6px); top: var(--sp-3); bottom: calc(var(--sc-tab) + var(--sc-land) + var(--sp-16)); width: 0;
+  border-left: 2px dotted color-mix(in srgb, var(--text) 34%, transparent);
+}
+:root[data-sciezka][data-uklad="d"] #view-dom > .sec { position: relative; margin: 0 0 var(--sp-16); padding: 0; border: 0; }
+:root[data-sciezka][data-uklad="d"] #view-dom > .sec + .sec { margin-top: 0; padding-top: 0; border-top: 0; }
+:root[data-sciezka][data-uklad="d"] #view-dom > .sec::before {
+  content: ""; position: absolute; left: -31px; top: 9px; width: 16px; height: 16px; box-sizing: border-box;
+  border-radius: 9px 10px 8px 10px; background: var(--ground); border: 2px solid var(--plant-stem);
+}
+:root[data-sciezka][data-uklad="d"] #view-dom > .zy-next { margin-top: 0; padding-top: 0; }
+:root[data-sciezka][data-uklad="d"] .sheet .kicker { margin: 0 0 var(--sp-3); }
+
+/* Twój tydzień: sama liczba i jedno zdanie */
+:root[data-sciezka][data-uklad="d"] .score { align-items: baseline; gap: var(--sp-3); margin-top: 0; }
+:root[data-sciezka][data-uklad="d"] .score-num strong { font-size: 5.4rem; line-height: .86; font-weight: 300; letter-spacing: -.04em; }
+:root[data-sciezka][data-uklad="d"] .score-num span { font-size: 1.1rem; font-weight: 500; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .score-word { font-family: var(--font-serif); font-style: italic; font-size: 1.35rem; font-weight: 400; margin: 0; }
+:root[data-sciezka][data-uklad="d"] .trend { margin-top: var(--sp-4); font-size: 1rem; line-height: 1.5; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .how { margin-top: var(--sp-4); background: none; padding: 0; border: 0; }
+:root[data-sciezka][data-uklad="d"] .how summary svg { display: none; }
+:root[data-sciezka][data-uklad="d"] .how summary { font-size: .95rem; line-height: 1.5; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .how ul { padding-left: var(--sp-5); }
+
+/* Dla Ciebie teraz: jedna podpowiedź jako wiersz, skróty jako kamyki */
+:root[data-sciezka][data-uklad="d"] :is(.du-suggest, .du-row-btn) {
+  padding: var(--sp-3) 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+:root[data-sciezka][data-uklad="d"] .du-suggest:hover { background: none; }
+:root[data-sciezka][data-uklad="d"] .du-ico { border-radius: 20px 23px 19px 22px; background: color-mix(in srgb, var(--plant-core) 42%, transparent); color: var(--text); }
+:root[data-sciezka][data-uklad="d"] .du-suggest b { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 400; letter-spacing: -.01em; }
+:root[data-sciezka][data-uklad="d"] :is(.du-chip, .zy-quick .du-chip) {
+  min-height: 44px; padding: 0 var(--sp-4); border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--line);
+  font-weight: 500; color: var(--text);
+}
+:root[data-sciezka][data-uklad="d"] .du-chip svg { color: currentColor; }
+:root[data-sciezka][data-uklad="d"] .du-chip.is-done { background: color-mix(in srgb, var(--primary) 20%, transparent); box-shadow: inset 0 0 0 1.5px var(--primary); }
+:root[data-sciezka][data-uklad="d"] .du-more-title { color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .zy-next .du-quick { margin-top: var(--sp-4); }
+
+/* Myśl na dziś: duży cytat prosto na niebie */
+:root[data-sciezka][data-uklad="d"] .quote { margin: 0; font-size: 1.85rem; line-height: 1.22; font-weight: 350; font-style: italic; letter-spacing: -.015em; }
+:root[data-sciezka][data-uklad="d"] .plant-foot { padding: 0; text-align: left; color: var(--text-body); }
+:root[data-sciezka][data-uklad="d"] .plant-foot b { font-family: var(--font-serif); font-weight: 400; font-size: 1.3rem; color: var(--text); }
+:root[data-sciezka][data-uklad="d"] .zy-foot-links { display: flex; justify-content: flex-start; }
+
+/* ================================================================
+   Pozostałe zakładki: tekst na niebie, wiersze zamiast kart
+   ================================================================ */
+:root[data-sciezka][data-uklad="d"] :is(.card, .vault-item, .insight, .helps, .tr-sec.week-sum, .post, .jar-card, .vault-compose) {
+  background: none; box-shadow: none; border-radius: 0; border: 0;
+}
+:root[data-sciezka][data-uklad="d"] :is(.tr-sec.week-sum, .insight, .helps) { padding: var(--sp-6) 0; border-top: 1px solid var(--line); }
+:root[data-sciezka][data-uklad="d"] .tr-list { gap: 0; }
+:root[data-sciezka][data-uklad="d"] .insight:first-child { padding-top: var(--sp-6); }
+:root[data-sciezka][data-uklad="d"] .insight .try { border-radius: var(--radius-lg); background: color-mix(in srgb, var(--plant-core) 26%, transparent); }
+:root[data-sciezka][data-uklad="d"] .sum-head b { font-size: 4.4rem; font-weight: 300; line-height: .9; }
+:root[data-sciezka][data-uklad="d"] .insight h3 { font-size: 1.45rem; line-height: 1.2; }
+/* słupki stoją na niebie: pełny kolor, zaokrąglone jak kamyki */
+:root[data-sciezka][data-uklad="d"] .sum-day i { border-radius: 14px 16px 6px 6px; background: var(--sc-bar); }
+:root[data-sciezka][data-uklad="d"] .sum-day.is-today i { background: var(--sc-bar-now); }
+:root[data-sciezka][data-uklad="d"] .sum-day.is-rest i { border-radius: 8px; background: var(--track); }
+:root[data-sciezka][data-uklad="d"] .mb i { border-radius: 14px 16px 6px 6px; background: color-mix(in srgb, var(--text) 24%, transparent); }
+:root[data-sciezka][data-uklad="d"] .mb.is-hl i { background: var(--cat, var(--primary)); }
+:root[data-sciezka][data-uklad="d"] .compare i { background: color-mix(in srgb, var(--text) 24%, transparent); }
+:root[data-sciezka][data-uklad="d"] .compare .is-hl i { background: var(--cat, var(--primary)); }
+:root[data-sciezka][data-uklad="d"] .help-bar { background: var(--track); }
+
+/* Skrytka: myśli jako wiersze oddzielone linią */
+:root[data-sciezka][data-uklad="d"] .vault-item { padding: var(--sp-4) 0; border-top: 1px solid var(--line); }
+:root[data-sciezka][data-uklad="d"] .vault-list { grid-template-columns: 1fr; gap: 0; }
+:root[data-sciezka][data-uklad="d"] .vault-text { font-size: 1.2rem; line-height: 1.4; }
+:root[data-sciezka][data-uklad="d"] :is(textarea, input[type="text"], input[type="tel"], .du-line-row input, .trusted-form input) {
+  border-radius: var(--radius-lg); border: 1px solid var(--line); background: var(--veil);
+}
+:root[data-sciezka][data-uklad="d"] .seg { border-radius: 999px; background: var(--track); }
+:root[data-sciezka][data-uklad="d"] .seg button { border-radius: 999px; }
+:root[data-sciezka][data-uklad="d"] .seg button[aria-pressed="true"] { background: var(--veil); box-shadow: inset 0 0 0 1px var(--line); }
+
+/* Blog: lista wpisów oddzielona linią, „Napisz” obok tytułu */
+:root[data-sciezka][data-uklad="d"] .post { padding: var(--sp-5) 0; border-top: 1px solid var(--line); }
+:root[data-sciezka][data-uklad="d"] .post-title { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 400; line-height: 1.2; letter-spacing: -.01em; }
+:root[data-sciezka][data-uklad="d"] .fab { border-radius: 26px 30px 26px 28px; box-shadow: none; }
+:root[data-sciezka][data-uklad="d"] :is(.btn-primary, .btn-soft, .btn-ghost, .btn-danger, .chip, .ci-chip, .post-btn, .icon-btn, .sos-item, .sos-breath, .trusted-call, .ci-back) { border-radius: 999px; }
+
+/* Podlewanie i arkusze: to samo niebo */
+:root[data-sciezka][data-uklad="d"] .ci-overlay { --ci-leaf: var(--radius-lg); }
+:root[data-sciezka][data-uklad="d"] :is(.ci-chip, .ci-close, .ci-back, .assist-btn, .ci-overlay .support-call) { box-shadow: inset 0 0 0 1px var(--line); }
+:root[data-sciezka][data-uklad="d"] :is(.ci-areas, .ci-overlay .ci-text) { box-shadow: inset 0 0 0 1px var(--line); background: var(--veil); }
+:root[data-sciezka][data-uklad="d"] .ci-chip[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--primary); }
+/* wsparcie przy niskim nastroju: ciepłe światło, ale na tyle spokojne, żeby tekst miał 4,5:1 w każdym motywie i trybie */
+:root[data-sciezka][data-uklad="d"] .support.is-low { background: color-mix(in srgb, var(--plant-core) 20%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--plant-core) 60%, transparent); }
+:root[data-sciezka][data-uklad="d"] .support.is-low .support-text { color: var(--text); }
+
+/* ================================================================
+   Telefon i tablet
+   ================================================================ */
+@media (max-width: 1023px) {
+  /* Dom zaczyna się za horyzontem: pierwszy przystanek wschodzi zza planety, gdy przewiniesz */
+  :root[data-sciezka][data-uklad="d"] .content { padding-top: var(--sc-top); }
+  :root[data-sciezka][data-uklad="d"] body[data-tab="dom"] .content { padding-top: calc(100vh - var(--sc-tab) - var(--sc-dock) - 6px); }
+  @supports (height: 1svh) { :root[data-sciezka][data-uklad="d"] body[data-tab="dom"] .content { padding-top: calc(100svh - var(--sc-tab) - var(--sc-dock) - 6px); } }
+  :root[data-sciezka][data-uklad="d"] body:not([data-tab="dom"]) .content { padding-top: var(--sc-top); }
+  :root[data-sciezka][data-uklad="d"] .view-head { padding-top: var(--sp-4); }
+  :root[data-sciezka][data-uklad="d"] body[data-tab="blog"] .fab { top: calc(var(--sc-top) + var(--sp-5)); }
+  :root[data-sciezka][data-uklad="d"] .plant-foot { padding: 0; }
+  :root[data-sciezka][data-uklad="d"] .toast { bottom: calc(var(--sc-tab) + var(--sp-4)); }
+}
+@media (min-width: 700px) and (max-width: 1023px) {
+  :root[data-sciezka][data-uklad="d"] .zy-panel { max-width: none; }
+  :root[data-sciezka][data-uklad="d"] .stage-greet h1 { font-size: 2.6rem; }
+  :root[data-sciezka][data-uklad="d"] .tab { flex-direction: row; gap: var(--sp-2); font-size: .9rem; }
+  :root[data-sciezka][data-uklad="d"] .tab-ico { width: 24px; }
+}
+@media (max-width: 359px) {
+  :root[data-sciezka][data-uklad="d"] .zy-week { margin-inline: 0; }
+  :root[data-sciezka][data-uklad="d"] .stage-greet h1 { font-size: 1.75rem; }
+}
+
+/* ================================================================
+   Komputer: roślinka z lewej na wielkim łuku, treść na niebie z prawej, zakładki na planecie
+   ================================================================ */
+@media (min-width: 1024px) {
+  :root[data-sciezka][data-uklad="d"] { --sc-tab: 78px; --sc-land: clamp(240px, 30vh, 320px); }
+  :root[data-sciezka][data-uklad="d"] .content { margin-left: calc(var(--page-w, 100vw) / 2); padding: 132px var(--gutter, 112px) 0 var(--sp-10); }
+  :root[data-sciezka][data-uklad="d"] .sheet, :root[data-sciezka][data-uklad="d"] .content .sheet { margin: 0; max-width: 560px; padding: 0; min-height: 0; }
+  :root[data-sciezka][data-uklad="d"] .view, :root[data-sciezka][data-uklad="d"] .view:not(#view-dom) { padding-top: 0; padding-bottom: calc(var(--sc-land) + var(--sp-12)); }
+  :root[data-sciezka][data-uklad="d"] .app-top { right: calc(100vw - var(--page-w, 100vw)); padding: var(--sp-8) var(--sp-10) 0; }
+  :root[data-sciezka][data-uklad="d"] .stage-greet h1 { font-size: 3.1rem; }
+  :root[data-sciezka][data-uklad="d"] .stage-greet { max-width: 40%; }
+  :root[data-sciezka][data-uklad="d"] .view-head h1 { font-size: 4rem; }
+  :root[data-sciezka][data-uklad="d"] .tabbar {
+    left: calc(var(--page-w, 100vw) / 2 + var(--sp-10)); right: auto; bottom: var(--sp-5); width: min(560px, var(--page-w, 100vw) / 2 - var(--sp-10) - var(--gutter, 112px)); height: 58px;
+    grid-template-columns: repeat(5, 1fr); padding: 0; background: none !important;
+  }
+  :root[data-sciezka][data-uklad="d"] .tab { flex-direction: row; gap: var(--sp-2); height: 58px; font-size: .92rem; }
+  :root[data-sciezka][data-uklad="d"] .tab-ico { width: 24px; }
+  :root[data-sciezka][data-uklad="d"] body.as-open .tabbar { transform: none; }
+  /* scena nie zmienia szerokości przy otwieraniu Asystenta, więc nie potrzebuje przejścia (roślinka przesuwa się razem z treścią) */
+  :root[data-sciezka][data-uklad="d"] .stage { transition: none; }
+  :root[data-sciezka][data-uklad="d"] .zy-tab-ind { top: 4px; bottom: 4px; left: 0; width: 20%; }
+  :root[data-sciezka][data-uklad="d"] #zy-panel { left: var(--sc-x, 27vw); bottom: var(--sp-6); }
+  :root[data-sciezka][data-uklad="d"] #view-dom { padding-left: 34px; padding-right: 0; }
+  :root[data-sciezka][data-uklad="d"] #view-dom::before { left: 6px; bottom: calc(var(--sc-land) + var(--sp-16)); }
+  :root[data-sciezka][data-uklad="d"] .sc-more { display: none; }
+  :root[data-sciezka][data-uklad="d"] .zy-foot-links { display: none; }
+  :root[data-sciezka][data-uklad="d"] .score-num strong { font-size: 7rem; }
+  :root[data-sciezka][data-uklad="d"] .quote { font-size: 2.3rem; }
+}
+
+/* Mniej ruchu i ?widok */
+:root.is-static[data-sciezka] #zy-panel, :root.is-static[data-sciezka] .zy-tab-ind { transition: none !important; }

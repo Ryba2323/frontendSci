@@ -17,7 +17,23 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - Keep an **SOS button visible** on in-app screens. For now it lists 116 111 (the free, 24/7 helpline for children and young people in Poland) and 112. The team still has to confirm the numbers.
 - Accessibility: use real text rather than text drawn on canvas for anything important, keep visible focus styles, add `aria-*` where it's needed, support `prefers-reduced-motion`, and keep white text on `--primary` at least as readable as the default theme.
 
-## Visual direction: "Żywa planeta" (default since 6.11.2026, `css/zywa.css`, proposal to confirm with the team)
+## Visual direction: "Ścieżka" (default on branch `tescik-designu-tymson`, 9.11.2026, `css/sciezka.css`, proposal to confirm with the team)
+
+"Ścieżka dookoła planety": option C from `/redesign` (see `.redesign-history.md`), built in revamp mode. Scope: `<html data-uklad="d" data-sciezka>` (inline script in `aplikacja.html`). It sits on top of the "Żywa planeta" mechanics (`buildD`, `window.Podlewanie`, check-in), so every function is the same; only the look and the scene framing change. `?uklad=d` shows "Żywa planeta" exactly as before, `?uklad=e` "Pokoje".
+
+- **The sky is the background.** No cards, shadows or frosted panes: text lies directly on the sky. Two canvases: `#sky` (gradient of the time of day, stars, sun glow) is **under** the content, `#plant` (planet, hills, plant, moons, clouds) is **over** it with `pointer-events: none`. Text scrolls up the sky and sets behind the horizon; just above the planet a haze in the sky's own colour fades it out (`scDrawHaze`). The top bar has the same fade (`.stage-fade`).
+- **The planet is the navigation.** The bottom of the screen is the planet's ground (`--planet`). The tab bar lies on it (no floating pill), and on Dom so do the 7 day buttons and "Podlej roślinkę" (`#zy-panel`, moved out of `<main>` by `js/sciezka.js` because it has to sit above the canvas).
+- **Camera.** `sc.hero` in `js/home2-scene.js`: 1 = top of Dom (big plant, panel on the ground), 0 = horizon (small plant right above the tab bar, the rest is sky with text). On phones it follows the scroll (first 200 px); other tabs are always at the horizon; desktop is always 1 (plant on the left, text column on the right).
+- **The week is a range of hills** behind the plant (`scTerrain`): better day = higher hill, rest day = flat meadow with a sleeping bud, today = bud in a ring until watered, then a hill grows. The hill columns sit exactly above the day buttons (`--sc-col`, written by the scene). Tapping a hill, a day button or a leaf selects the day; swiping sideways over the landscape steps to yesterday, the day before… The plant itself (stem, 7 day leaves, flower) is unchanged.
+- **The planet turns, so the sky moves.** Scrolling and changing tabs shift the moons, stars and clouds (`sc.skyRot`). On other tabs the plant stands on the left and the tab's place (jar, stones, signpost, sprouts) springs out of the ground next to it, past the last hill.
+- **Moons at night.** Evening and night show three moons (different size, phase and tint: cream, theme colour, warm); by day there are a few clouds instead. They live in the landscape, never behind text.
+- **Dark sky = dark app.** In "Jak w telefonie" mode `js/theme.js` also follows the sky: from 17:00 to 5:00 (or `?pora=wieczor|noc`) it sets `data-mode="dark"` while `Theme.mode` stays `auto`. "Dzienny" / "Nocny" chosen by hand win: the scene then shows a day sky in the evening, or a night sky by day (`skyPart()`), so text always lies on a matching sky.
+- **Colours.** `--ground` is now the sky colour under the content, `--planet` the ground; both are computed in OKLCH from the theme in `scPaint()` and written to `<html>`, so each of the 6 themes has its own sky and planet. Bars and chips use `--sc-bar`, `--veil` (the only translucent surface: inputs, the SOS button). `--cat-*` stays Tracker-only.
+- **Dom is one path:** today (plant) → "Twój tydzień" → "Dla Ciebie teraz" → "Myśl na dziś", joined by a dotted line with a pebble marker per stop. "Twój tydzień" moved first because the hills stand right above it; the panel has a "Twój tydzień" link that scrolls there.
+- **Type and shapes.** Fraunces (`--font-serif`) for titles, big numbers and personal content, Figtree for the rest. Buttons and markers are "pebbles" (fully rounded, slightly uneven radii), text fields 22 px.
+- **Tests.** `sprawdz-kontrast.js` treats `--planet` as the background of the tab bar and the day panel. Not tested on a real phone; the mid-scroll moment (text passing behind the big plant) is the weakest spot.
+
+## Visual direction: "Żywa planeta" (`?uklad=d`; default until 9.11.2026, `css/zywa.css`, proposal to confirm with the team)
 
 Built on "Mała planeta" below; it fixes the phone: the plant used to disappear behind a white card, leaving only text. Scope: `<html data-uklad="d">` (set by an inline script in `aplikacja.html`). `?uklad=a|b|c|stary` still show the older versions, unchanged.
 
@@ -84,6 +100,7 @@ The rules below still apply on top of this direction:
   - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
   - `?widok=statyczny` renders a page without animation and with demo data (for screenshots and team previews).
   - `?pora=rano|dzien|wieczor|noc` previews the sky at a given time of day.
+  - `?uklad=d` previews "Żywa planeta" (the default before "Ścieżka"); the test tools take `UKLAD=d`.
   - `?uklad=e` previews proposal E "Pokoje" (D with clearly separated tabs, see above). `UKLAD=e` works with the test tools too.
   - `?uklad=a|b|c` previews the earlier home-page layouts (A "Dziś jednym dotknięciem", B "Strona dnia", C "Wszystko pod kciukiem"), `?uklad=stary` the old home page with the "Podlej roślinkę" button. With `?uklad=a|b|c` a switcher appears at the top of Dom; `porownanie.html` shows D, A, B and C side by side. Layout D "Żywa planeta" is the default. `UKLAD=a|b|c` also works with `sprawdz-nakladanie.js` and `sprawdz-kontrast.js`.
 - Canvas scenes only animate while the tab is visible. When the browser tab is in the background (e.g. during automated testing), call `HomeScene.debugAdvance(sec)` / `Home2Scene.debugAdvance(sec)` in the console to step the scene forward manually.
@@ -99,7 +116,8 @@ The rules below still apply on top of this direction:
 | **The app: all tabs on one page (main entry)** | `aplikacja.html`, `css/app.css`, `css/planeta.css` (look of the "Mała planeta" direction), `js/app.js` (tabs/router) — see "The app" below |
 | Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
 | **Home page, version 2: plant on top (current direction)** | `strona-glowna-2.html`, `css/home2.css`, `js/home2.js`, `js/home2-scene.js` |
-| **Home page in the app: layout D "Żywa planeta" (default)** | `js/dom-uklad.js` (`buildD`), `css/zywa.css` (look of the whole app on phones) |
+| **The app's default look: "Ścieżka"** | `css/sciezka.css`, `js/sciezka.js`, the "Ścieżka" block in `js/home2-scene.js` (`sc*` functions), sky-driven dark mode in `js/theme.js` |
+| Home page in the app: layout D "Żywa planeta" (mechanics for "Ścieżka", look at `?uklad=d`) | `js/dom-uklad.js` (`buildD`), `css/zywa.css` (look of the whole app on phones) |
 | Earlier layouts A, B, C (previews) | `js/dom-uklad.js`, `css/dom-uklad.css`; comparison: `porownanie.html` |
 | Check-in, first question only (the design `aplikacja.html` reuses) | `nastroj.html`, `css/checkin.css`, `js/nastroj.js`, `css/mood-slider.css`, `js/mood-slider.js` |
 | Bottom sheets (shared) | `js/sheets.js` (`window.Sheets`) |

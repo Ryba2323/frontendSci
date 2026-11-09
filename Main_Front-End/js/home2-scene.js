@@ -43,7 +43,7 @@
   const canvas = document.getElementById('plant');
   const stage = document.getElementById('stage');
   if (!canvas || !canvas.getContext) { window.Home2Scene = { start() {}, water() {}, select() {}, isWatered: () => false }; return; }
-  const ctx = canvas.getContext('2d');
+  let ctx = canvas.getContext('2d');
   const closeUp = stage.hasAttribute('data-blisko');
   // JEDEN ŚWIAT (komputer, <div class="stage" data-swiat>, css/pulpit.css): niebo i planeta na całą szerokość, roślinka w lewej części,
   // treść leży na niebie jako matowa tafla — bez szwu między roślinką a interfejsem
@@ -51,6 +51,10 @@
   const PLANT_X = .27;                                           // gdzie stoi roślinka (ułamek szerokości sceny)
   const zywa = document.documentElement.dataset.uklad === 'd';   // kierunek „Żywa planeta” (css/zywa.css)
   const fadeEl = document.getElementById('stage-fade');
+  // ŚCIEŻKA (<html data-sciezka>, css/sciezka.css): planeta z bliska, tekst leży na niebie. Opis w bloku „Ścieżka” niżej.
+  const sciezka = zywa && document.documentElement.hasAttribute('data-sciezka');
+  const skyCanvas = document.getElementById('sky');
+  const mainCtx = ctx, skyCtx = sciezka && skyCanvas ? skyCanvas.getContext('2d') : null;
 
   const view = new URLSearchParams(location.search).get('widok');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!view;
@@ -149,10 +153,10 @@
   const groundNow = () => (roomTo == null ? pal.uiGround : roomT >= 1 || !roomFromC ? roomColor(roomTo) : mixC(roomFromC, roomColor(roomTo), easeInOut(roomT)));
   const markGround = () => {
     if (!zywa) return;
+    if (sciezka) { scPaint(); return; }
     const s = `rgb(${groundNow().map(c => Math.round(c)).join(',')})`;
     if (s !== lastGround) { lastGround = s; document.documentElement.style.setProperty('--ground', s); }
   };
-  markGround();
 
   // Kolory liścia: ton (0 = młody/jasny … 1 = dojrzały/ciemny) i żywość (0 = blady … 1 = soczysty)
   function leafColors(tone, vivid, hue = 0) {
@@ -248,13 +252,25 @@
   const stars = Array.from({ length: 30 }, () => ({ nx: rand(0, 1), ny: rand(0, .55), r: rand(.6, 1.5), ph: rand(0, TAU), sp: rand(.6, 1.6) }));
   // Tryb nocny (js/theme.js): zawsze nocne niebo z gwiazdami i księżycem
   const darkMode = () => !!(window.Theme && window.Theme.isDark && window.Theme.isDark());
-  const nightSky = () => darkMode() || DAYPART === 'night';
+  // Ścieżka: stan kamery i kolory nieba / planety (liczone w scPaint, zapisywane też do CSS)
+  const contentEl = document.getElementById('content');
+  const sc = { pageW: 0, dockX: -1, hero: 1, side: 0, skyRot: 0, col: 48, hmax: 44, lift: 9, gy: 0, tabH: 74, dockH: 150, h: [0, 0, 0, 0, 0, 0, 0], init: false, dockHero: -1 };
+  let SC = null, scCss = '';
+  // Ścieżka: ciemne niebo = ciemna aplikacja (js/theme.js), więc „noc” to po prostu tryb ciemny
+  const nightSky = () => (sciezka ? darkMode() : darkMode() || DAYPART === 'night');
+  // Ścieżka: pora nieba. Tryb ciemny w dzień daje noc, tryb „Dzienny” wieczorem daje dzień — tekst zawsze leży na pasującym niebie.
+  const skyPart = () => (darkMode() ? (DAYPART === 'evening' ? 'evening' : 'night') : DAYPART === 'morning' ? 'morning' : 'day');
   function markPora() {
+    if (sciezka) {
+      document.documentElement.dataset.pora = { morning: 'rano', day: 'dzien', evening: 'wieczor', night: 'noc' }[skyPart()];
+      return;
+    }
     document.documentElement.dataset.pora = nightSky() ? 'noc' : { morning: 'rano', day: 'dzien', evening: 'wieczor' }[DAYPART];
     // jasny tryb o prawdziwej nocy: niebo ciemne, ale karta z treścią jasna (css/planeta.css)
     document.documentElement.classList.toggle('noc-jasny', nightSky() && !darkMode());
   }
   markPora();
+  markGround();
 
   // ================================================================
   //  Roślina (jednostki: pełna wysokość ≈ 100; y w górę ujemne)
@@ -820,10 +836,355 @@
     }
   }
 
+
+  // ================================================================
+  //  ŚCIEŻKA (<html data-sciezka>): planeta z bliska, tekst na niebie
+  //
+  //  Dwie warstwy: niebo (canvas #sky, POD treścią) i świat (canvas #plant, NAD treścią, nie łapie dotyku).
+  //  Tekst przewija się po niebie i zachodzi za horyzont: tuż nad planetą rozmywa go mgiełka w kolorze nieba.
+  //  • Kamera: `hero` 1 = Dom na górze strony (duża roślinka, pod nią na gruncie dni tygodnia i „Podlej roślinkę”),
+  //    0 = horyzont (mała roślinka tuż nad paskiem zakładek, reszta ekranu to niebo z treścią). Na komputerze zawsze 1.
+  //  • Tydzień to pasmo wzgórz za roślinką: dobry dzień = wyższe wzgórze, odpoczynek = równa łąka z uśpionym pąkiem,
+  //    dziś = pąk w kółku; po podlaniu wyrasta wzgórze. Kolumny wzgórz leżą dokładnie nad przyciskami dni (--sc-col).
+  //  • Planeta się kręci, więc niebo płynie: przewijanie i zmiana zakładki przesuwają księżyce, gwiazdy i chmury.
+  //  • Nocą i wieczorem trzy księżyce (różna wielkość, faza i odcień), w dzień kilka chmur.
+  //  • Na innych zakładkach roślinka stoi z lewej, a obok niej wyrasta miejsce zakładki (słoik, kamienie, drogowskaz, kiełki).
+  //  W React Native: dwie warstwy <Canvas> Skii (pod i nad <ScrollView>), `hero` z Reanimated (scrollY).
+  // ================================================================
+  function OK(L, C, h) { return oklchToRgb(L, C, h); }
+  function scPaint() {
+    const part = skyPart();
+    const hLeaf = rgbToOklch(pal.l2)[2], hPrim = rgbToOklch(pal.primary)[2];
+    let top, mid, rose = null, low, near, rim, far;
+    if (part === 'night') {
+      top = OK(.17, .05, 4.62); mid = OK(.205, .055, 4.62); low = mixC(OK(.3, .06, 4.5), pal.primary, .18);
+      near = OK(.255, .04, hLeaf); rim = OK(.4, .06, hLeaf); far = mixC(OK(.33, .05, hLeaf), low, .35);
+    } else if (part === 'evening') {
+      top = OK(.245, .07, 5.5); mid = OK(.3, .085, 5.85);
+      rose = mixC([196, 112, 128], pal.flower, .2); low = mixC([246, 178, 138], pal.tip, .25);
+      near = mixC(OK(.27, .05, hLeaf), OK(.25, .06, 5.8), .35); rim = mixC(low, near, .5); far = mixC(OK(.38, .07, 5.9), rose, .28);
+    } else if (part === 'morning') {
+      top = mixC(OK(.94, .035, hPrim), [252, 222, 200], .55); mid = mixC(OK(.95, .03, hPrim), [253, 228, 206], .55); low = mixC([255, 238, 212], pal.glow, .2);
+      near = OK(.85, .075, hLeaf); rim = OK(.935, .06, hLeaf); far = mixC(OK(.9, .06, hLeaf), low, .3);
+    } else {
+      top = OK(.925, .048, hPrim); mid = OK(.95, .034, hPrim); low = mixC(OK(.975, .02, 1.4), pal.glow, .12);
+      near = OK(.84, .08, hLeaf); rim = OK(.935, .07, hLeaf); far = mixC(OK(.895, .065, hLeaf), mid, .3);
+    }
+    SC = { part, dark: part === 'night' || part === 'evening', top, mid, rose, low, near, rim, far };
+    // CSS: --ground = niebo pod treścią (reszta arkuszy liczy na „tło treści”), --planet = grunt planety (pasek zakładek, panel dnia)
+    const css = c => `rgb(${c.map(v => Math.round(v)).join(',')})`;
+    const key = css(mid) + css(near) + css(top);
+    if (key === scCss) return;
+    scCss = key;
+    const rs = document.documentElement.style;
+    rs.setProperty('--ground', css(mid)); rs.setProperty('--sky-top', css(top)); rs.setProperty('--sky-low', css(low));
+    rs.setProperty('--planet', css(near)); rs.setProperty('--planet-far', css(far));
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', css(top));
+  }
+  // gradient nieba: ten sam na obu warstwach (niebo i mgiełka nad horyzontem), więc tekst rozmywa się dokładnie w kolor tła
+  function scSkyGradient(c) {
+    const g = c.createLinearGradient(0, 0, 0, H), at = y => clamp(y / H);
+    g.addColorStop(0, rgba(SC.top));
+    g.addColorStop(at(sc.gy - (SC.rose ? 250 : 330)), rgba(SC.mid));
+    // wieczorna łuna zaczyna się dopiero w mgiełce nad horyzontem: wyżej niebo zostaje ciemne, żeby jasny tekst był czytelny
+    if (SC.rose) { g.addColorStop(at(sc.gy - 100), rgba(mixC(SC.mid, SC.rose, .5))); g.addColorStop(at(sc.gy - 28), rgba(SC.rose)); }
+    g.addColorStop(Math.max(at(sc.gy + 24), at(sc.gy - 29)), rgba(SC.low));
+    return g;
+  }
+  const wrap = (v, span) => ((v % span) + span) % span;
+  const arcY = x => { const d = x - baseX; return baseY + R - Math.sqrt(Math.max(0, R * R - d * d)); };
+  // wysokość pasma nad łukiem planety w punkcie x (px)
+  function scTerrain(x) {
+    const u = (x - baseX) / sc.col + 3;
+    if (u <= -1 || u >= 7) return 0;
+    const i = Math.floor(u), t = u - i;
+    const a = i < 0 ? 0 : sc.h[i], b = i + 1 > 6 ? 0 : sc.h[i + 1];
+    return (a + (b - a) * t * t * (3 - 2 * t) - Math.min(a, b) * .32 * Math.sin(Math.PI * t)) * sc.hmax;
+  }
+  const ridgeY = x => arcY(x) - sc.lift - scTerrain(x);
+  const hillOf = m => .22 + .78 * m / 10;
+
+  function scUpdate(dt) {
+    const sy = Math.max(0, window.scrollY), home = curTab === 'dom';
+    const heroT = wide ? 1 : home ? 1 - clamp(sy / 200) : 0;
+    const snap = reduceMotion || !sc.init;
+    sc.hero = snap ? heroT : approach(sc.hero, heroT, 13, dt);
+    sc.side = snap ? (home ? 0 : 1) : approach(sc.side, home ? 0 : 1, 4.5, dt);
+    const rotT = SLOT[curTab] * .9 + sy / 700;
+    sc.skyRot = snap ? rotT : approach(sc.skyRot, rotT, 2.6, dt);
+    sc.init = true;
+    // wzgórza: wyrastają przy wejściu, dzisiejsze dopiero po podlaniu
+    for (let i = 0; i < 7; i++) {
+      const today = i === 6, grow = grown(clamp((st.intro - .12 - i * .05) / .45));
+      if (today) {
+        const w = wateredAt != null && clock >= wateredAt;
+        sc.h[i] = w ? hillOf(todayMood || 7) * (reduceMotion ? 1 : easeOutBack(clamp((clock - wateredAt) / 1.3))) : 0;
+      } else sc.h[i] = missed[i] || days[i] == null ? 0 : hillOf(days[i]) * grow;
+    }
+  }
+
+  function frameLayoutSciezka() {
+    const f = wide ? 0 : st.full, hero = sc.hero, wk = clamp(CW / 375, 1, 2);
+    stageH = H;
+    greetEl.style.opacity = ((1 - st.greet) * (1 - f)).toFixed(3);
+    const greetBottom = greetEl.offsetTop + greetEl.offsetHeight + 8;
+    let drop, sFar;
+    if (wide) {
+      sc.gy = H - Math.max(196, H * .24);
+      // scena ma całą szerokość okna (planeta biegnie też za oknem Asystenta), a roślinka stoi w lewej części STRONY (--page-w)
+      sc.pageW = contentEl ? contentEl.getBoundingClientRect().left * 2 : CW;
+      baseX = sc.pageW * PLANT_X; drop = 96;
+      const px = Math.round(baseX);
+      if (px !== sc.dockX) { sc.dockX = px; document.documentElement.style.setProperty('--sc-x', px + 'px'); }
+      topReserve = Math.max(greetBottom + 26, H * .14);
+      S = clamp(Math.min((sc.gy - topReserve) / (FULL_H + 12), CW * .4 / 78), .9, 7);
+      sc.hmax = 54; sc.lift = 11; U = 2;
+    } else {
+      const heroGy = H - sc.tabH - sc.dockH - 30, horGy = H - sc.tabH - 30 * wk;
+      sc.gy = lerp(lerp(horGy, heroGy, hero), H - sc.tabH - 64, f);
+      drop = lerp(20, 24, hero) * wk;
+      baseX = CW * lerp(.5, .2, sc.side * (1 - hero));
+      topReserve = lerp(greetBottom + 6, 84, f);
+      const sHero = clamp(Math.min((sc.gy - topReserve) / (FULL_H + 12), CW * lerp(.92, 1, f) / 78), .4, 7);
+      sFar = 88 * wk / (FULL_H + 12);
+      S = lerp(sFar, sHero, easeInOut(hero));
+      sc.hmax = lerp(20, 44, hero) * Math.min(wk, 1.5); sc.lift = lerp(5, 9, hero); U = 1.02 * wk;
+    }
+    baseY = sc.gy;
+    const reach = Math.max(baseX, CW - baseX);
+    R = (drop * drop + reach * reach) / (2 * drop);
+    if (motion && clock > bumpAt && clock < bumpAt + 1.1) S *= 1 + .022 * Math.sin((clock - bumpAt) / 1.1 * Math.PI);
+    // panel dnia (css/sciezka.css): znika, gdy kamera odjeżdża do horyzontu
+    const hk = Math.round(hero * 100);
+    if (hk !== sc.dockHero) {
+      const dk = document.getElementById('zy-panel');
+      if (dk) { sc.dockHero = hk; dk.style.setProperty('--h', (hk / 100).toFixed(2)); dk.classList.toggle('sc-away', hk < 55); }
+    }
+  }
+
+  // Niebo pod treścią: gradient pory dnia, poświata słońca, gwiazdy
+  function scDrawSky() {
+    const c = skyCtx || mainCtx;
+    c.clearRect(0, 0, W, H);
+    c.fillStyle = scSkyGradient(c); c.fillRect(0, 0, W, H);
+    if (SC.dark) {
+      const n = SC.part === 'night' ? 24 : 9;
+      c.fillStyle = '#fff';
+      for (let i = 0; i < n; i++) {
+        const s0 = stars[i];
+        c.globalAlpha = (SC.part === 'night' ? .3 : .18) + .45 * (.5 + .5 * Math.sin(clock * s0.sp * motion + s0.ph));
+        c.beginPath(); c.arc(wrap(s0.nx * CW - sc.skyRot * 34, CW), s0.ny * 1.5 * sc.gy, s0.r, 0, TAU); c.fill();
+      }
+      c.globalAlpha = 1;
+    } else {
+      // słońce: tylko miękka poświata, od rana (lewo) do popołudnia (prawo)
+      const p = clamp((hour - 6) / 14), span = wide ? sc.pageW * .5 : CW;
+      const sx = span * (.2 + .6 * p), sy0 = sc.gy * (.62 - .3 * Math.sin(Math.PI * p));
+      const warm = SC.part === 'day' ? [255, 248, 226] : [255, 226, 190];
+      const halo = c.createRadialGradient(sx, sy0, 0, sx, sy0, Math.max(CW, H) * .42);
+      halo.addColorStop(0, rgba(warm, .5)); halo.addColorStop(1, rgba(warm, 0));
+      c.fillStyle = halo; c.fillRect(0, 0, W, H);
+    }
+  }
+
+  // Księżyce (noc, wieczór) i chmury (dzień): rzeczy na niebie, które płyną, gdy planeta się obraca
+  const MOONS = [
+    { nx: .8, alt: .8, r: 15, tone: 0, phase: .68, par: 1 },      // główny, kremowy
+    { nx: .24, alt: .52, r: 8, tone: 1, phase: .32, par: 1.7 },   // mały sierp w odcieniu roślinki
+    { nx: .66, alt: .13, r: 31, tone: 2, phase: 1, par: .5 },     // duży i ciepły, wschodzi zza planety
+  ];
+  const CLOUDS = [{ nx: .1, alt: .58, w: 74, par: 1.3 }, { nx: .7, alt: .36, w: 96, par: .8 }, { nx: .42, alt: .16, w: 60, par: .55 }];
+  function scDrawSkyThings() {
+    const hero = wide ? 1 : sc.hero, wk = clamp(CW / 375, 1, 1.6);
+    // komputer: tylko lewa część nieba, żeby nic nie wpływało na kolumnę z treścią
+    const span = (wide ? sc.pageW * .42 : CW) + 140, k = lerp(.18, 1, hero), skyH = Math.max(140, sc.gy - 70);
+    const drift = motion * clock * .9;
+    if (SC.dark) {
+      const all = SC.part === 'night' ? 1 : .6;
+      const tones = [[255, 246, 222], tint(pal.l3, .5), mixC(pal.tip, [255, 232, 196], .5)];
+      for (const m of MOONS) {
+        const x = wrap(m.nx * span - (sc.skyRot * 64 + drift * .25) * m.par, span) - 70;
+        const y = arcY(x) - m.alt * skyH * k, r = m.r * lerp(.72, 1, hero) * wk, col = tones[m.tone];
+        const gl = ctx.createRadialGradient(x, y, r * .6, x, y, r * 4.2);
+        gl.addColorStop(0, rgba(col, .2 * all)); gl.addColorStop(1, rgba(col, 0));
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r * 4.2, 0, TAU); ctx.fill();
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+        ctx.globalAlpha = all;
+        ctx.fillStyle = rgba(col); ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        ctx.fillStyle = rgba(mixC(col, SC.top, .22));
+        for (const [cx0, cy0, cr] of [[-.3, -.25, .22], [.32, .28, .16], [.05, .5, .1], [.42, -.34, .09]]) { ctx.beginPath(); ctx.arc(x + cx0 * r, y + cy0 * r, cr * r, 0, TAU); ctx.fill(); }
+        if (m.phase < 1) {                                       // cień fazy: ciemna strona prawie w kolorze nieba
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = rgba(mixC(SC.top, col, .1), .93);
+          ctx.beginPath(); ctx.arc(x - r * 2 * m.phase, y - r * .12, r * 1.08, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+      }
+    } else {
+      for (const cl of CLOUDS) {
+        const x = wrap(cl.nx * span - (sc.skyRot * 64 + drift) * cl.par, span) - 70;
+        const y = arcY(x) - cl.alt * skyH * k, w = cl.w * lerp(.7, 1, hero) * wk;
+        ctx.fillStyle = `rgba(255,255,255,${SC.part === 'day' ? .62 : .5})`;
+        ctx.beginPath();
+        ctx.ellipse(x, y, w * .5, w * .13, 0, 0, TAU);
+        ctx.ellipse(x - w * .16, y - w * .09, w * .2, w * .14, 0, 0, TAU);
+        ctx.ellipse(x + w * .12, y - w * .12, w * .24, w * .17, 0, 0, TAU);
+        ctx.fill();
+      }
+    }
+  }
+
+  // Mgiełka nad horyzontem: pierścienie w kolorze nieba, coraz gęstsze przy planecie. Tekst „zachodzi” za horyzont.
+  function scDrawHaze() {
+    const k = wide ? 1 : clamp((1 - sc.hero) * 2.2);            // gęstnieje szybko: w połowie odjazdu kamery tekst już nie prześwituje przez roślinkę
+    if (k < .02) return;
+    // komputer: treść jest obok roślinki, nie za nią, więc mgiełka może być niska
+    const hz = wide ? 96 : 172, N = Math.round(hz / 2.5), cx = baseX, cy = baseY + R;   // cienkie pierścienie: bez pasków na dużych literach
+    ctx.strokeStyle = scSkyGradient(ctx);
+    ctx.lineWidth = hz / N + .4;
+    for (let i = 0; i < N; i++) {
+      const t = clamp((i + 1) / N * 1.9);                          // pełna mgiełka już w połowie wysokości: przy roślince tekstu nie widać
+      ctx.globalAlpha = k * t * t * (3 - 2 * t);
+      ctx.beginPath(); ctx.arc(cx, cy, R + sc.lift + hz * (1 - (i + .5) / N), Math.PI, TAU); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // Planeta: dalekie pasmo (tydzień) i bliski łuk, na którym stoi roślinka i leży interfejs
+  function scDrawPlanet() {
+    const cx = baseX, cy = baseY + R;
+    // poświata atmosfery
+    const atm = ctx.createRadialGradient(cx, cy, R * .98, cx, cy, R + 90);
+    atm.addColorStop(0, rgba(SC.dark ? SC.rim : SC.low, SC.dark ? .32 : .7)); atm.addColorStop(1, rgba(SC.low, 0));
+    ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R + 90, Math.PI, TAU); ctx.fill();
+
+    // pasmo wzgórz
+    const path = () => {
+      ctx.beginPath(); ctx.moveTo(-12, CH + 2);
+      for (let x = -12; x <= CW + 12; x += 3) ctx.lineTo(x, ridgeY(x));
+      ctx.lineTo(CW + 12, CH + 2); ctx.closePath();
+    };
+    const top0 = sc.gy - sc.lift - sc.hmax;
+    const gr = ctx.createLinearGradient(0, top0, 0, sc.gy + 30);
+    gr.addColorStop(0, rgba(mixC(SC.far, SC.rim, .55))); gr.addColorStop(1, rgba(SC.far));
+    path(); ctx.fillStyle = gr; ctx.fill();
+    // fala po wejściu sekcji „Twój tydzień” i zaznaczony dzień: wzgórze łapie ciepłe światło
+    const wave = clock - waveAt, sAge = clock - selAt;
+    ctx.save(); path(); ctx.clip();
+    for (let i = 0; i < 7; i++) {
+      const wv = motion ? Math.exp(-Math.pow((wave - i * .12 - .2) * 5, 2)) : 0;
+      const sl = i === sel ? clamp((3.4 - sAge) / .5) : 0;
+      const a = Math.max(wv * .7, sl);
+      if (a < .02) continue;
+      const x = baseX + (i - 3) * sc.col, y = ridgeY(x), rr = sc.col * .95;
+      const g = ctx.createRadialGradient(x, y, 0, x, y + rr * .3, rr);
+      g.addColorStop(0, rgba(tint(pal.core, .25), .85 * a)); g.addColorStop(1, rgba(pal.core, 0));
+      ctx.fillStyle = g; ctx.fillRect(x - rr, y - 4, rr * 2, rr * 1.6);
+    }
+    ctx.restore();
+    // odpoczynek = uśpiony pąk na łące, dziś = pąk w kółku (czeka na podlanie)
+    hillPos.length = 0;
+    for (let i = 0; i < 7; i++) {
+      const x = baseX + (i - 3) * sc.col, y = ridgeY(x), k = grown(clamp((st.intro - .3 - i * .05) / .4));
+      hillPos.push({ x, y });
+      const today = i === 6, watered = today && wateredAt != null && clock >= wateredAt;
+      if (k <= 0 || watered || !(today || missed[i] || days[i] == null)) continue;
+      const u = Math.max(.7, sc.hmax / 44) * k;
+      ctx.strokeStyle = rgba(mixC(pal.stem, SC.far, SC.dark ? .15 : .25)); ctx.lineWidth = Math.max(1.2, 1.6 * u); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y + 1); ctx.lineTo(x, y - 6 * u); ctx.stroke();
+      ctx.fillStyle = today ? rgba(pal.l2) : rgba(mixC(pal.l3, SC.far, .45));
+      ctx.beginPath(); ctx.ellipse(x, y - 8.5 * u, 2.6 * u, 4 * u, 0, 0, TAU); ctx.fill();
+      if (today) {
+        ctx.strokeStyle = rgba(SC.dark ? tint(pal.l3, .3) : pal.primary, .75); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y - 8.5 * u, 9 * u, 0, TAU); ctx.stroke();
+      }
+    }
+
+    // bliski łuk: jednolity grunt (ten sam kolor co --planet w CSS), jaśniejszy przy krawędzi
+    const g = ctx.createRadialGradient(cx, cy, R - 46, cx, cy, R);
+    g.addColorStop(0, rgba(SC.near)); g.addColorStop(1, rgba(mixC(SC.near, SC.rim, .7)));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+    ctx.fillStyle = rgba(SC.near); ctx.fillRect(0, Math.min(CH, arcY(CW * .5) + 150), CW, CH);
+    ctx.strokeStyle = rgba(tint(SC.rim, SC.dark ? .1 : .5), SC.dark ? .55 : .9); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, R - .75, Math.PI, TAU); ctx.stroke();
+  }
+  const hillPos = [];
+
+  // Miejsce bieżącej zakładki wyrasta obok roślinki; poprzednie chowa się w planecie
+  function scDrawPlaces() {
+    placePos.length = 0;
+    placePos.push({ id: 'dom', x: baseX, y: baseY - 42 * S });
+    const dx = wide ? Math.max(sc.pageW * .2, sc.col * 4) : CW * .6, cx = baseX, cy = baseY + R, a = Math.asin(clamp(dx / R, -1, 1));
+    for (const [id, k] of [[prevTab, 1 - placeT], [curTab, placeT]]) {
+      if (!PLACE_DRAW[id] || k <= .01 || (id === prevTab && prevTab === curTab)) continue;
+      const pop = id === curTab ? lerp(.35, 1, easeOutBack(k)) : lerp(.35, 1, k);
+      ctx.save();
+      ctx.globalAlpha = clamp(k * 1.6) * (wide ? 1 : clamp(1.4 - sc.hero * 2));
+      ctx.translate(cx, cy); ctx.rotate(a); ctx.translate(0, -R + .5); ctx.scale(U * pop, U * pop);
+      PLACE_DRAW[id]();
+      ctx.restore();
+      if (id === curTab) placePos.push({ id, x: cx + Math.sin(a) * (R + 18 * U), y: cy - Math.cos(a) * (R + 18 * U) });
+    }
+  }
+
+  // Dotyk: świat leży nad treścią i nie łapie zdarzeń, więc stuknięcia zbieramy z dokumentu (poza przyciskami i polami)
+  function scTap(x, y) {
+    const home = curTab === 'dom';
+    const place = placePos.find(q => Math.hypot(q.x - x, q.y - y) < 34 * Math.max(1, U) && (q.id !== 'dom' || Math.abs(q.x - x) < 40 * S));
+    if (place && (place.id !== 'dom' || !home)) { location.hash = `#/${place.id}`; return true; }
+    if (!home) return false;
+    let best = -1, bd = 42;
+    leafPos.forEach((p, i) => { if (!p) return; const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = i; } });
+    // wzgórze dnia: kolumna pod palcem
+    if (best < 0 && y > sc.gy - sc.lift - sc.hmax - 26 && y < sc.gy + 6) {
+      const i = Math.round((x - baseX) / sc.col + 3);
+      if (i >= 0 && i <= 6) best = i;
+    }
+    const onPlant = Math.abs(x - baseX) < 42 * S && y < baseY + 8 && y > baseY - (FULL_H + 16) * S;
+    if (best < 0 && !onPlant) return false;
+    wind = Math.min(1.5, wind + .5 * motion);
+    if (motion && st.intro >= 1) flareAt = clock;
+    if (best >= 0) { select(best); window.dispatchEvent(new CustomEvent('dayselect', { detail: { index: best, from: 'plant' } })); }
+    return true;
+  }
+  if (sciezka) {
+    const UI = 'a, button, input, textarea, select, summary, label, [role="button"], [role="radio"], [contenteditable], .bsheet, .ci-overlay, .as-panel, .sheet-backdrop, .toast';
+    const busy = () => /\b(ci-open|sheet-open|as-open|pk-writing)\b/.test(document.body.className);
+    // w strefie czytania (nad krajobrazem, gdy kamera jest przy horyzoncie) stuknięcie należy do tekstu
+    const inWorld = y => wide || sc.hero > .5 || y > sc.gy - 130;
+    document.addEventListener('click', e => {
+      if (busy() || e.target.closest(UI) || !inWorld(e.clientY)) return;
+      scTap(e.clientX, e.clientY);
+    });
+    document.addEventListener('pointermove', e => {
+      const x = e.clientX, y = e.clientY;
+      if (pointer.active && Math.abs(x - baseX) < 60 * S && y < baseY + 10 && y > baseY - (FULL_H + 20) * S) wind = Math.min(1.5, wind + Math.hypot(x - pointer.x, y - pointer.y) * .003 * motion);
+      pointer.x = x; pointer.y = y; pointer.active = true;
+    }, { passive: true });
+    // przesunięcie palcem w bok po krajobrazie: wczoraj, przedwczoraj… (w prawo = wstecz w czasie)
+    let sw = null;
+    document.addEventListener('touchstart', e => {
+      const t = e.touches[0];
+      sw = curTab === 'dom' && !busy() && !e.target.closest(UI) && inWorld(t.clientY) ? { x: t.clientX, y: t.clientY } : null;
+    }, { passive: true });
+    document.addEventListener('touchend', e => {
+      if (!sw) return;
+      const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
+      sw = null;
+      if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      const from = sel >= 0 && clock - selAt < 3.4 ? sel : 6;
+      const i = clamp(from + (dx > 0 ? -1 : 1), 0, 6);
+      select(i); window.dispatchEvent(new CustomEvent('dayselect', { detail: { index: i, from: 'plant' } }));
+    }, { passive: true });
+  }
+
   // Zmiana zakładki: obrót do jej miejsca (najkrótszą drogą) i wysokość sceny
   function goPlace(tab) {
     if (tab !== curTab) { prevTab = curTab; placeT = firstPlace || reduceMotion ? 1 : 0; }
     curTab = tab;
+    if (sciezka) { firstPlace = false; wind = Math.min(1.5, wind + .5 * motion); return; }
     if (pokoje && tab !== roomTo) {
       roomFromC = roomTo == null ? null : groundNow();
       roomTo = tab; roomT = firstPlace || reduceMotion ? 1 : 0;
@@ -887,6 +1248,23 @@
     canvas.style.width = CW + 'px';
     canvas.style.height = CH + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (sciezka) {
+      // wysokości paska zakładek i panelu dnia są w CSS (css/sciezka.css) — mierzymy je, żeby łuk planety trafił dokładnie nad nie
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden;height:var(--sc-tab, 74px)';
+      document.body.appendChild(probe);
+      sc.tabH = probe.offsetHeight || 74;
+      probe.style.height = 'var(--sc-dock, 150px)';
+      sc.dockH = probe.offsetHeight || 150;
+      probe.remove();
+      sc.col = wide ? 62 : Math.min(CW - 40, 520) / 7;
+      const rs = document.documentElement.style;
+      rs.setProperty('--sc-col', sc.col.toFixed(2) + 'px');
+      if (skyCtx) {
+        skyCanvas.width = Math.round(W * dpr); skyCanvas.height = Math.round(H * dpr);
+        skyCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+    }
   }
 
   const greetEl = stage.querySelector('.stage-greet');
@@ -921,6 +1299,7 @@
   }
 
   function frameLayout() {
+    if (sciezka) { frameLayoutSciezka(); return; }
     if (onPlanet()) { frameLayoutPlanet(); return; }
     const f = wide ? 0 : st.full;
     stageH = wide ? H : lerp(lerp(lerp(stageMax, stageMax * .86, st.shrink), H, f), compactH, compact);
@@ -946,6 +1325,7 @@
   // ================================================================
   function inView(el) {
     const r = el.getBoundingClientRect();
+    if (sciezka) return r.top < baseY - 150 && r.bottom > 110;
     const top0 = wide ? 0 : stageH;
     return r.top < H - (H - top0) * .45 && r.bottom > top0 + 40;
   }
@@ -961,7 +1341,7 @@
     const tGreet = wide ? 0 : clamp((sy - 20) / 140);
     const weekVis = inView(document.getElementById('sec-week'));
     const quoteVis = inView(document.getElementById('sec-quote'));
-    if (!zywa && weekVis && !weekIn) waveAt = clock;                              // fala przez liście dni
+    if ((!zywa || sciezka) && weekVis && !weekIn) waveAt = clock;                 // fala przez liście dni (Ścieżka: także przez wzgórza)
     if (!zywa && quoteVis && !quoteIn && st.intro >= 1) { bloomFlashAt = clock; petalBurst(6); }
     weekIn = weekVis; quoteIn = quoteVis;
 
@@ -992,6 +1372,7 @@
     if (!onPlanet() || rotT >= 1) placeT = Math.min(1, placeT + dt / .5);
     if (roomT < 1) { roomT = Math.min(1, roomT + dt / .7); markGround(); }   // --dur-slow
     compact = reduceMotion ? compactTarget : approach(compact, compactTarget, 3.2, dt);
+    if (sciezka) scUpdate(dt);
     frameLayout();
 
     // najstarszy liść odpada chwilę po wejściu (okno 7 dni przesunęło się o dzień)
@@ -1060,7 +1441,7 @@
   // ================================================================
   function draw() {
     ctx.clearRect(0, 0, CW, CH);
-    drawSky();
+    if (sciezka) { scDrawSky(); scDrawHaze(); scDrawSkyThings(); } else drawSky();
     for (const o of zywa ? [] : bokeh) {
       const bx = o.nx * CW + Math.sin(clock * o.f + o.ph) * 30 * motion;
       const by = o.ny * stageH + Math.cos(clock * o.f * 1.3 + o.ph) * 20 * motion;
@@ -1088,8 +1469,7 @@
     glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(baseX, gy, Math.max(h, 40) * 1.05 * S, 0, TAU); ctx.fill();
-    drawPlanet();
-    drawPlaces();
+    if (sciezka) { scDrawPlanet(); scDrawPlaces(); } else { drawPlanet(); drawPlaces(); }
 
     drawGround();
     if (h < 1) { ctx.restore(); drawFog(); return; }
@@ -1261,7 +1641,9 @@
         const text = !selected ? labels[tw.i]
           : tw.off ? `${labels[tw.i]} · odpoczynek`
           : tw.m == null ? `${labels[tw.i]} · ${tw.watered ? 'podlane' : 'czeka'}` : `${labels[tw.i]} · ${tw.m}/10`;
-        tags.push({ x: tw.ex + Math.cos(angTip) * reach, y: tw.ey + Math.sin(angTip) * reach, text, selected, lab });
+        // Ścieżka: podpis stoi nad wzgórzem dnia (liść na roślince tylko się podświetla)
+        const hp = sciezka && selected ? hillPos[tw.i] : null;
+        tags.push(hp ? { x: hp.x, y: hp.y - 32, text, selected, lab } : { x: tw.ex + Math.cos(angTip) * reach, y: tw.ey + Math.sin(angTip) * reach, text, selected, lab });
       }
     }
 
