@@ -12,6 +12,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Żywa planeta: Bricolage Grotesque (tytuły, duże liczby, osobiste treści) + Figtree (reszta), wybór Marcela 6.11.2026; niżej czcionki starszych układów -->
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
+  <!-- Napis ReLeaf: tylko litery z nazwy, kilka kB -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
 
   <!-- Kierunek „Żywa planeta” (domyślny; ?uklad=a|b|c|stary — poprzednie wersje). Musi być ustawiony przed pierwszym rysowaniem.
@@ -94,7 +96,9 @@
 <!-- Górny pasek: napis ReLeaf, kolor roślinki, SOS. Na telefonie zostaje na wierzchu, gdy kafel zasłoni roślinkę.
      Postać z logo jest tu celowo pominięta: pojawia się tylko jako twarz Asystenta i na pustych ekranach. -->
 <header class="app-top" id="app-top">
-  <span class="brand is-word"><span class="brand-word">releaf</span></span>
+  <span class="brand is-word" role="img" aria-label="ReLeaf">
+    <span class="brand-word" aria-hidden="true"><span class="bw-re">Re</span><span class="bw-leaf">Leaf<svg class="bw-swoosh" viewBox="0 0 60 8" preserveAspectRatio="none"><path d="M2 5.5C18 2.2 38 1.6 58 3.4"/></svg></span></span>
+  </span>
   <div class="top-actions">
     <!-- Kolor roślinki (ten sam wybór co w rejestracji); kółko pokazuje aktualny motyw -->
     <button type="button" class="color-btn" id="color-open" aria-haspopup="dialog" aria-label="Zmień kolor roślinki">
@@ -257,10 +261,18 @@
 <div class="releaf-scrollbar" hidden>
   <div class="rl-guide" aria-hidden="true"></div>
   <div class="rl-handle" aria-hidden="true">
-    <span class="rl-leaf-skin">
-      <i class="rl-vein"></i><i class="rl-vein"></i><i class="rl-vein"></i>
-      <i class="rl-vein"></i><i class="rl-vein"></i><i class="rl-vein"></i>
-    </span>
+    <svg class="rl-leaf" viewBox="0 0 32 64" width="32" height="64">
+      <defs>
+        <linearGradient id="rl-leaf-g" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="var(--leaf-light)"/>
+          <stop offset=".5" stop-color="var(--leaf-mid)"/>
+          <stop offset=".5" stop-color="var(--leaf-deep)" stop-opacity=".92"/>
+          <stop offset="1" stop-color="var(--leaf-deep)"/>
+        </linearGradient>
+      </defs>
+      <path class="rl-blade" d="M16 2C21 10 29 17 29 30C29 43 22 51 16 56C10 51 3 43 3 30C3 17 11 10 16 2Z" fill="url(#rl-leaf-g)"/>
+      <path class="rl-veins" d="M16 7V62M16 22C13 20 10 18 8 15M16 22C19 20 22 18 24 15M16 33C12 31 8 29 5.5 25M16 33C20 31 24 29 26.5 25M16 44C12.5 42.5 9.5 40.5 7.5 37.5M16 44C19.5 42.5 22.5 40.5 24.5 37.5"/>
+    </svg>
   </div>
   <input class="rl-range" type="range" min="0" max="1000" value="0" step="1"
     aria-label="Pasek przewijania" aria-controls="content" aria-orientation="vertical">

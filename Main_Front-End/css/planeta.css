@@ -73,12 +73,14 @@
 :root[data-pora="noc"] .greet-date { color: rgba(238, 242, 246, .82); }
 :root[data-pora="noc"] .brand.is-word {
   color: var(--wordmark-on-dark);
-  --wordmark-halo: 2px var(--wordmark-on-light);
+  --wm-accent: var(--wm-accent-on-dark);
+  text-shadow: 0 0 3px rgb(16, 24, 42), 0 0 14px rgba(16, 24, 42, .9);
 }
 /* jasny tryb o prawdziwej nocy: gdy pasek dostaje jasne tło karty, wraca ciemny napis */
 :root.noc-jasny .app-top.is-solid .brand.is-word {
   color: var(--wordmark-on-light);
-  --wordmark-halo: 0 transparent;
+  --wm-accent: var(--wm-accent-on-light);
+  text-shadow: none;
 }
 
 :root[data-pora="noc"] .sos {

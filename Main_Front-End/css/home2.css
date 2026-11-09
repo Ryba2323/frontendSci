@@ -65,19 +65,36 @@ button, a { touch-action: manipulation; }
 .brand { display: inline-flex; align-items: flex-end; gap: var(--sp-1); height: 36px; animation: fade-in var(--dur-slow) ease both; }
 .brand img { display: block; height: auto; pointer-events: none; user-select: none; }
 .brand-mascot { width: 38px; margin-bottom: 2px; }
-/* Niebieski napis dobiera odcień do jasności nieba. */
+/* Napis ReLeaf: ten sam pomysł co w logo zespołu („Re” ciemne, „Leaf” w kolorze roślinki, kreska pod spodem),
+   ale czysty, zaokrąglony krój zamiast flamastra. Kolory idą za motywem i porą dnia. */
 .brand.is-word {
-  --wordmark-on-light: #0e2b47;
-  --wordmark-on-dark: #eff7ff;
+  --wordmark-on-light: var(--text);
+  --wordmark-on-dark: #F4F8F6;
+  --wm-accent-on-light: var(--primary);
+  --wm-accent-on-dark: color-mix(in srgb, var(--accent-light) 70%, white);
+  --wm-accent: light-dark(var(--wm-accent-on-light), var(--wm-accent-on-dark));
   align-items: center;
   color: light-dark(var(--wordmark-on-light), var(--wordmark-on-dark));
 }
 span.brand-word {
-  font: 500 30px/1 "Bricolage Grotesque", var(--font);
-  letter-spacing: -.04em;
-  -webkit-text-stroke: var(--wordmark-halo, 0 transparent);
-  paint-order: stroke fill;
+  display: inline-flex;
+  align-items: baseline;
+  font: 600 27px/1 "Fredoka", "Bricolage Grotesque", var(--font);
+  letter-spacing: -.02em;
+  transform: rotate(-3deg);
+  transform-origin: left center;
 }
+.brand-word .bw-leaf { position: relative; color: var(--wm-accent); margin-left: .02em; }
+.brand-word .bw-swoosh {
+  position: absolute;
+  left: -38%;
+  right: -4%;
+  bottom: -7px;
+  width: 142%;
+  height: 7px;
+  overflow: visible;
+}
+.brand-word .bw-swoosh path { fill: none; stroke: var(--wm-accent); stroke-width: 2.6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 /* Starszy podgląd strony głównej nadal korzysta z dwóch plików z logo. */
 img.brand-word { width: 70px; }
 .brand.is-word img.brand-word { width: 82px; }

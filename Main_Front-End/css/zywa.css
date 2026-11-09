@@ -19,6 +19,8 @@
   --font-serif: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
   --ground-k: .4;
   --ground: color-mix(in srgb, var(--plant-ground) 40%, var(--sheet));
+  /* ten sam czysty pastel co liczy scena (uiGroundOf w js/home2-scene.js), żeby pierwsza klatka nie mrugała */
+  --ground: oklch(from var(--plant-ground) .964 .026 h);
   /* Trzy poziomy tekstu: --text (tytuły) · --text-body (to, co się czyta) · --text-muted / --text-soft (podpisy, daty).
      Karty (--surface) i linie (--line) muszą wyraźnie odcinać się od gruntu; tym steruje ten blok, nie pojedyncze ekrany. */
   --text: #16222A;
@@ -116,7 +118,7 @@
   transition: opacity var(--dur-fast) ease, transform var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-fast);
 }
 .zy-panel[data-state="idle"] .zy-f-main, .zy-panel[data-state="done"] .zy-f-main,
-.zy-panel[data-state="choose"] .zy-f-choose, .zy-panel[data-state="low"] .zy-f-low {
+.zy-panel[data-state="low"] .zy-f-low {
   visibility: visible; opacity: 1; transform: none;
   transition: opacity var(--dur-base) ease, transform var(--dur-base) var(--ease-out), visibility 0s;
 }
@@ -181,49 +183,12 @@
   flex: none; min-height: var(--tap); padding: 0 var(--sp-3); border: 0; border-radius: var(--radius-sm); background: none;
   font: inherit; font-size: .92rem; font-weight: 600; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
 }
-.zy-change:focus-visible, .zy-x:focus-visible, .zy-help:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.zy-change:focus-visible, .zy-help:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 
-/* Wybór nastroju: w miejscu przycisku, roślinkę cały czas widać */
-.zy-q { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: var(--tap); }
-.zy-q h2 { margin: 0; font-family: var(--font-serif); font-weight: 500; font-size: 1.45rem; line-height: 1.2; letter-spacing: -.012em; }
-.zy-x { flex: none; width: var(--tap); height: var(--tap); margin-right: calc(var(--sp-2) * -1); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--text-muted); cursor: pointer; }
-.zy-x svg { width: 20px; height: 20px; }
-/* Przycisk otwiera się w kartę wyboru: karta rośnie dokładnie z miejsca przycisku, w jego kolorze, który gaśnie po drodze */
-.zy-panel .zy-f-choose {
-  inset: -10px -10px 2px; padding: var(--sp-2) var(--sp-3) var(--sp-3); gap: 0; opacity: 0; transform: none; z-index: 2;
-  border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--e2);
-  clip-path: inset(84px 10px 30px 10px round var(--radius-md));
-  /* zamykanie: karta po prostu gaśnie; dopiero otwieranie rośnie z miejsca przycisku */
-  transition: opacity var(--dur-fast) ease, clip-path 0s linear var(--dur-fast), visibility 0s linear var(--dur-fast);
-}
-.zy-panel[data-state="choose"] .zy-f-choose {
-  opacity: 1; clip-path: inset(-60px round var(--radius-lg));
-  transition: opacity 0s, clip-path var(--dur-base) var(--spring-soft), visibility 0s;
-}
-.zy-f-choose::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--primary); pointer-events: none;
-  transition: opacity 0s linear var(--dur-fast);
-}
-.zy-panel[data-state="choose"] .zy-f-choose::before { opacity: 0; transition: opacity var(--dur-fast) ease; }
-.zy-f-choose > * { position: relative; opacity: 0; transition: opacity .1s ease; }
-.zy-panel[data-state="choose"] .zy-f-choose > * { opacity: 1; transition: opacity var(--dur-fast) ease; }
-.zy-q h2 { opacity: 0; }
-.zy-panel[data-state="choose"] .zy-q h2 { opacity: 1; transition: opacity var(--dur-base) ease .08s; }
-.zy-moods { margin-top: 0; gap: var(--sp-2); }
-.zy-moods .du-mood {
-  min-height: var(--tap); height: var(--tap); aspect-ratio: auto; border: 0; color: var(--text);
-  background: color-mix(in srgb, var(--primary) calc(8% + var(--v) * 4.8%), var(--surface));
-  transition: transform var(--dur-base) var(--spring), background var(--dur-fast);
-}
-.zy-moods .du-mood:active { transform: scale(.9); transition-duration: .1s; }
-.zy-moods .du-mood span { font-size: 1.12rem; }
-.zy-panel[data-state="choose"] .zy-moods .du-mood { animation: zy-tile var(--dur-base) var(--spring) backwards; animation-delay: calc(50ms + var(--v) * 20ms); }
+/* Liście tygodnia wyrastają przy pierwszym wejściu (.is-arriving niżej) */
 @keyframes zy-tile { from { opacity: 0; transform: scale(.7) translateY(10px); } }
 
-/* Kropla leci z wybranej liczby do dzisiejszego pąka na roślince (js/dom-uklad.js), potem pada deszcz */
-.zy-fly { position: fixed; z-index: 28; left: 0; top: 0; width: 24px; height: 24px; margin: -12px 0 0 -12px; pointer-events: none; color: var(--primary); filter: drop-shadow(0 4px 6px rgba(16, 44, 48, .3)); }
-.zy-fly svg { display: block; width: 100%; height: 100%; }
-/* po wylądowaniu światło biegnie gałązką tygodnia aż do dzisiejszego liścia */
+/* po podlaniu (zdarzenie watered) światło biegnie gałązką tygodnia aż do dzisiejszego liścia */
 .zy-week::after {
   content: ""; position: absolute; left: 7%; right: 7%; top: 37px; height: 4px; border-radius: 4px; opacity: 0; pointer-events: none;
   background: linear-gradient(90deg, transparent, var(--plant-core)); transform-origin: left;
@@ -294,7 +259,7 @@
 :root[data-uklad="d"] .tab { font-weight: 500; }
 :root[data-uklad="d"] .tab[aria-current="page"] { font-weight: 700; }
 :root[data-uklad="d"] .insight-tag { font-weight: 600; letter-spacing: .02em; text-transform: none; font-size: .86rem; }
-:root[data-uklad="d"] :is(.view-head h1, .stage-greet h1, .sec h2, .sub-title, .list-head h2, .sheet .kicker, .insight h3, .zy-q h2, .score-num strong, .sum-head b) { font-weight: 500; letter-spacing: -.015em; }
+:root[data-uklad="d"] :is(.view-head h1, .stage-greet h1, .sec h2, .sub-title, .list-head h2, .sheet .kicker, .insight h3, .score-num strong, .sum-head b) { font-weight: 500; letter-spacing: -.015em; }
 :root[data-uklad="d"] .du-chip.is-done { background: color-mix(in srgb, var(--primary) 22%, var(--surface)); border-color: var(--primary); }
 :root[data-uklad="d"] .zy-done { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
 
@@ -337,7 +302,6 @@
 /* wąski telefon: pasek 7 dni wchodzi w marginesy, żeby każdy dzień miał 44 px i strona nie przewijała się w bok */
 @media (max-width: 359px) {
   .zy-week { gap: 0; margin-inline: calc(var(--sp-4) * -1); }
-  .zy-q h2 { font-size: 1.3rem; }
   .zy-help svg { display: none; }
 }
 @media (min-width: 700px) and (max-width: 1023px) {
@@ -348,7 +312,7 @@
 
 /* ---------- Forma: miękkie kształty i głębia zamiast ramek ---------- */
 :root[data-uklad="d"] :is(.zy-water, .zy-done, .zy-help, .fab, .btn-primary, .btn-soft, .btn-ghost, .btn-danger, .btn-primary.is-small, .water-btn, .sos-item, .sos-breath, .shortcut, .trusted-call) { border-radius: var(--radius-md); }
-:root[data-uklad="d"] :is(.sos, .du-chip, .chip, .ci-chip, .post-btn, .icon-btn, .du-ico, .zy-change, .plant-zoom, .du-mood, .zy-moods .du-mood) { border-radius: var(--radius-sm); }
+:root[data-uklad="d"] :is(.sos, .du-chip, .chip, .ci-chip, .post-btn, .icon-btn, .du-ico, .zy-change, .plant-zoom, .du-mood) { border-radius: var(--radius-sm); }
 :root[data-uklad="d"] :is(.card, .du-suggest, .du-row-btn, .du-support, .vault-item, .vault-compose, .post, .insight .try, .jar-card) { border-radius: var(--radius-lg); }
 :root[data-uklad="d"] :is(textarea, input[type="text"], input[type="tel"], .du-line-row input, .trusted-form input) { border-radius: var(--radius-md); border-width: 1px; }
 /* Karty i kafelki unoszą się cieniem; w nocy dodatkowo mają jasną krawędź u góry */
@@ -389,7 +353,8 @@
 :root[data-uklad="d"][data-pora="wieczor"] .greet-date { color: rgba(255, 248, 242, .88); }
 :root[data-uklad="d"][data-pora="wieczor"] .brand.is-word {
   color: var(--wordmark-on-dark);
-  --wordmark-halo: 2px var(--wordmark-on-light);
+  --wm-accent: var(--wm-accent-on-dark);
+  text-shadow: 0 0 3px rgb(16, 24, 42), 0 0 14px rgba(16, 24, 42, .9);
 }
 
 /* ---------- Tracker: wykresy mają się dać odczytać od razu ---------- */
@@ -438,6 +403,147 @@
 
 /* Mniej ruchu i ?widok: klasa .is-static (js/home2.js). Stany zmieniają się od razu, informacja zostaje ta sama. */
 :root.is-static :is(.zy-panel, .zy-panel *, .zy-panel *::before, .zy-panel *::after, .tab-ico, .as-fab-peek, .zy-tab-ind, .view.is-entering > *) { animation: none !important; transition: none !important; }
-:root.is-static .zy-panel .zy-f-choose { clip-path: none; }
-:root.is-static .zy-f-choose::before { display: none; }
-:root.is-static .zy-q h2, :root.is-static .zy-f-choose > * { opacity: 1; }
+
+/* ================================================================
+   Podlewanie: ekran pytań (js/checkin.js) w stylu Żywej planety
+   „Podlej roślinkę” otwiera pełny ekran, który wyrasta kołem z przycisku (mechanika: css/app.css .ci-overlay).
+   Tu tylko wygląd: grunt planety i --glow w tle, postęp jako gałązka z czterema pąkami (odpowiedź = liść),
+   Bricolage w pytaniach, karty z cieniem zamiast obwódek, wsparcie w ciepłym świetle. Na komputerze
+   tło i miejsce daje tafla z css/pulpit.css.
+   ================================================================ */
+:root[data-uklad="d"] .ci-overlay { --ci-leaf: var(--leaf, var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--sp-2)); }
+@media (max-width: 1023px) {
+  :root[data-uklad="d"] .ci-overlay {
+    background: var(--glow), linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, var(--ground, var(--bg))) 0%, var(--ground, var(--bg)) 46%);
+    background-attachment: fixed;
+  }
+  /* blady liść w rogu: ten sam motyw co tła kart, tylko większy; nic nie leży pod nim na stałe */
+  :root[data-uklad="d"] .ci-overlay .ci::before {
+    content: ""; position: fixed; right: -64px; bottom: 96px; width: 260px; height: 260px; pointer-events: none;
+    background: color-mix(in srgb, var(--primary) 5%, transparent);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+    transform: rotate(-12deg); z-index: -1;
+  }
+  :root[data-uklad="d"] .ci-overlay .ci-actions { background: linear-gradient(to top, var(--ground, var(--bg-2)) 62%, transparent); }
+}
+:root[data-uklad="d"] .ci-overlay .ci { position: relative; isolation: isolate; }
+
+/* Górny pasek: zamknij · co to za ekran · SOS (zawsze pod ręką) */
+:root[data-uklad="d"] .ci-top { gap: var(--sp-2); }
+:root[data-uklad="d"] .ci-close {
+  flex: 0 0 var(--tap); height: var(--tap); border: 0; background: var(--surface); box-shadow: var(--e1); color: var(--text);
+  transition: transform var(--dur-base) var(--spring), box-shadow var(--dur-fast);
+}
+:root[data-uklad="d"] .ci-close:active { transform: scale(.9); transition-duration: .1s; }
+:root[data-uklad="d"] .ci-kicker {
+  gap: var(--sp-2); padding-left: var(--sp-1);
+  font-size: .9rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-body);
+}
+:root[data-uklad="d"] .ci-kicker svg { width: 15px; height: 15px; fill: var(--primary); }
+:root[data-uklad="d"] .ci-count { order: 0; font-size: .82rem; font-weight: 600; color: var(--text-muted); }
+:root[data-uklad="d"] .ci-sos { flex: none; }
+:root:not([data-uklad="d"]) .ci-sos { height: 40px; }
+
+/* Postęp: gałązka z czterema pąkami. Bieżące pytanie = pąk w obwódce, odpowiedziane = liść, który wyrasta. */
+:root[data-uklad="d"] .ci-progress { position: relative; height: 30px; margin: var(--sp-2) var(--sp-1) 0; gap: 0; }
+:root[data-uklad="d"] .ci-progress::before {
+  content: ""; position: absolute; left: 12.5%; right: 12.5%; top: 50%; height: 2px; margin-top: -1px; border-radius: 2px;
+  background: color-mix(in srgb, var(--plant-stem) 40%, transparent);
+}
+:root[data-uklad="d"] .ci-progress i { position: relative; height: auto; border-radius: 0; background: none; }
+:root[data-uklad="d"] .ci-progress i::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+  background: color-mix(in srgb, var(--plant-stem) 50%, var(--ground, var(--bg)));
+  transition: transform var(--dur-base) var(--spring), background var(--dur-base), box-shadow var(--dur-base);
+}
+:root[data-uklad="d"] .ci-progress i.is-now::before {
+  width: 16px; height: 16px; margin: -8px 0 0 -8px;
+  background: var(--ground, var(--bg)); box-shadow: inset 0 0 0 2px var(--primary);
+}
+/* liść: rośnie z łodygi, jak dzień na gałązce tygodnia */
+:root[data-uklad="d"] .ci-progress i::after {
+  content: ""; position: absolute; left: 50%; bottom: 50%; width: 24px; height: 24px; margin-left: -4px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--plant-leaf-2) 70%, var(--primary)) 50%, var(--primary) 50%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+  transform-origin: 18% 88%; transform: scale(0);
+  transition: transform var(--dur-slow) var(--spring);
+}
+:root[data-uklad="d"] .ci-progress i.is-done::after { transform: scale(1); }
+:root[data-uklad="d"] .ci-progress i.is-done::before { transform: scale(.6); background: var(--plant-stem); box-shadow: none; }
+
+/* Pytanie i podpowiedź: nagłówek Bricolage, tekst do czytania w --text-body */
+:root[data-uklad="d"] .ci-q { font-family: var(--font-serif); font-weight: 500; font-size: 2rem; line-height: 1.12; letter-spacing: -.02em; margin-top: var(--sp-4); }
+:root[data-uklad="d"] .ci-hint { font-size: .98rem; color: var(--text-body); }
+:root[data-uklad="d"] .ci-overlay .ms-value { font-family: var(--font-serif); font-weight: 500; font-size: 3.4rem; letter-spacing: -.03em; color: var(--text); }
+:root[data-uklad="d"] .ci-overlay .ms-value span { font-family: var(--font); font-weight: 600; }
+:root[data-uklad="d"] .ci-overlay .ms-word { font-weight: 600; }
+:root[data-uklad="d"] .ci-overlay .ms-scale span.is-on { font-weight: 700; }
+:root[data-uklad="d"] .ci-note { color: var(--text-body); }
+
+/* Wsparcie: Asystent zawsze pod suwakiem, a przy nastroju 1–3 cała karta w ciepłym świetle (jak SOS-latarnia) z 116 111 */
+:root[data-uklad="d"] .support { border: 0; border-radius: var(--ci-leaf); }
+:root[data-uklad="d"] .support.is-low { background: var(--pole-warm, color-mix(in srgb, var(--plant-core) 30%, var(--surface))); box-shadow: var(--e1); }
+:root[data-uklad="d"] .support-title { font-family: var(--font-serif); font-weight: 500; font-size: 1.25rem; letter-spacing: -.01em; }
+:root[data-uklad="d"] .support-text { color: var(--text-body); }
+:root[data-uklad="d"] .assist-btn,
+:root[data-uklad="d"] .ci-overlay .support-call {
+  border: 0; border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--e1);
+  transition: transform var(--dur-base) var(--spring), box-shadow var(--dur-fast);
+}
+:root[data-uklad="d"] .assist-btn:active, :root[data-uklad="d"] .ci-overlay .support-call:active { transform: scale(.97); transition-duration: .1s; }
+:root[data-uklad="d"] .assist-text b { font-weight: 600; }
+:root[data-uklad="d"] .support.is-low .assist-btn { border: 0; }
+:root[data-uklad="d"] .ci-overlay .support-call { min-height: 56px; font-weight: 600; color: var(--text); }
+:root[data-uklad="d"] .ci-overlay .support-call svg { color: var(--primary-dark); }
+
+/* Sen: wybór jak miękkie płytki; zaznaczona = zabarwiona kolorem motywu z obwódką (pełny kolor zostaje dla „Dalej”) */
+:root[data-uklad="d"] .ci-group { margin-top: var(--sp-6); }
+:root[data-uklad="d"] .ci-label { font-family: var(--font-serif); font-weight: 500; font-size: 1.15rem; letter-spacing: -.01em; }
+:root[data-uklad="d"] .ci-chip {
+  min-height: var(--tap); height: auto; padding: var(--sp-2) var(--sp-4); border: 0; background: var(--surface); box-shadow: var(--e1);
+  font-weight: 600; color: var(--text-body);
+}
+:root[data-uklad="d"] .ci-chip[aria-pressed="true"] {
+  background: var(--pole-soft, color-mix(in srgb, var(--primary) 12%, var(--surface))); color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--primary), var(--e1);
+}
+
+/* Co miało znaczenie: jedna karta-liść, w niej wiersze rozdzielone cienką linią */
+:root[data-uklad="d"] .ci-areas {
+  gap: 0; padding: var(--sp-1) var(--sp-4); border-radius: var(--ci-leaf); background: var(--surface); box-shadow: var(--e1);
+}
+:root[data-uklad="d"] .ci-area { padding: var(--sp-3) 0; border: 0; border-radius: 0; background: none; }
+:root[data-uklad="d"] .ci-area + .ci-area { border-top: 1px solid var(--line); }
+:root[data-uklad="d"] .ci-area-name { font-weight: 600; color: var(--text); }
+:root[data-uklad="d"] .ci-seg { background: var(--pole-soft, var(--track)); }
+:root[data-uklad="d"] .ci-seg button { height: 38px; font-weight: 600; transition: background var(--dur-fast), color var(--dur-fast), transform var(--dur-base) var(--spring); }
+:root[data-uklad="d"] .ci-seg button:active { transform: scale(.94); transition-duration: .1s; }
+:root[data-uklad="d"] .ci-seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 2px var(--primary); }
+
+/* Notatka: osobiste słowa w Bricolage na karcie-liściu */
+:root[data-uklad="d"] .ci-overlay .ci-text { border: 0; border-radius: var(--ci-leaf); background: var(--surface); box-shadow: var(--e1); color: var(--text); }
+:root[data-uklad="d"] .ci-overlay .ci-text:focus { box-shadow: inset 0 0 0 2px var(--primary), var(--e1); }
+:root[data-uklad="d"] .ci-check { color: var(--text-body); }
+:root[data-uklad="d"] .ci-check-box { border-radius: 8px; }
+
+/* Dół: „Dalej”/„Pomiń” jak „Podlej roślinkę” na Domu (jedyny pełny kolor), „Wstecz” miękko */
+:root[data-uklad="d"] .ci-overlay .btn-primary {
+  height: 58px; border-radius: var(--radius-md);
+  background: linear-gradient(transparent, rgba(0, 0, 0, .08)), var(--primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 14px 26px -16px color-mix(in srgb, var(--primary) 80%, #000);
+  font-weight: 600; font-size: 1.05rem;
+  transition: transform var(--dur-base) var(--spring), box-shadow var(--dur-fast);
+}
+:root[data-uklad="d"] .ci-overlay .btn-primary:active { transform: scale(.96); transition-duration: .1s; }
+:root[data-uklad="d"] .ci-back {
+  height: 58px; border: 0; border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--e1); font-weight: 600; color: var(--text);
+  transition: transform var(--dur-base) var(--spring);
+}
+:root[data-uklad="d"] .ci-back:active { transform: scale(.94); transition-duration: .1s; }
+
+@media (min-width: 700px) {
+  :root[data-uklad="d"] .ci-q { font-size: 2.4rem; }
+}
+:root.is-static .ci-progress i::before, :root.is-static .ci-progress i::after { transition: none !important; }

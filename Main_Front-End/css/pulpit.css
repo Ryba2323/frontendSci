@@ -26,11 +26,6 @@
 
   /* ---------- Świat: scena na całą szerokość, pod treścią ---------- */
   .stage[data-swiat] { width: var(--page-w, 100vw); z-index: 0; }
-  /* Niebo zostaje za oknem Asystenta. Do lewej części przesuwa się tylko planeta. */
-  :root[data-uklad="d"] .stage[data-swiat] {
-    width: 100vw;
-    padding-right: calc(100vw - var(--page-w, 100vw));
-  }
   .stage[data-swiat] #plant { -webkit-mask-image: none; mask-image: none; }
   body::after { display: none; }                         /* światło roślinki rysuje teraz sama scena */
   .content { z-index: 2; }

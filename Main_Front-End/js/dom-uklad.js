@@ -139,21 +139,11 @@
             }).join('')}
           </div>
           <span class="sr" id="zy-day-say" aria-live="polite"></span>
-          <button type="button" class="zy-water" id="zy-water"><span class="zy-drop">${svg(ICON.drop)}</span>Podlej roślinkę</button>
+          <button type="button" class="zy-water" id="zy-water" aria-haspopup="dialog"><span class="zy-drop">${svg(ICON.drop)}</span>Podlej roślinkę</button>
           <div class="zy-done" id="zy-done">
             <span class="zy-done-ico">${svg(ICON.check)}</span>
             <b id="zy-done-text" aria-live="polite"></b>
             <button type="button" class="zy-change" data-zy-open>Zmień</button>
-          </div>
-        </div>
-
-        <div class="zy-face zy-f-choose">
-          <div class="zy-q">
-            <h2 id="zy-q-title">Jak się dziś czujesz?</h2>
-            <button type="button" class="zy-x" id="zy-close" aria-label="Zamknij bez podlewania">${svg('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
-          </div>
-          <div class="du-moods zy-moods" role="radiogroup" aria-labelledby="zy-q-title">
-            ${Array.from({ length: 10 }, (_, i) => i + 1).map(v => `<button type="button" role="radio" aria-checked="false" class="du-mood" data-v="${v}" style="--v:${v}" aria-label="${v} — ${word(v)}"><span>${v}</span></button>`).join('')}
           </div>
         </div>
 
@@ -184,73 +174,28 @@
         </div>
       </section>`);
     const root = $('#zy-panel'), next = root.nextElementSibling;
-    const moods = $$('.du-mood', root);
     const setState = s => { root.dataset.state = s; };
     const settled = m => (m ? (m <= LOW ? 'low' : 'done') : 'idle');
 
-    function openChoose() {
-      setState('choose');
+    // „Podlej roślinkę” i „Zmień” otwierają pełne pytania (js/checkin.js): ekran wyrasta kołem z przycisku,
+    // zaczyna od suwaka nastroju, a sen, ważne sprawy i notatkę można przejść albo pominąć. Po ostatnim pytaniu
+    // koło zwija się do roślinki i pada deszcz; window.Podlewanie zapisuje wpis i wysyła entrychange.
+    function openCheckin(from) {
       Scene.nudge();
       haptic(8);
-      const m = P.entry && P.entry.mood;
-      (moods[(m || 5) - 1]).focus({ preventScroll: true });
+      P.open({ from, step: 'mood' });
     }
-    function closeChoose() {
-      setState(settled(P.entry && P.entry.mood));
-      const back = $(root.dataset.state === 'idle' ? '#zy-water' : '[data-zy-open]', root);
-      if (back) back.focus({ preventScroll: true });
-    }
-    // Wybór liczby: panel od razu wraca (roślinka i wynik widoczne, wsparcie przy 1–3 bez czekania), kropla leci do pąka, a dopiero
-    // jej lądowanie zapisuje wpis i uruchamia deszcz. Bez animacji (mniej ruchu) zapis jest natychmiastowy.
-    function choose(v, from) {
-      const said = `Podlane · ${v}/10 · ${word(v)}`;
-      $('#zy-done-text').textContent = said;
-      $('#zy-low-text').textContent = said;
-      setState(settled(v));
-      const change = $(v <= LOW ? '.zy-low-line .zy-change' : '#zy-done .zy-change', root);
-      if (change) change.focus({ preventScroll: true });
-      const land = () => {
-        P.save({ mood: v });
-        haptic([10, 30, 10]);
-        root.classList.add('is-pulse');
-        setTimeout(() => root.classList.remove('is-pulse'), 800);
-      };
-      const to = !reduceMotion && Scene.budPos && Scene.budPos();
-      if (!to) { land(); return; }
-      haptic(8);
-      const a = from.getBoundingClientRect(), x0 = a.left + a.width / 2, y0 = a.top + a.height / 2;
-      const peak = Math.min(y0, to.y) - 36;                   // łuk: kropla wznosi się nad pąk i na niego opada
-      const fly = document.createElement('span');
-      fly.className = 'zy-fly';
-      fly.setAttribute('aria-hidden', 'true');
-      fly.innerHTML = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.500c3.800 4.600 6.800 8.300 6.800 11.900a6.800 6.800 0 0 1-13.600 0c0-3.600 3-7.300 6.800-11.900z"/><circle cx="9.500" cy="14.500" r="1.700" fill="#fff" opacity=".75"/></svg>';
-      document.body.appendChild(fly);
-      const at = (x, y, s) => `translate(${x}px, ${y}px) scale(${s})`;
-      const anim = fly.animate([
-        { transform: at(x0, y0, .4), opacity: 0, easing: 'cubic-bezier(.2, .7, .3, 1)' },
-        { transform: at(x0 + (to.x - x0) * .55, peak, 1.15), opacity: 1, offset: .55, easing: 'cubic-bezier(.5, 0, .9, .5)' },
-        { transform: at(to.x, to.y, .7), opacity: 1 },
-      ], { duration: 700 });                                  // --dur-slow
-      anim.onfinish = () => { fly.remove(); land(); };
-      anim.oncancel = () => { fly.remove(); land(); };
-    }
-    $('#zy-water').addEventListener('click', openChoose);
-    $('#zy-close').addEventListener('click', closeChoose);
+    $('#zy-water').addEventListener('click', e => openCheckin(e.currentTarget));
     root.addEventListener('click', e => {
-      if (e.target.closest('[data-zy-open]')) { openChoose(); return; }
-      const b = e.target.closest('.du-mood');
-      if (b) { choose(+b.dataset.v, b); return; }
+      const ch = e.target.closest('[data-zy-open]');
+      if (ch) { openCheckin(ch); return; }
       const d = e.target.closest('.zy-day');
       if (d) { showDay(+d.dataset.i); Scene.select(+d.dataset.i); }
     });
-    // strzałki w grupie nastroju (←/→ o jeden, ↑/↓ o rząd), Escape zamyka
-    root.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && root.dataset.state === 'choose') { closeChoose(); return; }
-      const b = e.target.closest('.du-mood');
-      const map = { ArrowRight: 1, ArrowDown: 5, ArrowLeft: -1, ArrowUp: -5 };
-      if (!b || !(e.key in map)) return;
-      e.preventDefault();
-      moods[Math.min(10, Math.max(1, +b.dataset.v + map[e.key])) - 1].focus();
+    // po deszczu światło biegnie gałązką tygodnia do dzisiejszego liścia
+    window.addEventListener('watered', () => {
+      root.classList.add('is-pulse');
+      setTimeout(() => root.classList.remove('is-pulse'), 800);
     });
     next.addEventListener('click', e => {
       const add = e.target.closest('[data-step]');
@@ -271,8 +216,7 @@
 
     function paint(entry) {
       const m = entry && entry.mood;
-      if (root.dataset.state !== 'choose') setState(settled(m));
-      moods.forEach(b => { const on = +b.dataset.v === m; b.setAttribute('aria-checked', String(on)); b.tabIndex = on || (!m && b.dataset.v === '5') ? 0 : -1; });
+      setState(settled(m));
       const today = $('.zy-day.is-today', root);
       today.classList.toggle('is-watered', !!m);
       today.style.setProperty('--v', m || 0);

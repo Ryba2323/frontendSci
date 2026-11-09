@@ -70,13 +70,17 @@ function audit() {
     await p.evaluate(() => { const s = document.querySelector('.ms-slider'); if (s) { s.focus(); } });
     for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowRight');
     await p.waitForTimeout(400); note('podlewanie, niski nastrój', await p.evaluate(audit));
-    // Żywa planeta: stany panelu na Domu (wybór liczby, po podlaniu, wsparcie przy niskim nastroju)
+    // kolejne pytania podlewania (sen z zaznaczoną odpowiedzią, co było ważne, notatka)
+    await p.click('#ci-next'); await p.waitForTimeout(500);
+    await p.click('#checkin .ci-chip'); await p.waitForTimeout(200); note('podlewanie: sen', await p.evaluate(audit));
+    await p.click('#ci-next'); await p.waitForTimeout(500);
+    await p.click('#checkin .ci-seg button[data-v="1"]'); await p.waitForTimeout(200); note('podlewanie: co było ważne', await p.evaluate(audit));
+    await p.click('#ci-next'); await p.waitForTimeout(500); note('podlewanie: notatka', await p.evaluate(audit));
+    // Żywa planeta: stany panelu na Domu po podlaniu (zwykły nastrój i wsparcie przy niskim)
     if (!process.env.UKLAD || process.env.UKLAD === 'd' || process.env.UKLAD === 'e') {
       await p.goto(`${URL}motyw=${theme}&r=${Math.random()}#/dom`); await p.waitForTimeout(400);
-      await p.click('#zy-water'); await p.waitForTimeout(300); note('panel: wybór', await p.evaluate(audit));
-      await p.click('.zy-moods .du-mood[data-v="8"]'); await p.waitForTimeout(300); note('panel: podlane', await p.evaluate(audit));
-      await p.click('#zy-done [data-zy-open]'); await p.waitForTimeout(300);
-      await p.click('.zy-moods .du-mood[data-v="2"]'); await p.waitForTimeout(300); note('panel: niski nastrój', await p.evaluate(audit));
+      await p.evaluate(() => window.Podlewanie.save({ mood: 8 }, { rain: false })); await p.waitForTimeout(300); note('panel: podlane', await p.evaluate(audit));
+      await p.evaluate(() => window.Podlewanie.save({ mood: 2 }, { rain: false })); await p.waitForTimeout(300); note('panel: niski nastrój', await p.evaluate(audit));
     }
     await p.close();
   }

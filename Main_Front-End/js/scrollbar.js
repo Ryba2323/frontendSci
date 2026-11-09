@@ -15,13 +15,20 @@
 
   let maxScroll = 0;
   let travel = 0;
-  let progress = 0;
-  let angle = 22;
-  let velocity = 0;
+  let progress = 0;   // gdzie naprawdę jest strona (0–1)
+  let shown = 0;      // gdzie rysujemy listek: łagodnie dogania progress
+  let angle = 0;
   let frame = null;
   let previousTime = null;
   let requestedTop = null;
   let drag = null;
+
+  // Tempo doganiania (1/s): przy kółku listek płynie, przy przeciąganiu trzyma się kursora.
+  const FOLLOW = 7;
+  const FOLLOW_DRAG = 24;
+  const TILT = 9;        // spokojne pochylenie u góry i u dołu strony
+  const SWAY = 10;       // dodatkowe wychylenie od prędkości, najwyżej tyle stopni
+  const SETTLE = 5;
 
   function schedule() {
     if (!rail.hidden && frame === null) frame = requestAnimationFrame(paint);
@@ -35,29 +42,8 @@
     schedule();
   }
 
-  // Ten sam ruch listka co w eksporcie: +22° u góry, 0° w połowie, −22° u dołu.
-  function updateAngle(target, time) {
-    if (reducedMotion.matches || root.classList.contains('is-static')) {
-      angle = target;
-      velocity = 0;
-      return false;
-    }
-    // Tłumienie z eksportu wygładza ruch bez odbijania.
-    const dt = previousTime === null ? 1 / 60 : Math.min((time - previousTime) / 1000, .05);
-    const damping = 16;
-    const displacement = angle - target;
-    if ((target - angle) * velocity < 0) velocity = 0;
-    const momentum = velocity + damping * displacement;
-    const decay = Math.exp(-damping * dt);
-    angle = target + (displacement + momentum * dt) * decay;
-    velocity = (velocity - damping * momentum * dt) * decay;
-    if (Math.abs(angle - target) < .015 && Math.abs(velocity) < .08) {
-      angle = target;
-      velocity = 0;
-      return false;
-    }
-    return true;
-  }
+  const still = () => reducedMotion.matches || root.classList.contains('is-static');
+  const ease = (rate, dt) => 1 - Math.exp(-rate * dt);
 
   function paint(time) {
     frame = null;
@@ -71,9 +57,25 @@
     // Najwyżej jedno przewinięcie na klatkę, bez ponownego mierzenia układu.
     progress = clamp((top ?? window.scrollY) / maxScroll);
     if (top !== null) window.scrollTo({ top, behavior: 'instant' });
-    const moving = updateAngle(22 - 44 * progress, time);
-    const position = (progress * travel).toFixed(2);
-    handle.style.transform = `translate3d(-50%, ${position}px, 0) rotate(${angle.toFixed(4)}deg)`;
+
+    const dt = previousTime === null ? 1 / 60 : Math.min((time - previousTime) / 1000, .05);
+    let moving = false;
+    if (still()) {
+      shown = progress;
+      angle = TILT - 2 * TILT * progress;
+    } else {
+      const before = shown;
+      shown += (progress - shown) * ease(drag ? FOLLOW_DRAG : FOLLOW, dt);
+      if (Math.abs(progress - shown) < .0004) shown = progress;
+      // Listek lekko „ciągnie się” za ruchem, ale nigdy nie fruwa.
+      const speed = (shown - before) / dt;
+      const sway = Math.max(-SWAY, Math.min(SWAY, -speed * 40));
+      const target = TILT - 2 * TILT * shown + sway;
+      angle += (target - angle) * ease(SETTLE, dt);
+      moving = shown !== progress || Math.abs(target - angle) > .05;
+    }
+
+    handle.style.transform = `translate3d(-50%, ${(shown * travel).toFixed(2)}px, 0) rotate(${angle.toFixed(3)}deg)`;
     rail.classList.toggle('is-moving', moving);
     const value = String(Math.round(progress * 1000));
     if (range.value !== value) range.value = value;

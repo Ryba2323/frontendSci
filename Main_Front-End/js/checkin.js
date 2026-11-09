@@ -161,8 +161,10 @@
     <div class="ci">
       <header class="ci-top">
         <button type="button" class="ci-close" data-ci-close aria-label="Zamknij pytania">${svg('<path d="M6 6l12 12M18 6L6 18"/>')}</button>
-        <p class="ci-kicker"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg>Codzienne podlewanie</p>
+        <p class="ci-kicker"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg>Podlewanie</p>
         <span class="ci-count" id="ci-count"></span>
+        <!-- SOS zostaje pod ręką także w trakcie pytań (arkusz SOS otwiera js/app.js przez [data-sos]) -->
+        <button type="button" class="sos ci-sos" data-sos aria-haspopup="dialog">${svg('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>')}<span>SOS</span></button>
       </header>
       <div class="ci-progress" aria-hidden="true">${STEPS.map(() => '<i></i>').join('')}</div>
       ${STEPS.map((s, i) => `<section class="ci-main ci-step" data-step="${s.id}"${i ? ' hidden' : ''}>${s.html()}</section>`).join('')}
