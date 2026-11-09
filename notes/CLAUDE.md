@@ -32,7 +32,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 - **Skrytka**: szyfrowany dziennik myśli, opcja wysłania wpisu do AI.
 - **Cytat / myśl dnia**: powiadomienie push, udostępnianie, ulubione.
 - **Tracker nastroju**: suwak **1–10**, wykres (np. 30 ostatnich wpisów), insighty typu „Twój nastrój spada w niedziele wieczorem”.
-- **Testy**: PHQ-9 (depresja), GAD-7 (lęk), PSS-10 (stres); każdy test najwyżej raz w tygodniu.
+- **Testy**: ~~PHQ-9, GAD-7, PSS-10~~ — zmienione 9.11.2026 (ustalenia Waldka): tylko **WHO-5** i **Big Five (IPIP)**. Szczegóły w „Testy i dane o zdrowiu” niżej.
 - **Blog**: jak Reddit, anonimowe posty, głosy w górę i w dół, komentarze.
 
 **P2 (później):** Asystent Wsparcia (chatbot AI, limit 10 wiadomości dziennie), umówienie wizyty u psychologa (formularz albo link), tryb SOS (animacja oddechowa + kontakty zaufane jednym dotknięciem), czat peer (Realtime, bez zapisu, sesja wygasa po 2 h), Dashboard (zawartość nie ustalona).
@@ -44,11 +44,34 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 - Nierozstrzygnięte: `moods` (plan) czy `daily_checkins` (rozmowa o bazie).
 
 ## Bezpieczeństwo — twarde zasady dla designu
-- **PHQ-9, pytanie 9** (myśli o śmierci lub samookaleczeniu): odpowiedź > 0 → ZAWSZE pokaż linię kryzysową i kontakty pomocowe.
+- ~~PHQ-9, pytanie 9~~: PHQ-9 wypadł z aplikacji (9.11.2026). Zasada zostaje w duchu: **niski wynik WHO-5 → zawsze pokaż wsparcie (116 111, Asystent, bliskie osoby)**, bez diagnozy.
 - SOS ma być łatwo dostępny (propozycja: stały przycisk na każdym ekranie).
 - Numery pomocowe nie są jeszcze ustalone. W designie używamy **116 111** (telefon zaufania dla dzieci i młodzieży), do potwierdzenia przez zespół.
 - **RODO Art. 9** (dane o zdrowiu): osobna, jawna zgoda przy rejestracji, możliwość usunięcia konta, polityka prywatności.
 - Zgody rodziców i ograniczenia wiekowe nie są ustalone. W designie rejestracji: zgoda opiekuna poniżej 16 lat.
+
+## Testy i dane o zdrowiu (ustalenia Waldka, 9.11.2026)
+- **Dozwolone testy: tylko WHO-5 i Big Five (IPIP).** PHQ-9, GAD-7 i PSS-10 wypadają.
+- **Osobna, wyraźna zgoda** przed pierwszym testem / zapisem danych o samopoczuciu, np.: „Wyrażam zgodę na przetwarzanie moich danych dotyczących zdrowia/samopoczucia w celu generowania historii i wykresów w aplikacji”. Zgodę można wycofać.
+- **Prosta i wyraźna opcja usunięcia historii testów**, i prawdopodobnie całego konta (Waldek nie był pewien; plan i tak zakłada Edge Function `delete-account`, więc robimy oba).
+- **Dane muszą być szyfrowane.**
+- **Co wolno przechowywać** (i nic więcej):
+  1. surowe odpowiedzi na pytania (np. pytanie 1: wartość 3),
+  2. wynik obliczony (np. WHO-5: 40%, Big Five: Sumienność = sten 7),
+  3. wynik interpretacyjny — komunikat, który użytkownik zobaczył danego dnia,
+  4. znacznik czasu wykonania testu (do wykresów historii),
+  5. metadane zgody RODO: ID zgody, wersja regulaminu/polityki, czas udzielenia, IP (rozliczalność, art. 5 ust. 2 RODO).
+- **Schemat bazy od Waldka:** `notes/supabase-testy.sql` (zastępuje sekcję 6 „Testy” w `supabase-schema.sql`). To **prototyp do poprawy** (Waldek: dużo błędów); przerabiamy go razem z całym schematem przy podłączaniu backendu. Na początku pliku są uwagi.
+- Proponowane progi WHO-5 (standardowe w literaturze, do potwierdzenia): wynik surowy 0–25 × 4 = 0–100%. Poniżej 50% → „ostatnio jest Ci trudniej” + łagodna podpowiedź; 28% i mniej → zawsze wsparcie (116 111, Asystent, bliskie osoby). Słowa: podpowiedź, nigdy diagnoza.
+
+## Plan dalszej pracy (Marcel, 9.11.2026)
+1. **Animacja pokazowa** nowego wyglądu ReLeaf (telefon i komputer).
+2. **Konto i prawo:** nowa rejestracja i logowanie (w stylu „Żywej planety”), zgody RODO (art. 9), konto, usuwanie historii i konta, regulamin, polityka prywatności.
+3. **Model biznesowy** (przygotował Piotrek; Marcel go przyśle).
+4. **Testy WHO-5 i Big Five** (zakładka Testy), równolegle **podłączenie backendu (Supabase)**.
+5. **Przejście na React Native + Expo** (od razu jako aplikacja), **model Asystenta**.
+6. Z backendem: **zbieranie i interpretacja danych**, żeby aplikacja mówiła, co robisz w dni, kiedy czujesz się gorzej, i dawała spersonalizowane insighty.
+- Test z nastolatkami: 20.11.2026 (`notes/test-z-nastolatkami.md`).
 
 ## Zespół
 - **Marcel**: założyciel, koordynacja, backend, baza, Supabase.
