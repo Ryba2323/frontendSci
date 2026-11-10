@@ -5,7 +5,7 @@
  *  • Dom to jedna ścieżka: dziś (roślinka + panel na planecie) → Twój tydzień → Dla Ciebie teraz → Myśl na dziś.
  *    „Twój tydzień” idzie na początek, bo wzgórza tygodnia stoją tuż nad nim.
  *  • W panelu dnia dochodzi link „Twój tydzień”, który przewija do pierwszego przystanku (bez niego nie widać, że niżej coś jest).
- *  • Roślinka stoi teraz NAD treścią i nie łapie dotyku — stukanie w liście, wzgórza i przesuwanie palcem obsługuje scena
+ *  • Roślinka stoi teraz NAD treścią i nie łapie dotyku — stukanie w liście i wzgórza obsługuje scena
  *    (js/home2-scene.js, blok „Ścieżka”).
  * W React Native: kolejność sekcji w komponencie ekranu Dom; link = scrollTo na ref sekcji.
  */
@@ -26,6 +26,13 @@
   // Stoi tuż przed treścią, więc kolejność czytania i fokusu zostaje: powitanie → dziś → reszta ścieżki.
   const content = $('#content');
   content.parentNode.insertBefore(panel, content);
+
+  // Krajobraz przy horyzoncie zasłania treść, ale jej nie wyłącza: bez tej warstwy stuknięcie w małą roślinkę trafiało
+  // w przycisk schowany pod spodem. Warstwa łapie dotyk w strefie krajobrazu; scena (scTap) robi z niego powrót na Dom.
+  const catcher = document.createElement('div');
+  catcher.id = 'sc-catch';
+  catcher.setAttribute('aria-hidden', 'true');
+  content.parentNode.insertBefore(catcher, content.nextSibling);
 
   // 2. Link do pierwszego przystanku
   const main = $('.zy-f-main', panel);

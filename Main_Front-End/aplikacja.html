@@ -14,15 +14,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
   <!-- Napis ReLeaf: tylko litery z nazwy, kilka kB -->
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
-  <!-- Ścieżka: Fraunces (tytuły, duże liczby, osobiste treści) -->
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Literata:opsz,wght@7..72,400;7..72,500&display=swap" rel="stylesheet">
 
-  <!-- Kierunek „Ścieżka” (domyślny na tej gałęzi, css/sciezka.css + js/sciezka.js): planeta z bliska, tekst leży na niebie,
-       tydzień to pasmo wzgórz, nocą księżyce. Zbudowany na mechanice „Żywej planety” (data-uklad="d"), więc funkcje są te same.
-       ?uklad=d — poprzednia „Żywa planeta” (z polami koloru, ?pola=0 bez nich) · ?uklad=e — „Pokoje” · ?uklad=a|b|c|stary — starsze wersje.
+  <!-- Połączenie „Ścieżki” Tymka z designem Bartka (domyślne na tej gałęzi, css/sciezka.css + js/sciezka.js): planeta na dole,
+       roślinka zjeżdża przy przewijaniu, pełne karty z polami koloru wyjeżdżają zza horyzontu, tydzień to pasmo wzgórz.
+       Zbudowane na mechanice „Żywej planety” (data-uklad="d"), więc funkcje są te same. Pola koloru (css/pola.css) włączone; ?pola=0 bez nich.
+       ?uklad=d — poprzednia „Żywa planeta” · ?uklad=e — „Pokoje” · ?uklad=a|b|c|stary — starsze wersje.
        Musi być ustawiony przed pierwszym rysowaniem. -->
-  <script>(function () { var q = new URLSearchParams(location.search), u = q.get('uklad'), r = document.documentElement; if (!u || u === 'd' || u === 'e' || u === 'f') r.dataset.uklad = 'd'; if (!u || u === 'f') r.setAttribute('data-sciezka', ''); if (u === 'e') r.setAttribute('data-pokoje', ''); if ((u === 'd' || u === 'e') && q.get('pola') !== '0') r.setAttribute('data-pola', ''); })();</script>
+  <script>(function () { var q = new URLSearchParams(location.search), u = q.get('uklad'), r = document.documentElement; if (!u || u === 'd' || u === 'e' || u === 'f') r.dataset.uklad = 'd'; if (!u || u === 'f') r.setAttribute('data-sciezka', ''); if (u === 'e') r.setAttribute('data-pokoje', ''); if ((!u || u === 'd' || u === 'e' || u === 'f') && q.get('pola') !== '0') r.setAttribute('data-pola', ''); })();</script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/home2.css">
   <link rel="stylesheet" href="css/checkin.css">

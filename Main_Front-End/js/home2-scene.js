@@ -254,7 +254,7 @@
   const darkMode = () => !!(window.Theme && window.Theme.isDark && window.Theme.isDark());
   // Ścieżka: stan kamery i kolory nieba / planety (liczone w scPaint, zapisywane też do CSS)
   const contentEl = document.getElementById('content');
-  const sc = { pageW: 0, dockX: -1, hero: 1, side: 0, skyRot: 0, col: 48, hmax: 44, lift: 9, gy: 0, tabH: 74, dockH: 150, h: [0, 0, 0, 0, 0, 0, 0], init: false, dockHero: -1 };
+  const sc = { pageW: 0, dockX: -1, hero: 1, side: 0, skyRot: 0, col: 48, hmax: 44, lift: 9, hz: 120, gy: 0, tabH: 74, dockH: 150, h: [0, 0, 0, 0, 0, 0, 0], init: false, dockHero: -1 };
   let SC = null, scCss = '';
   // Ścieżka: ciemne niebo = ciemna aplikacja (js/theme.js), więc „noc” to po prostu tryb ciemny
   const nightSky = () => (sciezka ? darkMode() : darkMode() || DAYPART === 'night');
@@ -939,17 +939,24 @@
       if (px !== sc.dockX) { sc.dockX = px; document.documentElement.style.setProperty('--sc-x', px + 'px'); }
       topReserve = Math.max(greetBottom + 26, H * .14);
       S = clamp(Math.min((sc.gy - topReserve) / (FULL_H + 12), CW * .4 / 78), .9, 7);
-      sc.hmax = 54; sc.lift = 11; U = 2;
+      sc.hmax = 54; sc.lift = 11; U = 2; sc.hz = 96;
+      if (sc.land) { sc.land = 0; document.documentElement.style.removeProperty('--sc-land'); }   // komputer: wartość z CSS
     } else {
-      const heroGy = H - sc.tabH - sc.dockH - 30, horGy = H - sc.tabH - 30 * wk;
+      // przy horyzoncie krajobraz prawie nie rośnie z szerokością ekranu (wkH): na szerokim telefonie zasłaniał treść
+      const wkH = Math.min(wk, 1.2);
+      const heroGy = H - sc.tabH - sc.dockH - 30, horGy = H - sc.tabH - 30 * wkH;
       sc.gy = lerp(lerp(horGy, heroGy, hero), H - sc.tabH - 64, f);
-      drop = lerp(20, 24, hero) * wk;
+      drop = lerp(20 * wkH, 24 * wk, hero);
       baseX = CW * lerp(.5, .2, sc.side * (1 - hero));
       topReserve = lerp(greetBottom + 6, 84, f);
       const sHero = clamp(Math.min((sc.gy - topReserve) / (FULL_H + 12), CW * lerp(.92, 1, f) / 78), .4, 7);
-      sFar = 88 * wk / (FULL_H + 12);
+      sFar = 62 * wkH / (FULL_H + 12);                            // przy horyzoncie roślinka jest mała: krajobraz nie zabiera treści miejsca
+      sc.hz = 46 + 62 * wkH;                                      // wysokość krajobrazu (mgiełki) nad gruntem
       S = lerp(sFar, sHero, easeInOut(hero));
-      sc.hmax = lerp(20, 44, hero) * Math.min(wk, 1.5); sc.lift = lerp(5, 9, hero); U = 1.02 * wk;
+      sc.hmax = lerp(15 * wkH, 44 * Math.min(wk, 1.5), hero); sc.lift = lerp(5, 9, hero); U = lerp(.86 * wkH, 1.02 * wk, hero);
+      // CSS: wysokość krajobrazu nad paskiem zakładek (--sc-land). Koniec strony i warstwa łapiąca dotyk (#sc-catch) liczą od niej.
+      const land = Math.round(30 * wkH + 5 + sc.hz);
+      if (land !== sc.land) { sc.land = land; document.documentElement.style.setProperty('--sc-land', land + 'px'); }
     }
     baseY = sc.gy;
     const reach = Math.max(baseX, CW - baseX);
@@ -957,6 +964,9 @@
     if (motion && clock > bumpAt && clock < bumpAt + 1.1) S *= 1 + .022 * Math.sin((clock - bumpAt) / 1.1 * Math.PI);
     // panel dnia (css/sciezka.css): znika, gdy kamera odjeżdża do horyzontu
     const hk = Math.round(hero * 100);
+    // treść schowana za krajobrazem nie może łapać dotyku: przy horyzoncie włącza się warstwa #sc-catch (css/sciezka.css)
+    const catchOn = !wide && hero < .5 && f < .01;
+    if (catchOn !== sc.catchOn) { sc.catchOn = catchOn; document.documentElement.classList.toggle('sc-horyzont', catchOn); }
     if (hk !== sc.dockHero) {
       const dk = document.getElementById('zy-panel');
       if (dk) { sc.dockHero = hk; dk.style.setProperty('--h', (hk / 100).toFixed(2)); dk.classList.toggle('sc-away', hk < 55); }
@@ -991,10 +1001,10 @@
   // Księżyce (noc, wieczór) i chmury (dzień): rzeczy na niebie, które płyną, gdy planeta się obraca
   const MOONS = [
     { nx: .8, alt: .8, r: 15, tone: 0, phase: .68, par: 1 },      // główny, kremowy
-    { nx: .24, alt: .52, r: 8, tone: 1, phase: .32, par: 1.7 },   // mały sierp w odcieniu roślinki
+    { nx: .24, alt: .52, r: 8, tone: 1, phase: .32, par: 1.7, keep: 1 },   // mały sierp w odcieniu roślinki
     { nx: .66, alt: .13, r: 31, tone: 2, phase: 1, par: .5 },     // duży i ciepły, wschodzi zza planety
   ];
-  const CLOUDS = [{ nx: .1, alt: .58, w: 74, par: 1.3 }, { nx: .7, alt: .36, w: 96, par: .8 }, { nx: .42, alt: .16, w: 60, par: .55 }];
+  const CLOUDS = [{ nx: .1, alt: .58, w: 74, par: 1.3 }, { nx: .7, alt: .36, w: 96, par: .8, keep: 1 }, { nx: .42, alt: .16, w: 60, par: .55 }];
   function scDrawSkyThings() {
     const hero = wide ? 1 : sc.hero, wk = clamp(CW / 375, 1, 1.6);
     // komputer: tylko lewa część nieba, żeby nic nie wpływało na kolumnę z treścią
@@ -1005,18 +1015,22 @@
       const tones = [[255, 246, 222], tint(pal.l3, .5), mixC(pal.tip, [255, 232, 196], .5)];
       for (const m of MOONS) {
         const x = wrap(m.nx * span - (sc.skyRot * 64 + drift * .25) * m.par, span) - 70;
+        // przy horyzoncie zostaje tylko mały sierp (krajobraz ma być spokojny) i gaśnie przy krawędzi ekranu, zamiast być przez nią ucięty
+        const edge = wide ? 1 : lerp(clamp((x - 8) / 28) * clamp((CW - 8 - x) / 28), 1, clamp(hero * 2));
+        const vis = (m.keep ? 1 : clamp(hero * 2.5 - .5)) * edge;
+        if (vis < .02) continue;
         const y = arcY(x) - m.alt * skyH * k, r = m.r * lerp(.72, 1, hero) * wk, col = tones[m.tone];
         const gl = ctx.createRadialGradient(x, y, r * .6, x, y, r * 4.2);
-        gl.addColorStop(0, rgba(col, .2 * all)); gl.addColorStop(1, rgba(col, 0));
+        gl.addColorStop(0, rgba(col, .2 * all * vis)); gl.addColorStop(1, rgba(col, 0));
         ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r * 4.2, 0, TAU); ctx.fill();
         ctx.save();
         ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
-        ctx.globalAlpha = all;
+        ctx.globalAlpha = all * vis;
         ctx.fillStyle = rgba(col); ctx.fillRect(x - r, y - r, r * 2, r * 2);
         ctx.fillStyle = rgba(mixC(col, SC.top, .22));
         for (const [cx0, cy0, cr] of [[-.3, -.25, .22], [.32, .28, .16], [.05, .5, .1], [.42, -.34, .09]]) { ctx.beginPath(); ctx.arc(x + cx0 * r, y + cy0 * r, cr * r, 0, TAU); ctx.fill(); }
         if (m.phase < 1) {                                       // cień fazy: ciemna strona prawie w kolorze nieba
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = vis;
           ctx.fillStyle = rgba(mixC(SC.top, col, .1), .93);
           ctx.beginPath(); ctx.arc(x - r * 2 * m.phase, y - r * .12, r * 1.08, 0, TAU); ctx.fill();
         }
@@ -1024,9 +1038,11 @@
       }
     } else {
       for (const cl of CLOUDS) {
+        const vis = cl.keep ? 1 : clamp(hero * 2.5 - .5);
+        if (vis < .02) continue;
         const x = wrap(cl.nx * span - (sc.skyRot * 64 + drift) * cl.par, span) - 70;
         const y = arcY(x) - cl.alt * skyH * k, w = cl.w * lerp(.7, 1, hero) * wk;
-        ctx.fillStyle = `rgba(255,255,255,${SC.part === 'day' ? .62 : .5})`;
+        ctx.fillStyle = `rgba(255,255,255,${(SC.part === 'day' ? .62 : .5) * vis})`;
         ctx.beginPath();
         ctx.ellipse(x, y, w * .5, w * .13, 0, 0, TAU);
         ctx.ellipse(x - w * .16, y - w * .09, w * .2, w * .14, 0, 0, TAU);
@@ -1036,16 +1052,18 @@
     }
   }
 
-  // Mgiełka nad horyzontem: pierścienie w kolorze nieba, coraz gęstsze przy planecie. Tekst „zachodzi” za horyzont.
+  // Mgiełka nad horyzontem: pierścienie w kolorze nieba, coraz gęstsze przy planecie. Karty „wyjeżdżają” zza horyzontu.
+  // Połączenie z designem Bartka: karty są pełne. Krajobraz (wzgórza, księżyce, mała roślinka) całkiem je zasłania,
+  // a przejście ma tylko EDGE px: karta nad krajobrazem jest od razu w pełni czytelna, bez półprzezroczystego pasa.
   function scDrawHaze() {
     const k = wide ? 1 : clamp((1 - sc.hero) * 2.2);            // gęstnieje szybko: w połowie odjazdu kamery tekst już nie prześwituje przez roślinkę
     if (k < .02) return;
     // komputer: treść jest obok roślinki, nie za nią, więc mgiełka może być niska
-    const hz = wide ? 96 : 172, N = Math.round(hz / 2.5), cx = baseX, cy = baseY + R;   // cienkie pierścienie: bez pasków na dużych literach
+    const hz = sc.hz, EDGE = 40, N = Math.round(hz / 2.5), cx = baseX, cy = baseY + R;   // cienkie pierścienie: bez pasków na dużych literach
     ctx.strokeStyle = scSkyGradient(ctx);
     ctx.lineWidth = hz / N + .4;
     for (let i = 0; i < N; i++) {
-      const t = clamp((i + 1) / N * 1.9);                          // pełna mgiełka już w połowie wysokości: przy roślince tekstu nie widać
+      const t = clamp((i + 1) / N * hz / EDGE);                    // pełna mgiełka po EDGE px od góry krajobrazu
       ctx.globalAlpha = k * t * t * (3 - 2 * t);
       ctx.beginPath(); ctx.arc(cx, cy, R + sc.lift + hz * (1 - (i + .5) / N), Math.PI, TAU); ctx.stroke();
     }
@@ -1091,6 +1109,10 @@
       hillPos.push({ x, y });
       const today = i === 6, watered = today && wateredAt != null && clock >= wateredAt;
       if (k <= 0 || watered || !(today || missed[i] || days[i] == null)) continue;
+      // przy horyzoncie pąki mają kilka pikseli i nic nie mówią: wracają razem z dużą roślinką
+      const budVis = wide ? 1 : clamp(sc.hero * 2.5 - .5);
+      if (budVis < .02) continue;
+      ctx.globalAlpha = budVis;
       const u = Math.max(.7, sc.hmax / 44) * k;
       ctx.strokeStyle = rgba(mixC(pal.stem, SC.far, SC.dark ? .15 : .25)); ctx.lineWidth = Math.max(1.2, 1.6 * u); ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(x, y + 1); ctx.lineTo(x, y - 6 * u); ctx.stroke();
@@ -1100,6 +1122,7 @@
         ctx.strokeStyle = rgba(SC.dark ? tint(pal.l3, .3) : pal.primary, .75); ctx.lineWidth = 1.5;
         ctx.beginPath(); ctx.arc(x, y - 8.5 * u, 9 * u, 0, TAU); ctx.stroke();
       }
+      ctx.globalAlpha = 1;
     }
 
     // bliski łuk: jednolity grunt (ten sam kolor co --planet w CSS), jaśniejszy przy krawędzi
@@ -1132,9 +1155,15 @@
   // Dotyk: świat leży nad treścią i nie łapie zdarzeń, więc stuknięcia zbieramy z dokumentu (poza przyciskami i polami)
   function scTap(x, y) {
     const home = curTab === 'dom';
-    const place = placePos.find(q => Math.hypot(q.x - x, q.y - y) < 34 * Math.max(1, U) && (q.id !== 'dom' || Math.abs(q.x - x) < 40 * S));
+    const place = placePos.find(q => Math.hypot(q.x - x, q.y - y) < 34 * Math.max(1, U) && (q.id !== 'dom' || Math.abs(q.x - x) < Math.max(28, 40 * S)));
     if (place && (place.id !== 'dom' || !home)) { location.hash = `#/${place.id}`; return true; }
     if (!home) return false;
+    // kamera przy horyzoncie: panel z „Podlej roślinkę” jest poza ekranem, więc mała roślinka prowadzi z powrotem na górę
+    if (!wide && sc.hero < .5 && Math.abs(x - baseX) < Math.max(28, 42 * S) && y < baseY + 10 && y > baseY - (FULL_H + 16) * S - 10) {
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      wind = Math.min(1.5, wind + .5 * motion);
+      return true;
+    }
     let best = -1, bd = 42;
     leafPos.forEach((p, i) => { if (!p) return; const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = i; } });
     // wzgórze dnia: kolumna pod palcem
@@ -1153,7 +1182,7 @@
     const UI = 'a, button, input, textarea, select, summary, label, [role="button"], [role="radio"], [contenteditable], .bsheet, .ci-overlay, .as-panel, .sheet-backdrop, .toast';
     const busy = () => /\b(ci-open|sheet-open|as-open|pk-writing)\b/.test(document.body.className);
     // w strefie czytania (nad krajobrazem, gdy kamera jest przy horyzoncie) stuknięcie należy do tekstu
-    const inWorld = y => wide || sc.hero > .5 || y > sc.gy - 130;
+    const inWorld = y => wide || sc.hero > .5 || y > sc.gy - sc.hz + 30;
     document.addEventListener('click', e => {
       if (busy() || e.target.closest(UI) || !inWorld(e.clientY)) return;
       scTap(e.clientX, e.clientY);
@@ -1163,21 +1192,7 @@
       if (pointer.active && Math.abs(x - baseX) < 60 * S && y < baseY + 10 && y > baseY - (FULL_H + 20) * S) wind = Math.min(1.5, wind + Math.hypot(x - pointer.x, y - pointer.y) * .003 * motion);
       pointer.x = x; pointer.y = y; pointer.active = true;
     }, { passive: true });
-    // przesunięcie palcem w bok po krajobrazie: wczoraj, przedwczoraj… (w prawo = wstecz w czasie)
-    let sw = null;
-    document.addEventListener('touchstart', e => {
-      const t = e.touches[0];
-      sw = curTab === 'dom' && !busy() && !e.target.closest(UI) && inWorld(t.clientY) ? { x: t.clientX, y: t.clientY } : null;
-    }, { passive: true });
-    document.addEventListener('touchend', e => {
-      if (!sw) return;
-      const t = e.changedTouches[0], dx = t.clientX - sw.x, dy = t.clientY - sw.y;
-      sw = null;
-      if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-      const from = sel >= 0 && clock - selAt < 3.4 ? sel : 6;
-      const i = clamp(from + (dx > 0 ? -1 : 1), 0, 6);
-      select(i); window.dispatchEvent(new CustomEvent('dayselect', { detail: { index: i, from: 'plant' } }));
-    }, { passive: true });
+    // gest „przesuń w bok = wczoraj” usunięty przy połączeniu z designem Bartka: nic na ekranie go nie sygnalizowało (dzień wybiera się stuknięciem)
   }
 
   // Zmiana zakładki: obrót do jej miejsca (najkrótszą drogą) i wysokość sceny
@@ -1338,8 +1353,10 @@
     if (motion && dy > 0) wind = Math.min(1.5, wind + dy * .0028);
 
     const tShrink = wide || onPlanet() ? 0 : clamp(sy / 260);
-    const tGreet = wide ? 0 : clamp((sy - 20) / 140);
-    const weekVis = inView(document.getElementById('sec-week'));
+    const weekEl = document.getElementById('sec-week');
+    // Ścieżka: powitanie zostaje na niebie, dopóki nie dojedzie do niego pierwsza karta (bez niego góra ekranu była pusta)
+    const tGreet = wide ? 0 : sciezka ? clamp((greetEl.offsetTop + greetEl.offsetHeight + 36 - weekEl.getBoundingClientRect().top) / 56) : clamp((sy - 20) / 140);
+    const weekVis = inView(weekEl);
     const quoteVis = inView(document.getElementById('sec-quote'));
     if ((!zywa || sciezka) && weekVis && !weekIn) waveAt = clock;                 // fala przez liście dni (Ścieżka: także przez wzgórza)
     if (!zywa && quoteVis && !quoteIn && st.intro >= 1) { bloomFlashAt = clock; petalBurst(6); }
@@ -1465,7 +1482,7 @@
     worldTransform();
     const gy = baseY - h * .5 * S;
     const glow = ctx.createRadialGradient(baseX, gy, 0, baseX, gy, Math.max(h, 40) * 1.05 * S);
-    glow.addColorStop(0, rgba(pal.glow, (.3 + .2 * bloom) * (zywa ? .3 : 1)));
+    glow.addColorStop(0, rgba(pal.glow, (.3 + .2 * bloom) * (zywa ? .3 : 1) * (sciezka && !wide ? lerp(.35, 1, sc.hero) : 1)));   // Ścieżka: przy horyzoncie poświata przygasa
     glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(baseX, gy, Math.max(h, 40) * 1.05 * S, 0, TAU); ctx.fill();
