@@ -15,7 +15,8 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
     for (let tryN = 0; tryN < 2 && (r == null || r.length); tryN++) {
     await p.goto(`${URL}?motyw=${theme}&pora=${pora}&r=${Math.random()}#/dom`); await p.waitForTimeout(700);
     r = await p.evaluate(() => {
-      const cv = document.getElementById('plant'), ctx = cv.getContext('2d'), cr = cv.getBoundingClientRect(), k = cv.width / cr.width;
+      // Ścieżka: niebo jest na osobnym canvasie (#sky) pod treścią; #plant ma tam tylko planetę i roślinkę
+      const cv = document.getElementById(document.documentElement.hasAttribute('data-sciezka') ? 'sky' : 'plant'), ctx = cv.getContext('2d'), cr = cv.getBoundingClientRect(), k = cv.width / cr.width;
       const lum = c => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); };
       const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
       const pageBg = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number);

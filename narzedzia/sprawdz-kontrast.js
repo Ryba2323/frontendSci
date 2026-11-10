@@ -4,6 +4,7 @@
  * Dla każdego widocznego tekstu liczy kontrast z tłem (półprzezroczyste tła są składane warstwa po warstwie,
  * aż do tła strony --bg). Próg WCAG AA: 4,5:1, duży tekst (od 24 px albo od 18,7 px pogrubiony) 3:1.
  * Gradienty tła pomija (liczy kolor pod nimi). Uruchom: node narzedzia/sprawdz-kontrast.js
+ * Domyślny kierunek „Ścieżka”: tłem treści jest niebo (--ground), a paska zakładek i panelu dnia grunt planety (--planet).
  * Wersja strony głównej: UKLAD=a|b|c|e node narzedzia/sprawdz-kontrast.js (e: także ekran pisania w Skrytce)
  */
 const { chromium } = require('playwright');
@@ -22,6 +23,8 @@ function audit() {
   const srgb = c => { const m = c.match(/color\(srgb ([\d.e-]+) ([\d.e-]+) ([\d.e-]+)(?: \/ ([\d.e-]+))?\)/); return m ? { r: m[1] * 255, g: m[2] * 255, b: m[3] * 255, a: m[4] == null ? 1 : +m[4] } : null; };
   const norm = c => (!c ? null : c.startsWith('color(srgb') ? srgb(c) : /^rgba?\(/.test(c) ? parse(c) : toRgb(c)) || { r: 0, g: 0, b: 0, a: 0 };
   const pageBg = toRgb(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim());
+  // Ścieżka: pasek zakładek i panel dnia leżą na gruncie planety, który rysuje canvas — ich tłem jest --planet, nie niebo
+  const planet = document.documentElement.hasAttribute('data-sciezka') ? toRgb(getComputedStyle(document.documentElement).getPropertyValue('--planet').trim()) : null;
   const out = [];
   const visible = el => { for (let e = el; e && e !== document.documentElement; e = e.parentElement) { const s = getComputedStyle(e); if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity < .05) return false; if (e.hidden) return false; } const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const label = el => { let s = el.tagName.toLowerCase(); if (el.id) s += '#' + el.id; if (el.classList.length) s += '.' + [...el.classList].slice(0, 2).join('.'); const p = el.parentElement; if (p && p.classList.length) s = '.' + p.classList[0] + ' > ' + s; return s; };
@@ -36,7 +39,7 @@ function audit() {
     // tło: od góry drzewa w dół
     const chain = []; for (let e = el; e; e = e.parentElement) chain.unshift(e);
     let bg = pageBg;
-    for (const e of chain) { const c = norm(getComputedStyle(e).backgroundColor); if (c && c.a > 0) bg = over(c, bg); }
+    for (const e of chain) { if (planet && (e.id === 'zy-panel' || e.id === 'tabbar')) bg = planet; const c = norm(getComputedStyle(e).backgroundColor); if (c && c.a > 0) bg = over(c, bg); }
     fg = over(fg, bg);
     const size = parseFloat(st.fontSize), bold = +st.fontWeight >= 700;
     const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
