@@ -279,6 +279,8 @@ button, a, label, input { touch-action: manipulation; }
 .panel { display: contents; }
 .pages { position: relative; }
 .page:focus { outline: none; }
+/* ekran wyłączony z etapu (e-mail opiekuna od 16 lat nie jest potrzebny; js/rejestracja.js) */
+.page[data-off] { display: none !important; }
 .page.is-leaving {
   position: absolute; top: 0; left: 0; right: 0;
   animation: step-out var(--dur-base) ease forwards; pointer-events: none;
@@ -362,6 +364,10 @@ legend { padding: 0; }
 .input-wrap > .f-ico + .input { grid-row: 1 / span 2; }
 .input::placeholder { color: var(--text-soft); opacity: 1; font-weight: 400; }
 .input:focus { outline: none; }
+/* kod z e-maila: cyfry równej szerokości, rozstawione jak w wiadomości */
+.input.is-code { font-family: var(--font-serif); font-size: 1.35rem; letter-spacing: .14em; font-variant-numeric: tabular-nums; }
+.input.is-code::placeholder { letter-spacing: .14em; }
+.q-hint b, .lead b { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
 /* autouzupełnianie przeglądarki nie maluje własnego tła na karcie */
 .input:-webkit-autofill { -webkit-box-shadow: 0 0 0 40px var(--field-bg) inset; -webkit-text-fill-color: var(--text); caret-color: var(--text); }
 
@@ -451,6 +457,9 @@ legend { padding: 0; }
 
 .age-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); }
 .age-grid .chip span { height: 58px; padding: 0; font-family: var(--font-serif); font-size: 1.3rem; font-weight: 500; }
+/* „Mam mniej niż 13 lat”: zwykła odpowiedź w osobnym wierszu, bez wyróżniania */
+.age-grid .chip.age-under { grid-column: 1 / -1; }
+.age-grid .chip.age-under span { height: 48px; font-family: var(--font); font-size: .95rem; font-weight: 600; }
 
 .choices { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
 .choice { position: relative; display: flex; }
@@ -585,6 +594,8 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
   .btn-primary:hover .sprout { transform: rotate(-12deg) scale(1.1); }
 }
 .btn-back { flex: 0 0 56px; padding: 0; background: var(--field-bg); box-shadow: var(--field-shadow); color: var(--text); }
+/* drugoplanowy: karta zamiast pełnego koloru (pełny kolor zostaje dla jednej, najważniejszej akcji ekranu) */
+.btn-soft { flex: 1; background: var(--field-bg); box-shadow: var(--field-shadow); color: var(--text); }
 
 #step3[data-last="true"] .arrow,
 #step3:not([data-last="true"]) .sprout { display: none; }
@@ -606,11 +617,11 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
 }
 .title:focus { outline: none; }
 .lead { margin: 0 0 var(--sp-4); font-size: 1rem; line-height: 1.5; color: var(--text-body); }
-/* telefon: pod tytułem od razu pola — zdanie wstępu oddaje miejsce roślinie (na komputerze zostaje) */
-@media (max-width: 899px) { .login #login .lead { display: none; } .login #login .title { margin-bottom: var(--sp-4); } }
 .login .field + .field { margin-top: var(--sp-3); }
 
 .row-end { display: flex; justify-content: flex-end; margin: var(--sp-1) 0 0; }
+/* w polu rejestracji „Wyślij kod ponownie” stoi pod polem, nie pod całą kartą */
+.field > .row-end { margin-top: var(--sp-2); }
 .btn-link.sm { align-self: auto; margin-right: calc(var(--sp-3) * -1); min-height: var(--tap); padding: var(--sp-2) var(--sp-3); font-size: .9rem; color: var(--text); }
 
 /* Przycisk w trakcie wysyłania: kręciołek zamiast strzałki */
@@ -652,28 +663,22 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
 .step-done h2 { margin: 0 0 var(--sp-3); font-family: var(--font-serif); font-size: 2rem; line-height: 1.08; font-weight: 500; letter-spacing: -.02em; text-wrap: balance; }
 .step-done p { max-width: 340px; margin: 0 auto; color: var(--text-body); line-height: 1.55; }
 
-.pills { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin: var(--sp-5) 0 0; padding: 0; list-style: none; }
-.pills li {
-  display: inline-flex; align-items: center; gap: var(--sp-2); height: 34px; padding: 0 var(--sp-3); border-radius: 12px 12px 12px 4px;
-  background: var(--field-bg); box-shadow: var(--card-edge);
-  font-size: .84rem; font-weight: 600; color: var(--text-body);
-}
-/* listek zamiast kolorowej kropki: kolory kategorii zostają tylko w Trackerze */
-.pills i {
-  width: 12px; height: 12px; background: var(--primary-dark);
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
-}
+#done-text { overflow-wrap: anywhere; }
+/* Poniżej 16 lat (data-pending): roślinka czeka w pąku na zgodę opiekuna — bez znaczka z kwiatkiem i bez wejścia do aplikacji */
+#step4[data-pending="true"] :is(.badge, #enter-app, #replay),
+#step4:not([data-pending="true"]) .pending-only { display: none; }
 
 /* tu nic nie jest dłuższe niż ekran, więc przyciski nie muszą być przyklejone (zasłaniały pigułki) */
 .step-done .actions { position: static; flex-direction: column; align-items: stretch; gap: var(--sp-1); background: none; }
-.step-done .btn-primary { flex: 0 0 auto; }
+.step-done :is(.btn-primary, .btn-soft) { flex: 0 0 auto; }
 .btn-link {
   align-self: center; min-height: var(--tap); padding: var(--sp-2) var(--sp-3); border: 0; border-radius: 10px; background: none;
   font: inherit; font-size: .92rem; font-weight: 600; color: var(--text-body); cursor: pointer;
   text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px;
 }
 .btn-link:hover { text-decoration-color: currentColor; }
+/* odliczanie do ponownej wysyłki kodu: zwykły tekst, dopóki nie da się stuknąć */
+.btn-link:disabled { cursor: default; text-decoration: none; color: var(--text-muted); }
 .btn-link:focus-visible { outline: 3px solid var(--focus); }
 
 /* ---------- Toast ---------- */
@@ -812,6 +817,11 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
   .q { margin-bottom: var(--sp-2); font-family: var(--font); font-size: .9rem; line-height: 1.4; font-weight: 600; letter-spacing: 0; }
   .q small { font-size: inherit; font-weight: 500; color: var(--text-muted); }
 
+  /* etap konta idzie po jednym ekranie także tutaj: pytanie jest nagłówkiem karty, zdanie pod nim zostaje */
+  #step3 .q { margin-bottom: var(--sp-2); font-family: var(--font-serif); font-size: 1.4rem; line-height: 1.15; font-weight: 500; letter-spacing: -.015em; }
+  #step3 .q-hint { display: block; margin-bottom: var(--sp-4); font-size: .95rem; }
+  #step3 .check + .err + .check, #step3 .check + .check { margin-top: var(--sp-3); }
+
   .page + .page { margin-top: var(--sp-4); }
   .input-wrap { min-height: 56px; padding: 6px var(--sp-12) 6px 6px; border-radius: 18px 18px 18px 6px; }
   .f-ico { width: 44px; height: 44px; border-radius: 14px 14px 14px 5px; }
@@ -828,6 +838,7 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
   .tiles .chip span { height: 40px; }
   .age-grid { grid-template-columns: repeat(7, 1fr); gap: var(--sp-2); }
   .age-grid .chip span { height: 44px; font-family: var(--font); font-size: .95rem; font-weight: 600; }
+  .age-grid .chip.age-under span { height: 40px; font-size: .9rem; }
   .choices { grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
   .choice span { min-height: 0; padding: var(--sp-3); border-radius: 14px 14px 14px 6px; }
   .choice span::after { display: none; }

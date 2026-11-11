@@ -41,11 +41,16 @@
 </header>
 
 <!--
+  KOLEJNOŚĆ PO RADZIE (11.11.2026, do sprawdzenia na teście z nastolatkami 20.11.2026):
+  roślinka (imię, kolor) → o Tobie (imię, wiek, forma) → konto (e-mail, kod z e-maila, zgody) → kwiat.
+  Z rejestracji wypadły tematy, pora przypomnień i hasło. Poprzednia kolejność (konto na początku) jest w historii gita.
+
   Każdy etap (form.step) składa się z ekranów (div.page).
   Telefon: jeden ekran na raz, pytanie i odpowiedzi leżą na gruncie planety pod rośliną.
-  Komputer: wszystkie ekrany etapu naraz w jednej karcie (.panel), tytuł etapu na niebie.
-  data-auto     — wybór od razu przechodzi dalej (telefon)
-  data-optional — pusty ekran można pominąć (przycisk „Pomiń”)
+  Komputer: ekrany etapu naraz w jednej karcie (.panel), tytuł etapu na niebie; etap „Konto” idzie po jednym
+  ekranie także na komputerze, bo kod przychodzi dopiero po podaniu e-maila.
+  data-auto — wybór od razu przechodzi dalej (telefon)
+  data-off  — ekran wyłączony z etapu (zgoda opiekuna od 16 lat nie jest potrzebna), ustawia js/rejestracja.js
 -->
 <main class="layout">
   <div class="scene-copy" aria-hidden="true">
@@ -58,177 +63,28 @@
 
     <!-- Postęp: gałązka z trzema pąkami. Bieżący etap to pąk w obwódce, z każdym pytaniem rośnie przy nim liść (css/auth.css). -->
     <ol class="stepper" aria-label="Postęp rejestracji">
-      <li class="is-current" aria-current="step"><span class="lbl">Konto</span></li>
+      <li class="is-current" aria-current="step"><span class="lbl">Roślinka</span></li>
       <li><span class="lbl">O Tobie</span></li>
-      <li><span class="lbl">Roślinka</span></li>
+      <li><span class="lbl">Konto</span></li>
     </ol>
 
     <div class="steps" id="steps">
 
-      <!-- ========== ETAP 1: konto ========== -->
+      <!-- ========== ETAP 1: roślinka (najpierw coś swojego, konto dopiero na końcu) ========== -->
       <form class="step" id="step1" novalidate>
         <header class="step-head">
-          <h2 tabindex="-1">Załóż konto</h2>
-          <p>Zacznijmy od podstaw. To zajmie mniej niż minutę.</p>
-        </header>
-
-        <div class="panel">
-        <div class="pages">
-          <div class="page" data-page="nick" tabindex="-1">
-            <div class="field">
-              <label class="q" for="nick">Jak mamy do Ciebie mówić?</label>
-              <p class="q-hint" id="nick-hint">Imię albo pseudonim — jak wolisz.</p>
-              <div class="input-wrap">
-                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></svg></span>
-                <input class="input" id="nick" name="nick" type="text" autocomplete="nickname" autocapitalize="words"
-                       maxlength="24" enterkeyhint="next" placeholder="np. Ola" aria-describedby="nick-hint nick-err">
-                <svg class="ok-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-              </div>
-              <p class="err" id="nick-err" aria-live="polite"></p>
-            </div>
-          </div>
-
-          <div class="page" data-page="email" tabindex="-1">
-            <div class="field">
-              <label class="q" for="email">Twój adres e-mail</label>
-              <p class="q-hint" id="email-hint">Przyda się do logowania i odzyskania hasła.</p>
-              <div class="input-wrap">
-                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg></span>
-                <input class="input" id="email" name="email" type="email" autocomplete="email" inputmode="email"
-                       autocapitalize="off" spellcheck="false" enterkeyhint="next"
-                       placeholder="twoj@email.pl" aria-describedby="email-hint email-err email-suggest">
-                <svg class="ok-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-              </div>
-              <p class="suggest" id="email-suggest" aria-live="polite" hidden>Czy chodziło Ci o <button type="button" id="email-suggest-btn"></button>?</p>
-              <p class="err" id="email-err" aria-live="polite"></p>
-            </div>
-          </div>
-
-          <div class="page" data-page="password" tabindex="-1">
-            <div class="field">
-              <label class="q" for="password">Wymyśl hasło</label>
-              <p class="q-hint" id="password-hint">Co najmniej 8 znaków. Im dłuższe, tym lepsze.</p>
-              <div class="input-wrap">
-                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg></span>
-                <input class="input" id="password" name="password" type="password" autocomplete="new-password" enterkeyhint="next"
-                       placeholder="Minimum 8 znaków" aria-describedby="password-hint password-err pw-label caps-hint">
-                <button type="button" class="input-btn" id="pw-toggle" aria-label="Pokaż hasło" aria-pressed="false">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <g class="eye-open"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></g>
-                    <g class="eye-closed" style="display:none"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.2M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7c1.8 0 3.4-.5 4.8-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></g>
-                  </svg>
-                </button>
-              </div>
-              <div class="meter" id="pw-meter" data-level="0">
-                <i></i><i></i><i></i><i></i><span id="pw-label"></span>
-              </div>
-              <p class="caps" id="caps-hint" aria-live="polite" hidden>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l7 8h-4v5H9v-5H5z"/><path d="M9 20h6"/></svg>
-                Caps Lock jest włączony
-              </p>
-              <p class="err" id="password-err" aria-live="polite"></p>
-            </div>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="button" class="btn btn-back" data-back aria-label="Wróć" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-          </button>
-          <button type="submit" class="btn btn-primary">
-            <span class="btn-label">Dalej</span>
-            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </button>
-        </div>
-        <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
-        <p class="foot">Masz już konto? <a href="logowanie.html">Zaloguj się</a></p>
-        </div>
-      </form>
-
-      <!-- ========== ETAP 2: o Tobie ========== -->
-      <form class="step" id="step2" novalidate hidden>
-        <header class="step-head">
-          <h2 id="s2-title" tabindex="-1">Miło Cię poznać!</h2>
-          <p>Kilka pytań, żeby aplikacja lepiej do Ciebie pasowała.</p>
-        </header>
-
-        <div class="panel">
-        <div class="pages">
-          <div class="page" data-page="age" data-auto tabindex="-1">
-            <fieldset class="field" id="age" aria-describedby="age-hint age-err">
-              <legend class="q">Ile masz lat?</legend>
-              <p class="q-hint" id="age-hint">Dopasujemy do tego treści w aplikacji.</p>
-              <div class="age-grid">
-                <label class="chip"><input type="radio" name="age" value="13"><span>13</span></label>
-                <label class="chip"><input type="radio" name="age" value="14"><span>14</span></label>
-                <label class="chip"><input type="radio" name="age" value="15"><span>15</span></label>
-                <label class="chip"><input type="radio" name="age" value="16"><span>16</span></label>
-                <label class="chip"><input type="radio" name="age" value="17"><span>17</span></label>
-                <label class="chip"><input type="radio" name="age" value="18"><span>18</span></label>
-                <label class="chip"><input type="radio" name="age" value="19"><span>19+</span></label>
-              </div>
-              <p class="err" id="age-err" aria-live="polite"></p>
-            </fieldset>
-          </div>
-
-          <div class="page" data-page="gform" data-auto tabindex="-1">
-            <fieldset class="field" id="gform" aria-describedby="gform-hint gform-err">
-              <legend class="q">W jakiej formie mamy do Ciebie pisać?</legend>
-              <p class="q-hint" id="gform-hint">Żeby aplikacja mówiła do Ciebie tak, jak lubisz.</p>
-              <div class="choices">
-                <label class="choice"><input type="radio" name="gform" value="f"><span><b>Żeńskiej</b><small>np. „zrobiłaś”</small></span></label>
-                <label class="choice"><input type="radio" name="gform" value="m"><span><b>Męskiej</b><small>np. „zrobiłeś”</small></span></label>
-                <label class="choice"><input type="radio" name="gform" value="n"><span><b>Neutralnej</b><small>np. „udało Ci się”</small></span></label>
-              </div>
-              <p class="err" id="gform-err" aria-live="polite"></p>
-            </fieldset>
-          </div>
-
-          <div class="page" data-page="topics" data-optional tabindex="-1">
-            <fieldset class="field" aria-describedby="topics-hint">
-              <legend class="q">Nad czym chcesz popracować? <small class="desktop-only">(opcjonalnie, możesz wybrać kilka)</small></legend>
-              <p class="q-hint" id="topics-hint">Możesz wybrać kilka albo pominąć ten krok.</p>
-              <div class="chips">
-                <label class="chip"><input type="checkbox" name="topics" value="Nastrój"><span>Nastrój</span></label>
-                <label class="chip"><input type="checkbox" name="topics" value="Energia"><span>Energia</span></label>
-                <label class="chip"><input type="checkbox" name="topics" value="Stres"><span>Stres</span></label>
-                <label class="chip"><input type="checkbox" name="topics" value="Sen"><span>Sen</span></label>
-                <label class="chip"><input type="checkbox" name="topics" value="Szkoła"><span>Szkoła</span></label>
-                <label class="chip"><input type="checkbox" name="topics" value="Relacje"><span>Relacje</span></label>
-                <label class="chip"><input type="checkbox" name="topics" value="Pewność siebie"><span>Pewność siebie</span></label>
-              </div>
-            </fieldset>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button type="button" class="btn btn-back" data-back aria-label="Wróć">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-          </button>
-          <button type="submit" class="btn btn-primary">
-            <span class="btn-label">Dalej</span>
-            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </button>
-        </div>
-        <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
-        </div>
-      </form>
-
-      <!-- ========== ETAP 3: roślinka ========== -->
-      <form class="step" id="step3" novalidate hidden>
-        <header class="step-head">
           <h2 tabindex="-1">Twoja roślinka</h2>
-          <p>Będzie rosła razem z Tobą — za każdym razem, gdy zadbasz o siebie.</p>
+          <p>Zacznij od niej. Będzie rosła razem z Tobą — za każdym razem, gdy zadbasz o siebie.</p>
         </header>
 
         <div class="panel">
         <div class="pages">
-          <div class="page" data-page="plant" data-optional tabindex="-1">
+          <div class="page" data-page="plant" tabindex="-1">
             <div class="field">
-              <label class="q" for="plant">Nadaj imię swojej roślince <small>(opcjonalnie)</small></label>
-              <p class="q-hint" id="plant-hint">Będzie rosła razem z Tobą — za każdym razem, gdy zadbasz o siebie.</p>
+              <label class="q" for="plant">Nadaj imię swojej roślince <small class="desktop-only">(opcjonalnie)</small></label>
+              <p class="q-hint" id="plant-hint">Nie masz pomysłu? Kostka wylosuje imię za Ciebie.</p>
               <div class="input-wrap">
-                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.400-5.2-6-5.2 0 3.2 2.400 5.2 6 5.2z"/></svg></span>
+                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg></span>
                 <input class="input" id="plant" name="plant" type="text" maxlength="20" autocomplete="off" autocapitalize="words"
                        enterkeyhint="next" placeholder="np. Kiełek" aria-describedby="plant-hint">
                 <button type="button" class="input-btn" id="dice" aria-label="Wylosuj imię">
@@ -257,24 +113,160 @@
               </div>
             </fieldset>
           </div>
+        </div>
 
-          <div class="page" data-page="reminder" tabindex="-1">
-            <fieldset class="field" aria-describedby="reminder-hint">
-              <legend class="q">Kiedy przypominać Ci o check-inie?</legend>
-              <p class="q-hint" id="reminder-hint">Codziennie jedna krótka chwila dla siebie.</p>
-              <div class="chips tiles">
-                <label class="chip"><input type="radio" name="reminder" value="rano"><span>Rano</span></label>
-                <label class="chip"><input type="radio" name="reminder" value="po szkole"><span>Po szkole</span></label>
-                <label class="chip"><input type="radio" name="reminder" value="wieczorem" checked><span>Wieczorem</span></label>
-                <label class="chip"><input type="radio" name="reminder" value="brak"><span>Bez przypomnień</span></label>
+        <div class="actions">
+          <button type="button" class="btn btn-back" data-back aria-label="Wróć" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <span class="btn-label">Dalej</span>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
+        <p class="foot">Masz już konto? <a href="logowanie.html">Zaloguj się</a></p>
+        </div>
+      </form>
+
+      <!-- ========== ETAP 2: o Tobie ========== -->
+      <form class="step" id="step2" novalidate hidden>
+        <header class="step-head">
+          <h2 tabindex="-1">Poznajmy się</h2>
+          <p>Trzy krótkie pytania, żeby aplikacja mówiła do Ciebie po Twojemu.</p>
+        </header>
+
+        <div class="panel">
+        <div class="pages">
+          <div class="page" data-page="nick" tabindex="-1">
+            <div class="field">
+              <label class="q" for="nick">Jak mamy do Ciebie mówić?</label>
+              <p class="q-hint" id="nick-hint">Imię albo pseudonim — jak wolisz.</p>
+              <div class="input-wrap">
+                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.8-3.8 3.8-6 7.5-6s6.7 2.2 7.5 6"/></svg></span>
+                <input class="input" id="nick" name="nick" type="text" autocomplete="nickname" autocapitalize="words"
+                       maxlength="24" enterkeyhint="next" placeholder="np. Ola" aria-describedby="nick-hint nick-err">
+                <svg class="ok-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+              </div>
+              <p class="err" id="nick-err" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <div class="page" data-page="age" data-auto tabindex="-1">
+            <fieldset class="field" id="age" aria-describedby="age-hint age-err">
+              <legend class="q">Ile masz lat?</legend>
+              <p class="q-hint" id="age-hint">Dopasujemy do tego treści w aplikacji.</p>
+              <div class="age-grid">
+                <label class="chip"><input type="radio" name="age" value="13"><span>13</span></label>
+                <label class="chip"><input type="radio" name="age" value="14"><span>14</span></label>
+                <label class="chip"><input type="radio" name="age" value="15"><span>15</span></label>
+                <label class="chip"><input type="radio" name="age" value="16"><span>16</span></label>
+                <label class="chip"><input type="radio" name="age" value="17"><span>17</span></label>
+                <label class="chip"><input type="radio" name="age" value="18"><span>18</span></label>
+                <label class="chip"><input type="radio" name="age" value="19"><span>19+</span></label>
+                <!-- wcześniej nie było takiej odpowiedzi, więc dwunastolatek po prostu wybierał „13” -->
+                <label class="chip age-under"><input type="radio" name="age" value="12"><span>Mam mniej niż 13 lat</span></label>
+              </div>
+              <p class="err" id="age-err" aria-live="polite"></p>
+              <!-- bez komunikatu o błędzie: spokojna informacja i numer, pod który można zadzwonić bez konta -->
+              <div class="reveal" id="under13" inert>
+                <div>
+                  <p class="note" id="under13-note" tabindex="-1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+                    <span>ReLeaf jest dla osób od 13 lat. Wróć tu z rodzicem albo opiekunem. A jeśli chcesz z kimś porozmawiać już teraz, zadzwoń pod <a href="tel:116111">116 111</a> — bezpłatnie, całą dobę.</span>
+                  </p>
+                </div>
               </div>
             </fieldset>
           </div>
 
+          <div class="page" data-page="gform" data-auto tabindex="-1">
+            <fieldset class="field" id="gform" aria-describedby="gform-hint gform-err">
+              <legend class="q">W jakiej formie mamy do Ciebie pisać?</legend>
+              <p class="q-hint" id="gform-hint">Żeby aplikacja mówiła do Ciebie tak, jak lubisz.</p>
+              <div class="choices">
+                <label class="choice"><input type="radio" name="gform" value="f"><span><b>Żeńskiej</b><small>np. „zrobiłaś”</small></span></label>
+                <label class="choice"><input type="radio" name="gform" value="m"><span><b>Męskiej</b><small>np. „zrobiłeś”</small></span></label>
+                <label class="choice"><input type="radio" name="gform" value="n"><span><b>Neutralnej</b><small>np. „udało Ci się”</small></span></label>
+              </div>
+              <p class="err" id="gform-err" aria-live="polite"></p>
+            </fieldset>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-back" data-back aria-label="Wróć">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <span class="btn-label">Dalej</span>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
+        </div>
+      </form>
+
+      <!-- ========== ETAP 3: konto (e-mail → kod zamiast hasła → zgody); po jednym ekranie także na komputerze ========== -->
+      <form class="step" id="step3" novalidate hidden>
+        <header class="step-head">
+          <h2 tabindex="-1">Zachowaj swoją roślinkę</h2>
+          <p>Konto jest po to, żeby jej nie stracić. Hasła nie potrzebujesz.</p>
+        </header>
+
+        <div class="panel">
+        <div class="pages">
+          <div class="page" data-page="email" tabindex="-1">
+            <div class="field">
+              <label class="q" for="email">Twój adres e-mail</label>
+              <p class="q-hint" id="email-hint">Wyślemy na niego 6-cyfrowy kod. Hasła nie musisz wymyślać ani pamiętać.</p>
+              <div class="input-wrap">
+                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg></span>
+                <input class="input" id="email" name="email" type="email" autocomplete="email" inputmode="email"
+                       autocapitalize="off" spellcheck="false" enterkeyhint="send"
+                       placeholder="twoj@email.pl" aria-describedby="email-hint email-err email-suggest">
+                <svg class="ok-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+              </div>
+              <p class="suggest" id="email-suggest" aria-live="polite" hidden>Czy chodziło Ci o <button type="button" id="email-suggest-btn"></button>?</p>
+              <p class="err" id="email-err" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <div class="page" data-page="code" tabindex="-1">
+            <div class="field">
+              <label class="q" for="code">Wpisz kod z e-maila</label>
+              <p class="q-hint" id="code-hint">Wysłaliśmy 6 cyfr na <b id="code-email"></b>.</p>
+              <div class="input-wrap">
+                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16 6.5l2.5 2.5"/></svg></span>
+                <input class="input is-code" id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                       maxlength="7" enterkeyhint="done" placeholder="000 000" aria-describedby="code-hint code-err">
+              </div>
+              <!-- PROTOTYP: e-maile jeszcze nie wychodzą, więc kod widać tutaj (js/auth-common.js, codeField) -->
+              <p class="suggest" id="code-demo" hidden>Wersja testowa, e-maile jeszcze nie wychodzą. Twój kod: <button type="button" id="code-demo-btn"></button></p>
+              <p class="err" id="code-err" aria-live="polite"></p>
+              <p class="row-end"><button type="button" class="btn-link sm" id="code-resend" disabled>Wyślij kod ponownie</button></p>
+            </div>
+          </div>
+
+          <!-- Poniżej 16 lat: zamiast pola do zaznaczenia (które każdy by zaznaczył) prosimy o adres opiekuna -->
+          <div class="page" data-page="parent" data-off tabindex="-1">
+            <div class="field">
+              <label class="q" for="pemail">E-mail rodzica lub opiekuna</label>
+              <p class="q-hint" id="pemail-hint">Masz mniej niż 16 lat, więc potrzebujemy jego zgody. Wyślemy mu krótką wiadomość, a Twoja roślinka poczeka w pąku.</p>
+              <div class="input-wrap">
+                <span class="f-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5"/><circle cx="17" cy="9.5" r="2.4"/><path d="M16.5 14.2c2.4.2 4 1.7 4.5 4.3"/></svg></span>
+                <input class="input" id="pemail" name="pemail" type="email" autocomplete="off" inputmode="email"
+                       autocapitalize="off" spellcheck="false" enterkeyhint="next"
+                       placeholder="rodzic@email.pl" aria-describedby="pemail-hint pemail-err">
+              </div>
+              <p class="err" id="pemail-err" aria-live="polite"></p>
+            </div>
+          </div>
+
           <div class="page" data-page="consents" tabindex="-1">
             <div class="field">
-              <!-- bez zdania pod pytaniem: to samo mówi podpis nad rośliną („Jeszcze chwila — zaraz rozkwitnie”), a bez niego zgody mieszczą się na ekranie -->
-              <p class="q mobile-only">Ostatnia rzecz</p>
+              <!-- bez zdania pod pytaniem: to samo mówi podpis nad rośliną („Jeszcze chwila — zaraz rozkwitnie”) -->
+              <p class="q">Ostatnia rzecz</p>
 
               <label class="check">
                 <input type="checkbox" id="terms" name="terms" aria-describedby="terms-err">
@@ -282,19 +274,16 @@
               </label>
               <p class="err" id="terms-err" aria-live="polite"></p>
 
-              <div class="reveal" id="parent-wrap" inert>
-                <div>
-                  <label class="check">
-                    <input type="checkbox" id="parent" name="parent" aria-describedby="parent-err">
-                    <span>Mój rodzic lub opiekun wie o tym i wyraża zgodę.<small>Wymagane dla osób poniżej 16 lat.</small></span>
-                  </label>
-                  <p class="err" id="parent-err" aria-live="polite"></p>
-                </div>
-              </div>
+              <!-- Osobna zgoda na dane o zdrowiu (RODO art. 9). Treść robocza — do sprawdzenia z prawnikiem przed prawdziwymi kontami. -->
+              <label class="check">
+                <input type="checkbox" id="health" name="health" aria-describedby="health-err">
+                <span>Zgadzam się, żeby ReLeaf zapisywał moje wpisy o nastroju i samopoczuciu.<small>To dane o zdrowiu, dlatego pytamy osobno. Zgodę cofniesz w każdej chwili.</small></span>
+              </label>
+              <p class="err" id="health-err" aria-live="polite"></p>
 
               <p class="note">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
-                <span>Ta aplikacja wspiera, ale nie zastępuje rozmowy ze specjalistą. Gdy jest Ci naprawdę ciężko, zadzwoń pod <a href="tel:116111">116 111</a> — to bezpłatny telefon zaufania dla dzieci i młodzieży.</span>
+                <span>ReLeaf wspiera, ale nie zastępuje rozmowy ze specjalistą. Gdy jest Ci naprawdę ciężko, zadzwoń pod <a href="tel:116111">116 111</a> — bezpłatnie, całą dobę.</span>
               </p>
             </div>
           </div>
@@ -305,7 +294,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
           </button>
           <button type="submit" class="btn btn-primary">
-            <span class="btn-label">Załóż konto</span>
+            <span class="btn-label">Wyślij kod</span>
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             <svg class="sprout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/></svg>
           </button>
@@ -314,7 +303,7 @@
         </div>
       </form>
 
-      <!-- ========== GOTOWE ========== -->
+      <!-- ========== GOTOWE: kwiat i od razu pierwsze podlanie. Poniżej 16 lat roślinka czeka w pąku na zgodę opiekuna (data-pending). ========== -->
       <div class="step step-done" id="step4" hidden>
         <div class="panel">
         <div class="badge" aria-hidden="true">
@@ -334,13 +323,15 @@
         </div>
         <h2 id="done-title" tabindex="-1">Witaj!</h2>
         <p id="done-text"></p>
-        <ul class="pills" id="done-pills"></ul>
         <div class="actions">
-          <a href="aplikacja.html" class="btn btn-primary" id="enter-app">
-            Przejdź do aplikacji
+          <a href="aplikacja.html?podlej=1" class="btn btn-primary" id="enter-app">
+            Podlej pierwszy raz
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
-          <button type="button" class="btn-link" id="replay">Obejrzyj animację jeszcze raz</button>
+          <button type="button" class="btn-link" id="replay">Obejrzyj rozkwit jeszcze raz</button>
+          <button type="button" class="btn btn-soft pending-only" id="parent-resend">Wyślij prośbę jeszcze raz</button>
+          <!-- PROTOTYP: zgody opiekuna nie ma jeszcze kto potwierdzić, więc można ją tu zasymulować -->
+          <button type="button" class="btn-link pending-only" id="parent-demo">Wersja testowa: opiekun potwierdził</button>
         </div>
         </div>
       </div>

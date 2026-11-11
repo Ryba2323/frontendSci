@@ -1,15 +1,16 @@
 /*
- * Logowanie — logika ekranu (logowanie → reset hasła → powitanie).
+ * Logowanie — logika ekranu (e-mail → kod z e-maila → powitanie).
  *
+ * Hasła nie ma (decyzja po radzie, 11.11.2026): logujemy kodem wysłanym na e-mail, więc zniknął też reset hasła.
  * Roślinka czeka już wyrośnięta z pąkami, podrasta przy wpisywaniu danych i rozkwita po zalogowaniu.
- * Backendu jeszcze nie ma: logowanie i wysyłka linku są symulowane (miejsca oznaczone „TODO backend”).
- * Scena w tle jest w js/plant-scene.js, wspólne elementy w js/auth-common.js.
+ * Backendu jeszcze nie ma: wysyłka i sprawdzenie kodu są symulowane (miejsca oznaczone „TODO backend”).
+ * Scena w tle jest w js/plant-scene.js, wspólne elementy (w tym pole kodu) w js/auth-common.js.
  */
 (function () {
   'use strict';
 
   const Scene = window.PlantScene || { setGrowth() {}, rustle() {} };
-  const { EMAIL_RE, haptic, passwordField, stagger, account } = window.AuthCommon;
+  const { EMAIL_RE, haptic, codeField, stagger, account } = window.AuthCommon;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(pointer: fine)').matches;
 
@@ -23,17 +24,18 @@
 
   const card = $('.card');
   const stepsWrap = $('#steps');
-  const views = { login: $('#login'), forgot: $('#forgot'), welcome: $('#welcome') };
+  const views = { login: $('#login'), verify: $('#verify'), welcome: $('#welcome') };
+  const ORDER = ['login', 'verify', 'welcome'];
   const emailInput = $('#email');
-  const pwInput = $('#password');
-  const femailInput = $('#femail');
+  const codeInput = $('#code');
   const caption = $('#caption');
   const eyebrow = $('#caption-eyebrow');
 
   const MSG = {
     emailEmpty: 'Podaj adres e-mail.',
     emailBad: 'Sprawdź adres — czegoś w nim brakuje.',
-    password: 'Wpisz hasło.',
+    codeEmpty: 'Wpisz 6 cyfr z wiadomości.',
+    codeBad: 'Ten kod nie pasuje. Sprawdź wiadomość albo wyślij nowy.',
   };
 
   let current = 'login';
@@ -53,8 +55,8 @@
 
   const CAPTIONS = {
     rest: 'Czeka na Ciebie.',
+    code: 'Jeszcze kod i gotowe.',
     ready: 'Już się budzi…',
-    forgot: 'Poczeka, aż wrócisz.',
     bloom: 'Rozkwita na powitanie.',
   };
   let captionKey = 'rest';
@@ -72,15 +74,17 @@
   caption.textContent = CAPTIONS.rest;
 
   // ================================================================
-  //  Roślinka reaguje na wypełnianie
+  //  Kod z e-maila i roślinka, która reaguje na wypełnianie
   // ================================================================
+  const code = codeField({ input: codeInput, demo: $('#code-demo'), demoBtn: $('#code-demo-btn'), resend: $('#code-resend') });
+  let codeSentFor = null;   // adres, na który poszedł ostatni kod
   const emailOk = () => EMAIL_RE.test(emailInput.value.trim());
-  const pwFilled = () => pwInput.value.length > 0;
 
+  // połowa drogi do rozkwitu za poprawny e-mail, druga połowa za sześć cyfr kodu
   function syncGrowth() {
-    const p = (emailOk() ? .5 : 0) + (pwFilled() ? .5 : 0);
+    const p = (emailOk() ? .5 : 0) + (current === 'verify' && code.filled() ? .5 : 0);
     Scene.setGrowth(G_REST + (G_READY - G_REST) * p);
-    setCaption(p === 1 ? 'ready' : 'rest');
+    setCaption(p === 1 ? 'ready' : current === 'verify' ? 'code' : 'rest');
   }
   Scene.setGrowth(G_REST, { instant: true });
   syncGrowth();
@@ -94,8 +98,8 @@
     err.textContent = msg || '';
     return !msg;
   }
-  const emailMsg = input => {
-    const v = input.value.trim();
+  const emailMsg = () => {
+    const v = emailInput.value.trim();
     return !v ? MSG.emailEmpty : EMAIL_RE.test(v) ? '' : MSG.emailBad;
   };
 
@@ -106,6 +110,7 @@
     haptic([16, 40, 16]);
   }
 
+  const isLoading = form => form.getAttribute('aria-busy') === 'true';
   function setLoading(form, on) {
     const btn = form.querySelector('.btn-primary');
     btn.classList.toggle('is-loading', on);
@@ -120,7 +125,7 @@
     if (name === current || busy) return;
     busy = true;
     const from = views[current], to = views[name];
-    const dir = name === 'login' ? -1 : 1;
+    const dir = ORDER.indexOf(name) > ORDER.indexOf(current) ? 1 : -1;
 
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     Object.values(views).forEach(v => v.classList.remove('is-entering'));
@@ -135,7 +140,7 @@
     to.classList.add('is-entering');
     stepsWrap.style.height = to.offsetHeight + 'px';
     current = name;
-    if (name === 'login') syncGrowth();
+    if (name !== 'welcome') syncGrowth();
 
     setTimeout(() => {
       from.hidden = true;
@@ -143,60 +148,87 @@
       stepsWrap.style.height = '';
       stepsWrap.classList.remove('is-animating');
       busy = false;
-      const input = finePointer && name !== 'welcome' && to.querySelector('input.input:not([hidden])');
+      const input = finePointer && name !== 'welcome' && to.querySelector('input.input');
       (input || to.querySelector('.title, h2')).focus({ preventScroll: true });
     }, T_STEP);
   }
 
-  // Systemowy „wstecz” (Android, gest na iOS) z resetu hasła wraca do logowania
+  // Systemowy „wstecz” (Android, gest na iOS) z ekranu kodu wraca do adresu e-mail
   let guarded = false;
   function pushGuard() {
     if (guarded) return;
     try { history.pushState({ login: true }, ''); guarded = true; } catch (_) { /* np. sandbox */ }
   }
+  const backToEmail = () => { if (guarded) history.back(); else goTo('login'); };
   window.addEventListener('popstate', () => {
     guarded = false;
-    if (current === 'forgot') goTo('login');
+    if (current === 'verify' && !isLoading(views.verify)) goTo('login');
   });
 
   // ================================================================
-  //  Logowanie
+  //  E-mail → wysyłka kodu
   // ================================================================
   const loginForm = views.login;
 
   loginForm.addEventListener('input', e => {
-    const t = e.target;
-    if (t.hasAttribute('aria-invalid')) setErr(t, '');
+    if (e.target.hasAttribute('aria-invalid')) setErr(e.target, '');
     Scene.rustle(.05);
     syncGrowth();
   });
 
-  // Enter w polu e-mail przechodzi do hasła, zamiast od razu wysyłać
-  emailInput.addEventListener('keydown', e => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    if (setErr(emailInput, emailMsg(emailInput))) pwInput.focus();
-    else shake();
-  });
-
-  const pwField = passwordField(pwInput, $('#pw-toggle'), $('#caps-hint'));
-
   loginForm.addEventListener('submit', e => {
     e.preventDefault();
-    if (busy || loginForm.getAttribute('aria-busy') === 'true') return;
-    const okEmail = setErr(emailInput, emailMsg(emailInput));
-    const okPw = setErr(pwInput, pwFilled() ? '' : MSG.password);
-    if (!okEmail || !okPw) {
-      shake();
-      (okEmail ? pwInput : emailInput).focus();
-      return;
-    }
+    if (busy || isLoading(loginForm)) return;
+    if (!setErr(emailInput, emailMsg())) { shake(); emailInput.focus(); return; }
+
+    const email = emailInput.value.trim();
+    $('#code-email').textContent = email;
+    const show = () => { setErr(codeInput, ''); pushGuard(); goTo('verify'); };
+    if (codeSentFor === email) { show(); return; }   // powrót i ten sam adres: kod już poszedł
 
     setLoading(loginForm, true);
     Scene.rustle(.3);
-    // TODO backend: tu wysyłamy e-mail i hasło; przy błędzie → setErr(pwInput, 'Nieprawidłowy e-mail lub hasło.')
+    // TODO backend: supabase.auth.signInWithOtp({ email }); odpowiedź zawsze taka sama — nie zdradzamy, czy konto istnieje
     setTimeout(() => {
       setLoading(loginForm, false);
+      codeSentFor = email;
+      code.send();
+      haptic(12);
+      show();
+    }, T_FAKE);
+  });
+
+  // ================================================================
+  //  Kod → logowanie
+  // ================================================================
+  const verifyForm = views.verify;
+
+  verifyForm.querySelector('[data-back]').addEventListener('click', () => { if (!isLoading(verifyForm)) backToEmail(); });
+
+  // Sześć cyfr wpisane (albo wklejone, albo podpowiedziane przez telefon) → logujemy bez stukania w przycisk
+  let codeTimer;
+  verifyForm.addEventListener('input', e => {
+    if (e.target.hasAttribute('aria-invalid')) setErr(e.target, '');
+    Scene.rustle(.05);
+    syncGrowth();
+    clearTimeout(codeTimer);
+    if (code.filled()) codeTimer = setTimeout(() => {
+      if (current !== 'verify') return;
+      if (verifyForm.requestSubmit) verifyForm.requestSubmit();
+      else verifyForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    }, 250);
+  });
+
+  verifyForm.addEventListener('submit', e => {
+    e.preventDefault();
+    if (busy || isLoading(verifyForm)) return;
+    if (!setErr(codeInput, !code.filled() ? MSG.codeEmpty : code.matches() ? '' : MSG.codeBad)) { shake(); codeInput.focus(); return; }
+
+    setLoading(verifyForm, true);
+    Scene.rustle(.3);
+    // TODO backend: supabase.auth.verifyOtp({ email, token, type: 'email' }); przy błędzie → setErr(codeInput, MSG.codeBad)
+    setTimeout(() => {
+      setLoading(verifyForm, false);
       haptic(12);
       welcome(emailInput.value.trim());
     }, T_FAKE);
@@ -214,81 +246,22 @@
     $('#welcome-text').textContent = `${back} ${plant}`;
     if (me && me.plant) eyebrow.textContent = me.plant;
 
-    pwInput.value = '';
-    pwField.reset();
+    code.reset();
+    codeSentFor = null;
     Scene.setGrowth(G_BLOOM);
     setCaption('bloom');
     goTo('welcome');
   }
 
-
   $('#switch-account').addEventListener('click', () => {
     emailInput.value = '';
-    [emailInput, pwInput].forEach(i => setErr(i, ''));
+    [emailInput, codeInput].forEach(i => setErr(i, ''));
     eyebrow.textContent = plantName || 'Twoja roślinka';
     Scene.setGrowth(G_REST);
     setCaption('rest');
     goTo('login');
   });
 
-  // ================================================================
-  //  Reset hasła
-  // ================================================================
-  const forgotForm = views.forgot;
-  const sentBox = $('#forgot-sent');
-  const forgotField = $('#forgot-field');
-  const forgotBtnLabel = $('.btn-label', forgotForm);
-
-  function resetForgot() {
-    sentBox.hidden = true;
-    forgotField.hidden = false;
-    forgotBtnLabel.textContent = 'Wyślij link';
-    forgotForm.dataset.sent = 'false';
-    setErr(femailInput, '');
-  }
-
-  $('#forgot-open').addEventListener('click', () => {
-    // w trakcie logowania nie zmieniamy widoku: powitanie nie miałoby jak się pokazać, a roślinka i tak by zakwitła
-    if (loginForm.getAttribute('aria-busy') === 'true') return;
-    resetForgot();
-    femailInput.value = emailInput.value.trim();
-    setCaption('forgot');
-    pushGuard();
-    goTo('forgot');
-  });
-
-  forgotForm.querySelector('[data-back]').addEventListener('click', () => {
-    if (guarded) history.back(); else goTo('login');
-  });
-  forgotForm.addEventListener('input', e => { if (e.target.hasAttribute('aria-invalid')) setErr(e.target, ''); });
-
-  forgotForm.addEventListener('submit', e => {
-    e.preventDefault();
-    if (busy || forgotForm.getAttribute('aria-busy') === 'true') return;
-    // Po wysłaniu główny przycisk wraca do logowania
-    if (forgotForm.dataset.sent === 'true') {
-      if (guarded) history.back(); else goTo('login');
-      return;
-    }
-    if (!setErr(femailInput, emailMsg(femailInput))) { shake(); femailInput.focus(); return; }
-
-    setLoading(forgotForm, true);
-    // TODO backend: tu prosimy serwer o wysłanie linku (odpowiedź zawsze taka sama — nie zdradzamy, czy konto istnieje)
-    setTimeout(() => {
-      setLoading(forgotForm, false);
-      const email = femailInput.value.trim();
-      $('#forgot-sent-text').textContent =
-        `Jeśli konto ${email} istnieje, za chwilę dostaniesz od nas wiadomość z linkiem. Sprawdź też folder Spam.`;
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-      forgotField.hidden = true;
-      sentBox.hidden = false;
-      forgotBtnLabel.textContent = 'Wróć do logowania';
-      forgotForm.dataset.sent = 'true';
-      emailInput.value = email;
-      haptic(12);
-    }, T_FAKE);
-  });
-
-  // Na komputerze od razu pole do wpisania (hasło, jeśli e-mail już znamy)
-  if (finePointer) (emailInput.value ? pwInput : emailInput).focus({ preventScroll: true });
+  // Na komputerze od razu pole do wpisania
+  if (finePointer) emailInput.focus({ preventScroll: true });
 })();

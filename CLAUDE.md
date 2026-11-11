@@ -76,6 +76,13 @@ Tymek's task: make `logowanie.html` and `rejestracja.html` match the rest of the
 - **Tokens**: `css/auth.css` starts with a copy of the direction's tokens (`--font*`, `--text-*`, `--radius-*`, `--e1/--e2`, `--spring`, `--pole-*`, `--leaf*`) because these pages don't load `zywa.css` / `pola.css` / `sciezka.css`. If those change there, change them here too.
 - "Przejdź do aplikacji" now opens `aplikacja.html` (it pointed at the old `strona-glowna.html`).
 - **Fixes after review (Marcel, 11.11.2026).** The e-mail typo hint really stops the first "Dalej" (the tap used to show it and move on in the same instant; a blur caused by the submit button no longer marks the hint as seen). The "regulamin" / "polityka prywatności" links no longer navigate to `#` (that fired the back handler and threw the user from consents to reminders); they show a toast until the documents exist. SOS is `position: fixed`, so it stays on screen when a long screen scrolls; from 1200 px the form column ends before it. The flower badge on the final screens is really hidden on phones (its rule stood before the base `.badge` rule and lost). The consents screen lost its hint sentence (the caption above the plant says the same) and now fits 375 × 812. Short phones (≤ 700 px high) get tighter answers and swatches, low desktop windows (≤ 760 px high, e.g. 1366 × 768 laptops) a compact stage card, so "Dalej" is visible without scrolling. Moons shrink with the sky band (`mk` in `drawSkyThings`). Login: "Nie pamiętasz hasła?" is ignored while logging in, and the saved profile matches the e-mail case-insensitively.
+- **Order after the `/council` session (Marcel, 11.11.2026; a proposal to test with 5 teenagers on 20.11.2026).** Registration is now: **1. Roślinka** (plant name, colour) → **2. O Tobie** (name, age, grammatical form) → **3. Konto** (e-mail, 6-digit e-mail code, parent's e-mail under 16, consents) → bloom. Rule from the council: the new order stays only if at least 4 of 5 testers finish without help; otherwise go back to account-first (in git history, commit `c048d6b`) but keep the cuts. What changed and why:
+  - **Cut from registration:** topics ("Nad czym chcesz popracować?"), reminder time (ask in the app after the first watering; not built yet) and the **password**. Login and registration use an e-mail code instead (`AuthCommon.codeField` in `js/auth-common.js`), so the password-reset view is gone. `passwordField` and the `.meter` / `.caps` styles stay as a fallback: if codes turn out not to arrive within a minute from typical Polish mailboxes, the password comes back.
+  - **PROTOTYPE:** no e-mail is sent. The code is generated in the page and shown under the field ("Wersja testowa…"); tapping it fills the field. `TODO backend` comments mark where Supabase `signInWithOtp` / `verifyOtp` go.
+  - **The account stage is paged on desktop too** (`STAGE_PAGED` in `js/rejestracja.js`), because the code only exists after the e-mail step. A page with `data-off` is not part of its stage (the parent page from 16 up).
+  - **Consents:** terms + a separate health-data consent (GDPR Art. 9; working copy, a lawyer has to check it before real accounts). The "my parent agrees" checkbox is gone: under 16 the user gives the parent's e-mail, and the final screen says the plant waits in bud (`#step4[data-pending]`, `data.parentPending`); "Wersja testowa: opiekun potwierdził" simulates the parent's click. No real accounts before the consent documents and a consent table exist (target 4.12.2026).
+  - **Under 13:** "Mam mniej niż 13 lat" shows a warm note with 116 111 instead of an error, and "Dalej" does not advance.
+  - **Final screen:** "Podlej pierwszy raz" opens `aplikacja.html?podlej=1`, and layout D opens the check-in by itself (`js/dom-uklad.js`). "Obejrzyj rozkwit jeszcze raz" replays only the bloom; it used to reset the whole form.
 - Not tested on a real phone (only Playwright). The on-screen keyboard was not tested at all.
 
 ## Proposal E: "Pokoje" (8.11.2026, preview `?uklad=e`, `css/pokoje.css`, `js/pokoje.js`)
@@ -130,8 +137,8 @@ The rules below still apply on top of this direction:
 | Screen | Files |
 |---|---|
 | Screen index | `index.html` |
-| Login | `logowanie.html`, `js/logowanie.js` |
-| Registration (3 stages, one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
+| Login (e-mail → e-mail code → welcome) | `logowanie.html`, `js/logowanie.js` |
+| Registration (3 stages: plant → about you → account; one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
 | Shared by login and registration ("Ścieżka" look, see above) | `css/auth.css` (look + a copy of the direction's tokens), `js/auth-common.js` (toast, haptics, password field, entrance stagger, SOS dialog, `account` storage), `js/plant-scene.js` (growing plant on the planet under the sky of the time of day, `window.PlantScene`) |
 | **The app: all tabs on one page (main entry)** | `aplikacja.html`, `css/app.css`, `css/planeta.css` (look of the "Mała planeta" direction), `js/app.js` (tabs/router) — see "The app" below |
 | Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
@@ -247,8 +254,8 @@ These are the current rules. They are also shown on the page under "Jak działa 
 
 ### Data and backend (not built yet)
 
-- There's no backend. Login and password reset are simulated (see `TODO backend` in `js/logowanie.js`).
-- Registration keeps the profile in `localStorage` (`sci.account`) so the other screens can greet the user. It **never stores the password**.
+- There's no backend. Login, the e-mail code and the parent's consent are simulated (see `TODO backend` in `js/logowanie.js`, `js/rejestracja.js`, `js/auth-common.js`).
+- Registration keeps the profile in `localStorage` (`sci.account`: name, e-mail, age, form, plant, theme, consents with a date, parent's e-mail under 16) so the other screens can greet the user. There is no password any more.
 - The "Twój tydzień" data on the home page is **random demo data**, generated in `js/home2.js` and shaped like the planned `daily_checkins` table: mood 1–10 per day, `null` means no entry.
 - In `aplikacja.html` the check-in answers, blog posts and votes live only in page memory; Skrytka uses `localStorage`. On `strona-glowna-2.html` the "Podlej roślinkę" button only plays the animation.
 - Blog moderation is a word list (`js/moderacja.js`) until the AI moderation exists (planned as a server-side function).

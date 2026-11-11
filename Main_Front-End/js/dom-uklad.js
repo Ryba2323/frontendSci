@@ -186,6 +186,12 @@
       P.open({ from, step: 'mood' });
     }
     $('#zy-water').addEventListener('click', e => openCheckin(e.currentTarget));
+    // Z rejestracji („Podlej pierwszy raz”, aplikacja.html?podlej=1): pytania otwierają się same, gdy strona się ułoży.
+    // Parametr znika z adresu, żeby odświeżenie strony nie otwierało ich drugi raz.
+    if (params.get('podlej') === '1') {
+      try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (_) { /* np. sandbox */ }
+      if (!P.entry) setTimeout(() => openCheckin($('#zy-water')), 1100);
+    }
     root.addEventListener('click', e => {
       const ch = e.target.closest('[data-zy-open]');
       if (ch) { openCheckin(ch); return; }

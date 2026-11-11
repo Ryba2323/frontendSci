@@ -6,7 +6,9 @@
  *   EMAIL_RE                          prosty test adresu e-mail
  *   haptic(pattern)                   krótka wibracja (tylko telefony)
  *   toast(text)                       komunikat na dole ekranu (#toast)
+ *   codeField({ input, demo, demoBtn, resend })  kod z e-maila zamiast hasła; zwraca { send(), filled(), matches(), reset() }
  *   passwordField(input, toggle, caps) pokaż/ukryj hasło + ostrzeżenie o Caps Locku; zwraca { reset() }
+ *                                     (nieużywane od 11.11.2026: zostaje jako zapas, gdyby kody z e-maila nie dochodziły)
  *   stagger(step)                     numeruje elementy widoku (--i), żeby wjeżdżały po kolei (css/auth.css)
  *   account.save(data) / .load()      TYMCZASOWO, do czasu backendu: profil w localStorage (bez hasła)
  * Do tego SOS: przycisk [data-sos] otwiera arkusz <dialog id="auth-sos"> z numerami pomocowymi (jak w aplikacji).
@@ -52,6 +54,54 @@
     return { reset() { show(false); if (caps) caps.hidden = true; } };
   }
 
+  // Kod z e-maila zamiast hasła (decyzja po radzie, 11.11.2026): nie ma czego zapomnieć, znika reset hasła.
+  // PROTOTYP: e-maile jeszcze nie wychodzą, więc kod losujemy tutaj i pokazujemy pod polem („Wersja testowa”),
+  // stuknięcie go wpisuje. TODO backend: Supabase Auth — signInWithOtp({ email }) wysyła, verifyOtp sprawdza.
+  //   input   pole kodu (same cyfry, najwyżej 6; wklejone „482 913” też działa)
+  //   demo    akapit z kodem testowym, demoBtn — przycisk w nim
+  //   resend  „Wyślij kod ponownie”, aktywny po RESEND_AFTER sekundach
+  const RESEND_AFTER = 30;
+  function codeField({ input, demo, demoBtn, resend }) {
+    let code = '', left = 0, timer;
+    const digits = () => input.value.replace(/\D/g, '').slice(0, 6);
+    const label = () => {
+      resend.disabled = left > 0;
+      resend.textContent = left > 0 ? `Wyślij ponownie za 0:${String(left).padStart(2, '0')}` : 'Wyślij kod ponownie';
+    };
+    function send() {
+      code = String(Math.floor(100000 + Math.random() * 900000));
+      input.value = '';
+      demoBtn.textContent = code.slice(0, 3) + ' ' + code.slice(3);
+      demo.hidden = false;
+      clearInterval(timer);
+      left = RESEND_AFTER;
+      label();
+      timer = setInterval(() => { left--; label(); if (left <= 0) clearInterval(timer); }, 1000);
+    }
+    input.addEventListener('input', () => {
+      const d = digits();
+      // odstęp po trzeciej cyfrze, jak w wiadomości z kodem
+      const shown = d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d;
+      if (input.value !== shown) input.value = shown;
+    });
+    demoBtn.addEventListener('click', () => {
+      input.value = code;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    resend.addEventListener('click', () => {
+      send();
+      toast('Wysłaliśmy nowy kod.');
+      input.focus();
+    });
+    label();
+    return {
+      send,
+      filled: () => digits().length === 6,
+      matches: () => !!code && digits() === code,
+      reset() { clearInterval(timer); code = ''; left = 0; input.value = ''; demo.hidden = true; label(); },
+    };
+  }
+
   // Kolejne elementy widoku wjeżdżają z lekkim opóźnieniem. Na telefonie .panel tylko grupuje pola (display: contents),
   // więc numerujemy też jego dzieci; na komputerze .panel to karta i wjeżdża w całości.
   function stagger(step) {
@@ -84,6 +134,6 @@
 
   window.AuthCommon = {
     EMAIL_RE: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
-    haptic, toast, passwordField, stagger, account,
+    haptic, toast, codeField, passwordField, stagger, account,
   };
 })();

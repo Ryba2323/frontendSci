@@ -1,7 +1,7 @@
 /*
  * Test kontrastu tekstu na ekranach logowania i rejestracji (Playwright):
  * 6 motywów × 4 pory dnia (rano, dzień = jasny ekran; wieczór, noc = ciemny) × telefon / komputer,
- * wszystkie ekrany rejestracji (też z błędami i zaznaczonymi odpowiedziami), logowanie, reset hasła, powitanie i arkusz SOS.
+ * wszystkie ekrany rejestracji (też z błędami i zaznaczonymi odpowiedziami), logowanie kodem z e-maila, powitanie i arkusz SOS.
  * Liczy tak samo jak sprawdz-kontrast.js: każdy widoczny tekst z tłem składanym warstwa po warstwie.
  * Próg WCAG AA: 4,5:1, duży tekst (od 24 px albo od 18,7 px pogrubiony) 3:1.
  * Tło pod spodem rysuje canvas (js/plant-scene.js), więc bierzemy kolory, które scena zapisuje do <html>:
@@ -70,43 +70,50 @@ function audit() {
     const next = async () => { await p.locator('form.step:not([hidden]) button[type=submit]').click(); await wait(); };
     const q = `?pora=${pora}&motyw=${theme}`;
 
-    // ---------- rejestracja ----------
+    // ---------- rejestracja (kolejność po radzie: roślinka → o Tobie → konto z kodem i zgodami) ----------
+    // Etap konta idzie po jednym ekranie także na komputerze.
+    const auto = desktop ? 100 : 700;
     await p.goto(DIR + 'rejestracja.html' + q); await wait(500);
-    await note('rejestracja: start');
-    await next(); await note('rejestracja: konto, błędy');
-    await p.fill('#nick', 'Ola'); if (!desktop) await next();
-    await p.fill('#email', 'ola@gmial.com');
-    if (!desktop) { await next(); await note('rejestracja: e-mail, podpowiedź'); await next(); }
-    await p.fill('#password', 'haslo12');
-    await note('rejestracja: hasło za krótkie');
-    await p.fill('#password', 'tajnehaslo1A'); await next();
-    if (desktop) { await note('rejestracja: konto, podpowiedź'); await next(); }
-    await note('rejestracja: wiek');
-    if (!desktop) { await next(); await note('rejestracja: wiek, błąd'); }
-    await p.locator('label.chip:has(input[name=age][value="14"])').click(); await wait(desktop ? 100 : 700);
-    await note('rejestracja: forma');
-    await p.locator('label.choice:has(input[value="f"])').click(); await wait(desktop ? 100 : 700);
-    await p.locator('label.chip:has(input[value="Sen"])').click();
-    await note('rejestracja: tematy');
+    await note('rejestracja: imię roślinki');
+    await p.click('#dice'); if (!desktop) await next();
+    await p.locator('label.swatch:has(input[value="lawenda"])').click(); await wait();
+    await note('rejestracja: kolor');
+    await p.locator(`label.swatch:has(input[value="${theme}"])`).click(); await wait();
     await next();
-    await p.click('#dice'); await note('rejestracja: imię roślinki');
-    if (!desktop) { await next(); await note('rejestracja: kolor'); await next(); await note('rejestracja: przypomnienia'); await next(); }
+    await next(); await note('rejestracja: o Tobie, błędy');
+    await p.fill('#nick', 'Ola'); if (!desktop) await next();
+    await note('rejestracja: wiek');
+    await p.locator('label.age-under').click(); await wait(auto);
+    await note('rejestracja: poniżej 13 lat');
+    await p.locator('label.chip:has(input[name=age][value="14"])').click(); await wait(auto);
+    await note('rejestracja: forma');
+    await p.locator('label.choice:has(input[value="f"])').click(); await wait(auto);
+    if (desktop) await next();
+    await note('rejestracja: e-mail');
+    await p.fill('#email', 'ola@gmial.com'); await next();
+    await note('rejestracja: e-mail, podpowiedź'); await next();
+    await note('rejestracja: kod');
+    await p.fill('#code', '111111'); await wait(500);
+    await note('rejestracja: kod, błąd');
+    await p.click('#code-demo-btn'); await wait(600);
+    await next(); await note('rejestracja: e-mail opiekuna, błąd');
+    await p.fill('#pemail', 'mama@gmail.com'); await next();
     await next(); await note('rejestracja: zgody, błędy');
-    await p.locator('#terms').check(); await p.locator('#parent').check();
+    await p.locator('#terms').check(); await p.locator('#health').check();
     await note('rejestracja: zgody');
-    await next(); await wait(500); await note('rejestracja: gotowe');
+    await next(); await wait(500); await note('rejestracja: czeka na zgodę opiekuna');
+    await p.click('#parent-demo'); await wait(500); await note('rejestracja: gotowe');
 
-    // ---------- logowanie ----------
+    // ---------- logowanie (e-mail → kod → powitanie) ----------
     await p.goto(DIR + 'logowanie.html' + q); await wait(500);
     await note('logowanie');
     await p.fill('#email', ''); await p.locator('#login button[type=submit]').click(); await wait();
-    await note('logowanie: błędy');
-    await p.click('#forgot-open'); await wait(); await note('reset hasła');
-    await p.fill('#femail', 'ola@gmail.com'); await p.locator('#forgot button[type=submit]').click(); await wait(600);
-    await note('reset hasła: wysłane');
-    await p.locator('#forgot button[type=submit]').click(); await wait();
-    await p.fill('#email', 'ola@gmail.com'); await p.fill('#password', 'tajnehaslo1A');
-    await p.locator('#login button[type=submit]').click(); await wait(700);
+    await note('logowanie: błąd');
+    await p.fill('#email', 'ola@gmail.com'); await p.locator('#login button[type=submit]').click(); await wait(600);
+    await note('logowanie: kod');
+    await p.fill('#code', '222222'); await wait(500);
+    await note('logowanie: kod, błąd');
+    await p.click('#code-demo-btn'); await wait(900);
     await note('logowanie: powitanie');
     await p.click('[data-sos]'); await wait(); await note('SOS');
     await p.close();

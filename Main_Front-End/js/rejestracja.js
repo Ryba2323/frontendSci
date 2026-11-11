@@ -1,24 +1,36 @@
 /*
  * Rejestracja — logika formularza (3 etapy + ekran końcowy).
  *
+ * KOLEJNOŚĆ PO RADZIE (11.11.2026, do sprawdzenia na teście z nastolatkami 20.11.2026):
+ *   1. Roślinka: imię, kolor            — najpierw coś swojego
+ *   2. O Tobie: imię, wiek, forma
+ *   3. Konto:   e-mail, kod z e-maila (zamiast hasła), [e-mail opiekuna poniżej 16 lat], zgody
+ *   4. Kwiat i od razu pierwsze podlanie; poniżej 16 lat roślinka czeka w pąku na zgodę opiekuna.
+ * Z rejestracji wypadły tematy i pora przypomnień (o to zapytamy w aplikacji) oraz hasło.
+ *
  * Każdy etap (form.step) ma ekrany (div.page). Na telefonie pokazujemy jeden ekran na raz,
- * na komputerze (min. 900 px) cały etap naraz. Systemowy „wstecz” na telefonie cofa o jeden ekran.
- * Scena w tle (listki, roślina, świetliki) jest w js/plant-scene.js.
+ * na komputerze (min. 900 px) cały etap naraz — poza kontem, które zawsze idzie po jednym ekranie.
+ * Systemowy „wstecz” cofa o jeden ekran. Scena w tle (listki, roślina, świetliki) jest w js/plant-scene.js.
+ *
+ * PROTOTYP: kod z e-maila i zgoda opiekuna są symulowane (miejsca oznaczone „TODO backend”).
  */
 (function () {
   'use strict';
 
-  const Scene = window.PlantScene || { setStage() {}, setProgress() {}, rustle() {} };
-  const { EMAIL_RE, haptic, toast, passwordField, stagger, account } = window.AuthCommon;
+  const Scene = window.PlantScene || { setStage() {}, setProgress() {}, setGrowth() {}, rustle() {} };
+  const { EMAIL_RE, haptic, toast, codeField, stagger, account } = window.AuthCommon;
   const Theme = window.Theme || { list: [], current: null, apply() {} };
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(pointer: fine)').matches;
   const mqDesktop = window.matchMedia('(min-width: 900px)');
-  const isPaged = () => !mqDesktop.matches; // telefon: jeden ekran (pytanie) na raz
+  const STAGE_PAGED = 3;   // konto: kolejne ekrany zależą od poprzednich (kod przychodzi po podaniu e-maila)
+  // telefon: jeden ekran (pytanie) na raz; komputer: tylko etap konta
+  const isPaged = n => !mqDesktop.matches || n === STAGE_PAGED;
 
   const T_STEP = reduceMotion ? 20 : 600;  // czas przejścia między etapami (ms)
   const T_PAGE = reduceMotion ? 20 : 480;  // czas przejścia między ekranami (ms)
   const T_AUTO = 450;                      // opóźnienie auto-przejścia po wyborze (ms)
+  const G_BUDS = 2.1;                      // wzrost rośliny z pąkami, tuż przed rozkwitem (js/plant-scene.js)
 
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -31,33 +43,43 @@
   const stepsWrap = $('#steps');
   const steps = { 1: $('#step1'), 2: $('#step2'), 3: $('#step3'), 4: $('#step4') };
   const forms = [steps[1], steps[2], steps[3]];
-  const f2 = steps[2], f3 = steps[3];
+  const f1 = steps[1], f2 = steps[2], f3 = steps[3];
 
+  const plantInput = $('#plant');
   const nickInput = $('#nick');
   const emailInput = $('#email');
-  const pwInput = $('#password');
-  const plantInput = $('#plant');
+  const codeInput = $('#code');
+  const parentInput = $('#pemail');
+  const parentPage = $('.page[data-page="parent"]');
 
   const data = {};
   const pageIdx = { 1: 0, 2: 0, 3: 0 };
   const passed = new Set();   // ekrany, przez które użytkownik już przeszedł (liczą się do wzrostu rośliny)
-  let reminderTouched = false;
   let colorTouched = false;
   let current = 1;
   let busy = false;
 
-  const pagesOf = n => (n >= 1 && n <= 3 ? $$('.page', steps[n]) : []);
+  // ekran z data-off nie należy do etapu (e-mail opiekuna od 16 lat nie jest potrzebny)
+  const pagesOf = n => (n >= 1 && n <= 3 ? $$('.page', steps[n]).filter(p => !('off' in p.dataset)) : []);
+  const currentPage = () => pagesOf(current)[pageIdx[current]] || null;
   const isTextInput = el => el instanceof HTMLInputElement && el.classList.contains('input');
+  const submitForm = form => {
+    if (form.requestSubmit) form.requestSubmit();
+    else form.dispatchEvent(new Event('submit', { cancelable: true }));
+  };
 
   const MSG = {
     nick: 'Wpisz co najmniej 2 znaki.',
     emailEmpty: 'Podaj adres e-mail.',
     emailBad: 'Sprawdź adres — czegoś w nim brakuje.',
-    password: 'Hasło musi mieć co najmniej 8 znaków.',
+    codeEmpty: 'Wpisz 6 cyfr z wiadomości.',
+    codeBad: 'Ten kod nie pasuje. Sprawdź wiadomość albo wyślij nowy.',
     age: 'Zaznacz swój wiek.',
     gform: 'Wybierz jedną z opcji.',
+    parentEmpty: 'Podaj adres e-mail opiekuna.',
+    parentSame: 'To musi być adres opiekuna, nie Twój.',
     terms: 'Zaakceptuj regulamin, żeby założyć konto.',
-    parent: 'Potrzebujemy potwierdzenia zgody opiekuna.',
+    health: 'Bez tej zgody nie możemy zapisywać Twoich wpisów.',
   };
 
   // Podpis nad roślinką: etap + czy jest już za połową etapu
@@ -69,6 +91,7 @@
     3: 'Pojawiają się pierwsze pąki.',
     '3+': 'Jeszcze chwila — zaraz rozkwitnie.',
     4: 'Rozkwita — tak jak Ty, krok po kroku.',
+    wait: 'Czeka w pąku. Nic jej nie będzie.',
   };
 
   // Kolejne elementy etapu / ekranu wjeżdżają z lekkim opóźnieniem
@@ -83,26 +106,44 @@
   card.addEventListener('animationend', e => { if (e.animationName === 'card-in') card.classList.remove('intro'); });
 
   // ================================================================
+  //  Kod z e-maila (zamiast hasła)
+  // ================================================================
+  const code = codeField({ input: codeInput, demo: $('#code-demo'), demoBtn: $('#code-demo-btn'), resend: $('#code-resend') });
+  let codeSentFor = null;   // adres, na który poszedł ostatni kod
+  function sendCode() {
+    const email = emailInput.value.trim();
+    $('#code-email').textContent = email;
+    if (codeSentFor === email) return;   // powrót do e-maila bez zmiany adresu nie wysyła drugiego kodu
+    codeSentFor = email;
+    // TODO backend: supabase.auth.signInWithOtp({ email }) — tu prosimy serwer o wysłanie kodu
+    code.send();
+  }
+
+  // ================================================================
   //  Stan wypełnienia — napędza wzrost rośliny w trakcie etapu
   // ================================================================
   const nickOk = () => nickInput.value.trim().length >= 2;
   const emailOk = () => EMAIL_RE.test(emailInput.value.trim());
-  const passwordOk = () => pwInput.value.length >= 8;
-  const needsParent = () => { const age = parseInt(f2.elements.age.value, 10); return !isNaN(age) && age < 16; };
-  const consentsOk = () => $('#terms').checked && (!needsParent() || $('#parent').checked);
+  const ageValue = () => f2.elements.age.value;
+  const under13 = () => ageValue() === '12';
+  const needsParent = () => { const age = parseInt(ageValue(), 10); return !isNaN(age) && age < 16; };
+  const parentOk = () => {
+    const v = parentInput.value.trim().toLowerCase();
+    return EMAIL_RE.test(v) && v !== emailInput.value.trim().toLowerCase();
+  };
+  const consentsOk = () => $('#terms').checked && $('#health').checked;
 
   // Ekran jest „zrobiony”, gdy ma poprawną odpowiedź albo użytkownik już przez niego przeszedł
-  // (np. pominął opcjonalne pytanie). Każdy zrobiony ekran to kawałek wzrostu rośliny.
+  // (np. nie nadał roślince imienia). Każdy zrobiony ekran to kawałek wzrostu rośliny.
   const PAGE_FILLED = {
-    nick: nickOk,
-    email: emailOk,
-    password: passwordOk,
-    age: () => !!f2.elements.age.value,
-    gform: () => !!f2.elements.gform.value,
-    topics: () => $$('input[name=topics]:checked', f2).length > 0,
     plant: () => !!plantInput.value.trim(),
     color: () => colorTouched,
-    reminder: () => reminderTouched,
+    nick: nickOk,
+    age: () => !!ageValue() && !under13(),
+    gform: () => !!f2.elements.gform.value,
+    email: emailOk,
+    code: () => code.matches(),
+    parent: parentOk,
     consents: consentsOk,
   };
   const pageDone = p => passed.has(p.dataset.page) || PAGE_FILLED[p.dataset.page]();
@@ -121,20 +162,20 @@
     if (err) err.textContent = msg || '';
     return !msg;
   }
-  function clearErrors(form) {
-    form.querySelectorAll('[aria-invalid]').forEach(el => el.removeAttribute('aria-invalid'));
-    form.querySelectorAll('.err').forEach(e => { e.textContent = ''; });
-  }
 
   const PAGE_CHECKS = {
     nick: () => setErr('nick', nickOk() ? '' : MSG.nick),
-    email: () => setErr('email', !emailInput.value.trim() ? MSG.emailEmpty : emailOk() ? '' : MSG.emailBad),
-    password: () => setErr('password', passwordOk() ? '' : MSG.password),
-    age: () => setErr('age', f2.elements.age.value ? '' : MSG.age),
+    age: () => setErr('age', ageValue() ? '' : MSG.age),
     gform: () => setErr('gform', f2.elements.gform.value ? '' : MSG.gform),
+    email: () => setErr('email', !emailInput.value.trim() ? MSG.emailEmpty : emailOk() ? '' : MSG.emailBad),
+    code: () => setErr('code', !code.filled() ? MSG.codeEmpty : code.matches() ? '' : MSG.codeBad),
+    parent: () => {
+      const v = parentInput.value.trim();
+      return setErr('pemail', !v ? MSG.parentEmpty : !EMAIL_RE.test(v) ? MSG.emailBad : parentOk() ? '' : MSG.parentSame);
+    },
     consents: () => {
       const ok = setErr('terms', $('#terms').checked ? '' : MSG.terms);
-      return setErr('parent', needsParent() && !$('#parent').checked ? MSG.parent : '') && ok;
+      return setErr('health', $('#health').checked ? '' : MSG.health) && ok;
     },
   };
   function validatePages(pages) {
@@ -148,8 +189,6 @@
       if (el) { (el.tagName === 'FIELDSET' ? el.querySelector('input') : el).focus(); return; }
     }
   }
-  const pageHasValue = page => $$('input', page).some(i =>
-    (i.type === 'checkbox' || i.type === 'radio') ? i.checked : i.value.trim() !== '');
 
   // ================================================================
   //  Nawigacja: etapy
@@ -159,16 +198,15 @@
     busy = true;
     const dir = n > current ? 1 : -1;
     const from = steps[current], to = steps[n];
-    const paged = isPaged();
 
     if (n <= 3) {
-      const pages = pagesOf(n);
+      const pages = pagesOf(n), paged = isPaged(n);
       pageIdx[n] = page != null ? page : dir > 0 ? 0 : pages.length - 1;
       pages.forEach((p, i) => { p.classList.remove('is-entering', 'is-leaving'); p.hidden = paged && i !== pageIdx[n]; });
     }
 
     // Na telefonie chowamy klawiaturę i wracamy na górę, żeby było widać, jak roślina rośnie
-    if (paged) {
+    if (!mqDesktop.matches) {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
     }
@@ -188,7 +226,9 @@
     current = n;
     syncControls();
     updateCaption();
-    Scene.setStage(n, stageProgress(n));
+    // poniżej 16 lat roślinka nie kwitnie od razu: zostaje w pąkach do zgody opiekuna
+    if (n === 4 && data.parentPending) Scene.setStage(3, 1);
+    else Scene.setStage(n, stageProgress(n));
     if (dir > 0) pushGuard();
 
     setTimeout(() => {
@@ -201,19 +241,18 @@
     }, T_STEP);
   }
 
+  // Telefon (dotyk): fokus na ekranie, żeby klawiatura nie wyskakiwała sama. Komputer: od razu pole tekstowe.
+  function focusTarget(scope, fallback) {
+    const input = finePointer && scope && scope.querySelector('input.input');
+    return input || fallback;
+  }
   function focusAfterStep(stepEl, n) {
-    if (isPaged()) {
-      const page = n <= 3 ? pagesOf(n)[pageIdx[n]] : null;
-      (page || stepEl.querySelector('h2')).focus({ preventScroll: true });
-    } else {
-      // Na komputerze od razu pole tekstowe
-      const input = finePointer && stepEl.querySelector('input.input');
-      (input || stepEl.querySelector('h2')).focus({ preventScroll: true });
-    }
+    const page = n <= 3 && isPaged(n) ? pagesOf(n)[pageIdx[n]] : null;
+    focusTarget(page || stepEl, page || stepEl.querySelector('h2')).focus({ preventScroll: true });
   }
 
   // ================================================================
-  //  Nawigacja: ekrany w obrębie etapu (telefon)
+  //  Nawigacja: ekrany w obrębie etapu
   // ================================================================
   function goToPage(n, idx) {
     const pages = pagesOf(n);
@@ -248,16 +287,16 @@
       from.hidden = true;
       from.classList.remove('is-leaving');
       busy = false;
-      if (!(keyboardOpen && input)) to.focus({ preventScroll: true });
+      if (!(keyboardOpen && input)) focusTarget(to, to).focus({ preventScroll: true });
     }, T_PAGE);
   }
 
   function goBack() {
     if (busy || current === 4) return;
-    if (isPaged() && pageIdx[current] > 0) goToPage(current, pageIdx[current] - 1);
+    if (isPaged(current) && pageIdx[current] > 0) goToPage(current, pageIdx[current] - 1);
     else if (current > 1) goTo(current - 1);
   }
-  const atStart = () => current === 1 && (!isPaged() || pageIdx[1] === 0);
+  const atStart = () => current === 1 && (!isPaged(1) || pageIdx[1] === 0);
   const whenIdle = fn => { if (!busy) fn(); else setTimeout(() => whenIdle(fn), 60); };
 
   // Systemowy „wstecz” (Android, gest na iOS) cofa o jeden ekran zamiast zamykać rejestrację
@@ -281,9 +320,8 @@
   //  Przyciski, postęp, podpis sceny
   // ================================================================
   function syncControls() {
-    const paged = isPaged();
     forms.forEach((form, i) => {
-      const n = i + 1, pages = pagesOf(n), idx = pageIdx[n], page = pages[idx];
+      const n = i + 1, paged = isPaged(n), pages = pagesOf(n), idx = pageIdx[n], page = pages[idx];
       const last = !paged || idx === pages.length - 1;
       form.dataset.last = String(last);
 
@@ -293,16 +331,15 @@
       if (foot) foot.hidden = paged && idx > 0;
 
       let label = n === 3 && last ? 'Załóż konto' : 'Dalej';
-      if (paged && page && 'optional' in page.dataset && !pageHasValue(page)) label = 'Pomiń';
+      if (paged && page && page.dataset.page === 'email') label = 'Wyślij kod';
       form.querySelector('.btn-label').textContent = label;
     });
     updateStepper();
   }
 
   // Gałązka postępu (css/auth.css): ukończony etap ma pełny liść, a przy bieżącym liść rośnie
-  // z każdym pytaniem, które jest już za użytkownikiem (--fill 0–1; na komputerze etap to jeden ekran, więc 0)
+  // z każdym pytaniem, które jest już za użytkownikiem (--fill 0–1; etap pokazany w całości na komputerze: 0)
   function updateStepper() {
-    const paged = isPaged();
     $$('.stepper li').forEach((li, i) => {
       const s = i + 1;
       li.classList.toggle('is-done', s < current);
@@ -310,7 +347,7 @@
       if (s === current) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
 
       let fill = s < current ? 1 : 0;
-      if (s === current && s <= 3 && paged) fill = pageIdx[s] / pagesOf(s).length;
+      if (s === current && s <= 3 && isPaged(s)) fill = pageIdx[s] / pagesOf(s).length;
       li.style.setProperty('--fill', fill);
     });
   }
@@ -320,11 +357,13 @@
   let captionKey = 1;
   let captionTimer;
   function updateCaption() {
-    const plant = plantInput.value.trim();
-    eyebrow.textContent = current >= 3 && plant ? plant : 'Twoja roślinka';
+    // roślinka dostaje imię już na pierwszym ekranie, więc podpis nosi je od razu
+    eyebrow.textContent = plantInput.value.trim() || 'Twoja roślinka';
 
     const p = current <= 3 ? stageProgress(current) : 0;
-    const key = current === 1 ? (p > 0 ? '1+' : 1) : current <= 3 && p >= .5 ? current + '+' : current;
+    const key = current === 4 ? (data.parentPending ? 'wait' : 4)
+      : current === 1 ? (p > 0 ? '1+' : 1)
+      : p >= .5 ? current + '+' : current;
     if (key === captionKey) return;
     captionKey = key;
     clearTimeout(captionTimer);
@@ -343,10 +382,14 @@
 
   // Przełączenie telefon ↔ komputer (obrót tabletu, zmiana szerokości okna)
   function onModeChange() {
-    [1, 2, 3].forEach(n => pagesOf(n).forEach((p, i) => {
-      p.classList.remove('is-entering', 'is-leaving');
-      p.hidden = isPaged() && i !== pageIdx[n];
-    }));
+    [1, 2, 3].forEach(n => {
+      const pages = pagesOf(n);
+      pageIdx[n] = Math.min(pageIdx[n], Math.max(0, pages.length - 1));
+      pages.forEach((p, i) => {
+        p.classList.remove('is-entering', 'is-leaving');
+        p.hidden = isPaged(n) && i !== pageIdx[n];
+      });
+    });
     syncControls();
   }
   if (mqDesktop.addEventListener) mqDesktop.addEventListener('change', onModeChange);
@@ -365,12 +408,19 @@
     form.addEventListener('submit', e => {
       e.preventDefault();
       if (busy) return;
-      const pages = pagesOf(n);
-      const scope = isPaged() ? [pages[pageIdx[n]]] : pages;
+      const pages = pagesOf(n), paged = isPaged(n);
+      const scope = paged ? [pages[pageIdx[n]]] : pages;
+      const has = name => scope.some(p => p.dataset.page === name);
+
+      // Poniżej 13 lat: bez komunikatu o błędzie i bez potrząsania, tylko spokojna informacja pod wiekiem
+      if (has('age') && under13()) { showUnder13(true); return; }
       if (!validatePages(scope)) { shake(); haptic([16, 40, 16]); focusFirstInvalid(scope); return; }
-      // Możliwa literówka w e-mailu: najpierw pokaż podpowiedź, drugie „Dalej” przechodzi mimo to
-      if (scope.some(p => p.dataset.page === 'email') && emailNeedsSuggestion()) { showEmailSuggestion(true); haptic(8); return; }
-      if (isPaged() && pageIdx[n] < pages.length - 1) { goToPage(n, pageIdx[n] + 1); return; }
+      if (has('email')) {
+        // Możliwa literówka w e-mailu: najpierw pokaż podpowiedź, drugie „Dalej” przechodzi mimo to
+        if (emailNeedsSuggestion()) { showEmailSuggestion(true); haptic(8); return; }
+        sendCode();
+      }
+      if (paged && pageIdx[n] < pages.length - 1) { goToPage(n, pageIdx[n] + 1); return; }
       haptic(12);
       completeStage(n);
     });
@@ -388,14 +438,13 @@
 
     // Telefon: wybór wieku / formy od razu przechodzi do kolejnego pytania
     form.addEventListener('change', e => {
-      if (!isPaged() || e.target.type !== 'radio' || Date.now() - lastPointerDown > 1000) return;
+      if (!isPaged(n) || e.target.type !== 'radio' || Date.now() - lastPointerDown > 1000) return;
       const page = e.target.closest('.page');
-      if (!page || !('auto' in page.dataset)) return;
+      if (!page || !('auto' in page.dataset) || under13()) return;
       clearTimeout(autoTimer);
       autoTimer = setTimeout(() => {
         if (busy || page.hidden || page.classList.contains('is-leaving')) return;
-        if (form.requestSubmit) form.requestSubmit();
-        else form.dispatchEvent(new Event('submit', { cancelable: true }));
+        submitForm(form);
       }, T_AUTO);
     });
 
@@ -403,8 +452,7 @@
     form.addEventListener('keydown', e => {
       if (e.key === 'Enter' && e.target.matches('input[type=radio], input[type=checkbox]')) {
         e.preventDefault();
-        if (form.requestSubmit) form.requestSubmit();
-        else form.dispatchEvent(new Event('submit', { cancelable: true }));
+        submitForm(form);
       }
     });
   });
@@ -412,42 +460,110 @@
   function completeStage(n) {
     pagesOf(n).forEach(p => passed.add(p.dataset.page));
     if (n === 1) {
-      Object.assign(data, { nick: nickInput.value.trim(), email: emailInput.value.trim(), password: pwInput.value });
-      $('#s2-title').textContent = `Miło Cię poznać, ${data.nick}!`;
-    } else if (n === 2) {
-      data.age = f2.elements.age.value === '19' ? '19+' : f2.elements.age.value;
-      data.form = f2.elements.gform.value;
-      data.topics = $$('input[name=topics]:checked', f2).map(i => i.value);
-    } else if (n === 3) {
       data.plant = plantInput.value.trim();
-      data.theme = f3.elements.theme.value;
+      data.theme = f1.elements.theme.value;
+    } else if (n === 2) {
+      data.nick = nickInput.value.trim();
+      data.age = ageValue() === '19' ? '19+' : ageValue();
+      data.form = f2.elements.gform.value;
+    } else if (n === 3) {
+      data.email = emailInput.value.trim();
+      data.parentEmail = needsParent() ? parentInput.value.trim() : null;
+      data.parentPending = needsParent();
+      // osobno regulamin i dane o zdrowiu, z datą — tak, jak pójdą do tabeli zgód (TODO backend)
+      data.consents = { terms: true, health: true, at: new Date().toISOString() };
       Theme.apply(data.theme, { save: true });
-      data.reminder = f3.elements.reminder.value;
-      data.parentConsent = needsParent() ? true : null;
-      // Tymczasowo, do czasu backendu: profil (bez hasła) zostaje w przeglądarce, żeby logowanie mogło przywitać po imieniu
-      const { password, ...profile } = data;
-      account.save(profile);
+      // Tymczasowo, do czasu backendu: profil zostaje w przeglądarce, żeby logowanie mogło przywitać po imieniu.
+      // TODO backend: supabase.auth.verifyOtp + zapis profilu; poniżej 16 lat wysyłka prośby do opiekuna
+      account.save(data);
       fillDone();
     }
     goTo(n + 1);
   }
 
   // ================================================================
-  //  Etap 1 — konto
+  //  Etap 1 — roślinka
+  // ================================================================
+  // Kolor: podgląd na żywo (roślina i cała paleta), zapis dopiero po założeniu konta
+  const colorQ = $('#color-q');
+  const syncColorQuestion = () => {
+    colorQ.textContent = `Jaki kolor ma mieć ${plantInput.value.trim() || 'Twoja roślinka'}?`;
+  };
+  const selectCurrentTheme = () => {
+    const radio = $$('input[name=theme]', f1).find(r => r.value === Theme.current);
+    if (radio) radio.checked = true;
+  };
+  plantInput.addEventListener('input', syncColorQuestion);
+  f1.addEventListener('change', e => {
+    if (e.target.name !== 'theme') return;
+    colorTouched = true;
+    Theme.apply(e.target.value);
+    haptic(8);
+  });
+  selectCurrentTheme();
+
+  const NAMES = shuffle(['Kiełek', 'Bazylia', 'Mięta', 'Listek', 'Fikus', 'Pestka', 'Groszek',
+    'Melisa', 'Rumianek', 'Zielu', 'Koniczynka', 'Szczypiorek']);
+  let nameIdx = 0;
+  const dice = $('#dice');
+  dice.addEventListener('click', () => {
+    plantInput.value = NAMES[nameIdx++ % NAMES.length];
+    plantInput.dispatchEvent(new Event('input', { bubbles: true }));
+    dice.classList.remove('roll');
+    void dice.offsetWidth;
+    dice.classList.add('roll');
+    setTimeout(() => dice.classList.remove('roll'), 500);
+  });
+
+  // ================================================================
+  //  Etap 2 — o Tobie
   // ================================================================
   function syncValidMarks() {
     nickInput.closest('.field').classList.toggle('is-valid', nickOk());
     emailInput.closest('.field').classList.toggle('is-valid', emailOk());
   }
-  steps[1].addEventListener('input', syncValidMarks);
+  f2.addEventListener('input', syncValidMarks);
+  f3.addEventListener('input', syncValidMarks);
 
   nickInput.addEventListener('blur', () => {
     if (nickInput.value.trim() && !nickOk()) setErr('nick', MSG.nick);
   });
+
+  // Poniżej 13 lat: informacja w ciepłym świetle zamiast błędu (wcześniej nie było takiej odpowiedzi)
+  const under13Box = $('#under13');
+  function showUnder13(focus) {
+    under13Box.classList.add('open');
+    under13Box.inert = false;
+    setErr('age', '');
+    if (focus) {
+      const note = $('#under13-note');
+      note.focus({ preventScroll: true });
+      note.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+    }
+  }
+  function hideUnder13() {
+    under13Box.classList.remove('open');
+    under13Box.inert = true;
+  }
+
+  // Poniżej 16 lat etap konta dostaje dodatkowy ekran: e-mail rodzica lub opiekuna
+  function syncParent() {
+    if (needsParent()) delete parentPage.dataset.off;
+    else { parentPage.dataset.off = ''; parentInput.value = ''; setErr('pemail', ''); }
+  }
+  f2.addEventListener('change', e => {
+    if (e.target.name !== 'age') return;
+    syncParent();
+    if (under13()) showUnder13(false); else hideUnder13();
+  });
+
+  // ================================================================
+  //  Etap 3 — konto
+  // ================================================================
   emailInput.addEventListener('blur', e => {
     if (emailInput.value.trim() && !emailOk()) setErr('email', MSG.emailBad);
     // Stuknięcie w „Dalej” też zabiera fokus z pola: wtedy podpowiedź tylko się pokazuje, a „widziana” robi się
-    // dopiero w obsłudze wysyłki. Inaczej to samo stuknięcie pokazywało ją i od razu przechodziło do hasła.
+    // dopiero w obsłudze wysyłki. Inaczej to samo stuknięcie pokazywało ją i od razu przechodziło dalej.
     const viaSubmit = e.relatedTarget instanceof Element && e.relatedTarget.matches('button[type=submit]');
     showEmailSuggestion(!viaSubmit);
   });
@@ -504,126 +620,66 @@
     emailInput.focus();
   });
 
-  // Pokaż / ukryj hasło, Caps Lock
-  const pwField = passwordField(pwInput, $('#pw-toggle'), $('#caps-hint'));
-
-  // Siła hasła
-  const meter = $('#pw-meter');
-  const meterLabel = $('#pw-label');
-  const LEVELS = ['', 'Za krótkie', 'Słabe', 'Dobre', 'Mocne'];
-  function pwLevel(pw) {
-    if (!pw) return 0;
-    if (pw.length < 8) return 1;
-    let s = 0;
-    if (pw.length >= 12) s++;
-    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
-    if (/\d/.test(pw)) s++;
-    if (/[^A-Za-z0-9]/.test(pw)) s++;
-    return s <= 1 ? 2 : s === 2 ? 3 : 4;
-  }
-  function syncMeter() {
-    const lvl = pwLevel(pwInput.value);
-    meter.dataset.level = lvl;
-    meter.classList.toggle('show', lvl > 0);
-    meterLabel.textContent = LEVELS[lvl];
-  }
-  pwInput.addEventListener('input', syncMeter);
-
-  // ================================================================
-  //  Etap 2 — o Tobie
-  // ================================================================
-  const parentWrap = $('#parent-wrap');
-  function syncParentConsent() {
-    const needs = needsParent();
-    parentWrap.classList.toggle('open', needs);
-    parentWrap.inert = !needs;
-    if (!needs) { $('#parent').checked = false; setErr('parent', ''); }
-  }
-  f2.addEventListener('change', e => { if (e.target.name === 'age') syncParentConsent(); });
-  f3.addEventListener('change', e => { if (e.target.name === 'reminder') reminderTouched = true; });
+  // Sześć cyfr wpisane (albo wklejone, albo podpowiedziane przez telefon) → od razu sprawdzamy, bez stukania w „Dalej”
+  let codeTimer;
+  codeInput.addEventListener('input', () => {
+    clearTimeout(codeTimer);
+    if (!code.filled()) return;
+    codeTimer = setTimeout(() => {
+      const page = currentPage();
+      if (!busy && current === 3 && page && page.dataset.page === 'code') submitForm(f3);
+    }, 250);
+  });
 
   // Regulamin i polityka prywatności: dokumentów jeszcze nie ma (dojdą razem ze zgodami RODO, notes/CLAUDE.md).
-  // Bez tego href="#" dokładał wpis do historii i wywoływał „wstecz”, czyli cofał z ekranu zgód do przypomnień.
+  // Bez tego href="#" dokładał wpis do historii i wywoływał „wstecz”, czyli cofał z ekranu zgód o ekran.
   $$('.check a[href="#"]', f3).forEach(a => a.addEventListener('click', e => {
     e.preventDefault();
     toast('Ten dokument dodamy przed startem aplikacji.');
   }));
 
-  // Kolor roślinki: podgląd na żywo (roślina i cała paleta), zapis dopiero po założeniu konta
-  const colorQ = $('#color-q');
-  const syncColorQuestion = () => {
-    const plant = plantInput.value.trim();
-    colorQ.textContent = `Jaki kolor ma mieć ${plant || 'Twoja roślinka'}?`;
-  };
-  const selectCurrentTheme = () => {
-    const radio = $$('input[name=theme]', f3).find(r => r.value === Theme.current);
-    if (radio) radio.checked = true;
-  };
-  plantInput.addEventListener('input', syncColorQuestion);
-  f3.addEventListener('change', e => {
-    if (e.target.name !== 'theme') return;
-    colorTouched = true;
-    Theme.apply(e.target.value);
-    haptic(8);
-  });
-  selectCurrentTheme();
-
-  // ================================================================
-  //  Etap 3 — roślinka
-  // ================================================================
-  const NAMES = shuffle(['Kiełek', 'Bazylia', 'Mięta', 'Listek', 'Fikus', 'Pestka', 'Groszek',
-    'Melisa', 'Rumianek', 'Zielu', 'Koniczynka', 'Szczypiorek']);
-  let nameIdx = 0;
-  const dice = $('#dice');
-  dice.addEventListener('click', () => {
-    plantInput.value = NAMES[nameIdx++ % NAMES.length];
-    plantInput.dispatchEvent(new Event('input', { bubbles: true }));
-    dice.classList.remove('roll');
-    void dice.offsetWidth;
-    dice.classList.add('roll');
-    setTimeout(() => dice.classList.remove('roll'), 500);
-  });
-
   // ================================================================
   //  Gotowe
   // ================================================================
   function fillDone() {
+    const pending = !!data.parentPending;
+    steps[4].dataset.pending = String(pending);
+    const plant = data.plant;
+    if (pending) {
+      $('#done-title').textContent = `Jeszcze chwila, ${data.nick}`;
+      $('#done-text').textContent = `Wysłaliśmy prośbę o zgodę na adres ${data.parentEmail}. Gdy opiekun ją potwierdzi, ${plant || 'Twoja roślinka'} rozkwitnie. Nic nie przepadnie — poczeka na Ciebie w pąku.`;
+      return;
+    }
     $('#done-title').textContent = `Witaj, ${data.nick}!`;
     const greet = { f: 'Dobrze, że dołączyłaś.', m: 'Dobrze, że dołączyłeś.', n: 'Dobrze, że jesteś z nami.' }[data.form];
-    const plant = data.plant ? `Twoja roślinka, ${data.plant}, właśnie zakwitła.` : 'Twoja roślinka właśnie zakwitła.';
-    $('#done-text').textContent = `${greet} ${plant} Od dziś rośniecie razem — dzień po dniu.`;
-
-    const pills = $('#done-pills');
-    pills.innerHTML = '';
-    // każda pigułka ma listek w kolorze roślinki (css/auth.css); kolory kategorii zostają tylko w Trackerze
-    const add = text => {
-      const li = document.createElement('li');
-      li.append(document.createElement('i'), document.createTextNode(text));
-      pills.append(li);
-    };
-    const theme = Theme.list.find(t => t.id === data.theme);
-    if (theme) add(`Kolor: ${theme.name}`);
-    add(data.reminder === 'brak' ? 'Bez przypomnień' : `Check-in ${data.reminder}`);
-    data.topics.forEach(tp => add(tp));
+    const bloom = plant ? `Twoja roślinka, ${plant}, właśnie zakwitła.` : 'Twoja roślinka właśnie zakwitła.';
+    $('#done-text').textContent = `${greet} ${bloom} Podlej ją pierwszy raz — to kilka krótkich pytań o Twój dzień.`;
   }
 
+  // Powtórka samego rozkwitu: roślina wraca do pąków i kwitnie jeszcze raz. Formularz zostaje nietknięty
+  // (wcześniej ten przycisk kasował wszystko i zaczynał rejestrację od nowa).
+  let replayTimer;
   $('#replay').addEventListener('click', () => {
-    forms.forEach(f => { f.reset(); clearErrors(f); });
-    syncMeter();
-    syncValidMarks();
-    syncParentConsent();
-    suggestBox.hidden = true;
-    suggestedFor = null;
-    pwField.reset();
-    passed.clear();
-    reminderTouched = false;
-    colorTouched = false;
-    selectCurrentTheme();
-    syncColorQuestion();
-    $('#s2-title').textContent = 'Miło Cię poznać!';
-    for (const k in data) delete data[k];
-    goTo(1, 0);
+    clearTimeout(replayTimer);
+    Scene.setGrowth(G_BUDS);
+    replayTimer = setTimeout(() => Scene.setStage(4), reduceMotion ? 300 : 1400);
   });
 
+  $('#parent-resend').addEventListener('click', () => {
+    // TODO backend: ponowna wysyłka prośby o zgodę do opiekuna
+    toast(`Prośba poszła jeszcze raz na ${data.parentEmail}.`);
+  });
+  // PROTOTYP: opiekun „potwierdza” jednym stuknięciem — roślinka rozkwita i ekran zmienia się w powitanie
+  $('#parent-demo').addEventListener('click', () => {
+    data.parentPending = false;
+    account.save(data);
+    fillDone();
+    Scene.setStage(4);
+    updateCaption();
+    haptic(12);
+    $('#done-title').focus({ preventScroll: true });
+  });
+
+  syncParent();
   onModeChange();
 })();
