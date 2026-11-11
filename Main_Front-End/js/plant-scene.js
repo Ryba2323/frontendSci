@@ -30,7 +30,7 @@
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
   const card = document.querySelector('.card');
-  const layout = document.querySelector('.layout');
+  const copy = document.querySelector('.scene-copy');   // podpis nad rośliną: wyznacza górę nieba
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const motion = reduceMotion ? .3 : 1;
@@ -797,13 +797,15 @@
   // Księżyce (wieczór, noc) i chmury (dzień). Żyją w pasie między podpisem a horyzontem: nigdy pod tekstem.
   function drawSkyThings() {
     const span = skySpan + 140, skyH = Math.max(90, baseY - skyTop), wk = clamp(W / 375, 1, 1.5);
+    // niskie niebo (długi ekran formularza, mała roślina): księżyce maleją razem z nim, żeby nie były większe od rośliny
+    const mk = clamp(skyH / 240, .5, 1);
     const drift = reduceMotion ? 0 : clock * .9;
     if (SC.dark) {
       const all = SC.part === 'night' ? 1 : .6;
       const tones = [[255, 246, 222], tint(pal.l3, .5), mixC(pal.tip, [255, 232, 196], .5)];
       for (const m of MOONS) {
         const x = wrap(m.nx * span - drift * .25 * m.par, span) - 70;
-        const r = m.r * wk, y = arcY(x) - m.alt * skyH, col = tones[m.tone];
+        const r = m.r * wk * mk, y = arcY(x) - m.alt * skyH, col = tones[m.tone];
         const gl = ctx.createRadialGradient(x, y, r * .6, x, y, r * 4.2);
         gl.addColorStop(0, rgba(col, .2 * all)); gl.addColorStop(1, rgba(col, 0));
         ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r * 4.2, 0, TAU); ctx.fill();
@@ -1050,7 +1052,6 @@
   // krótkie pytanie = nisko położony grunt i wielka roślina, dłuższy ekran = grunt podnosi się, roślina maleje.
   // Horyzont i skala dochodzą do celu płynnie (jak kamera w aplikacji), więc zmiana pytania nie szarpie sceną.
   function place(dt, snap) {
-    const copy = document.querySelector('.scene-copy');
     const copyBottom = copy && copy.offsetHeight ? copy.getBoundingClientRect().bottom + window.scrollY : 0;
     const cardBox = card.getBoundingClientRect();
     wide = W >= 900;

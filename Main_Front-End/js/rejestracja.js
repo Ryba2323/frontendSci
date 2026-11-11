@@ -9,7 +9,7 @@
   'use strict';
 
   const Scene = window.PlantScene || { setStage() {}, setProgress() {}, rustle() {} };
-  const { EMAIL_RE, haptic, passwordField, stagger, account } = window.AuthCommon;
+  const { EMAIL_RE, haptic, toast, passwordField, stagger, account } = window.AuthCommon;
   const Theme = window.Theme || { list: [], current: null, apply() {} };
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(pointer: fine)').matches;
@@ -369,7 +369,7 @@
       const scope = isPaged() ? [pages[pageIdx[n]]] : pages;
       if (!validatePages(scope)) { shake(); haptic([16, 40, 16]); focusFirstInvalid(scope); return; }
       // Możliwa literówka w e-mailu: najpierw pokaż podpowiedź, drugie „Dalej” przechodzi mimo to
-      if (scope.some(p => p.dataset.page === 'email') && emailNeedsSuggestion()) { showEmailSuggestion(); return; }
+      if (scope.some(p => p.dataset.page === 'email') && emailNeedsSuggestion()) { showEmailSuggestion(true); haptic(8); return; }
       if (isPaged() && pageIdx[n] < pages.length - 1) { goToPage(n, pageIdx[n] + 1); return; }
       haptic(12);
       completeStage(n);
@@ -444,9 +444,12 @@
   nickInput.addEventListener('blur', () => {
     if (nickInput.value.trim() && !nickOk()) setErr('nick', MSG.nick);
   });
-  emailInput.addEventListener('blur', () => {
+  emailInput.addEventListener('blur', e => {
     if (emailInput.value.trim() && !emailOk()) setErr('email', MSG.emailBad);
-    showEmailSuggestion();
+    // Stuknięcie w „Dalej” też zabiera fokus z pola: wtedy podpowiedź tylko się pokazuje, a „widziana” robi się
+    // dopiero w obsłudze wysyłki. Inaczej to samo stuknięcie pokazywało ją i od razu przechodziło do hasła.
+    const viaSubmit = e.relatedTarget instanceof Element && e.relatedTarget.matches('button[type=submit]');
+    showEmailSuggestion(!viaSubmit);
   });
 
   // Podpowiedź literówek w domenie („gmial.com” → „gmail.com”)
@@ -482,12 +485,12 @@
   }
   const suggestBox = $('#email-suggest');
   const suggestBtn = $('#email-suggest-btn');
-  let suggestedFor = null; // adres, dla którego podpowiedź już była pokazana
-  function showEmailSuggestion() {
+  let suggestedFor = null; // adres, dla którego użytkownik już widział podpowiedź (kolejne „Dalej” przechodzi mimo niej)
+  function showEmailSuggestion(seen = true) {
     const value = emailInput.value.trim();
     const s = emailSuggestion(value);
     suggestBox.hidden = !s;
-    if (s) { suggestBtn.textContent = s; suggestedFor = value; }
+    if (s) { suggestBtn.textContent = s; if (seen) suggestedFor = value; }
   }
   const emailNeedsSuggestion = () => {
     const value = emailInput.value.trim();
@@ -538,6 +541,13 @@
   }
   f2.addEventListener('change', e => { if (e.target.name === 'age') syncParentConsent(); });
   f3.addEventListener('change', e => { if (e.target.name === 'reminder') reminderTouched = true; });
+
+  // Regulamin i polityka prywatności: dokumentów jeszcze nie ma (dojdą razem ze zgodami RODO, notes/CLAUDE.md).
+  // Bez tego href="#" dokładał wpis do historii i wywoływał „wstecz”, czyli cofał z ekranu zgód do przypomnień.
+  $$('.check a[href="#"]', f3).forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    toast('Ten dokument dodamy przed startem aplikacji.');
+  }));
 
   // Kolor roślinki: podgląd na żywo (roślina i cała paleta), zapis dopiero po założeniu konta
   const colorQ = $('#color-q');

@@ -160,8 +160,11 @@ button, a, label, input { touch-action: manipulation; }
 .brand-word .bw-swoosh { position: absolute; left: -38%; right: -4%; bottom: -7px; width: 142%; height: 7px; overflow: visible; }
 .brand-word .bw-swoosh path { fill: none; stroke: var(--wm-accent); stroke-width: 2.6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 
-/* SOS: pigułka ze „Ścieżki”; wieczorem i nocą świeci jak latarnia (ciepłe światło) */
+/* SOS: pigułka ze „Ścieżki”; wieczorem i nocą świeci jak latarnia (ciepłe światło).
+   Przyklejony do ekranu: zostaje widoczny także po przewinięciu długiego ekranu (zgody, niski telefon),
+   a napis ReLeaf przewija się razem z niebem. */
 .sos {
+  position: fixed; top: calc(env(safe-area-inset-top) + var(--sp-3)); right: calc(env(safe-area-inset-right) + var(--sp-5));
   display: inline-flex; align-items: center; gap: var(--sp-2);
   height: var(--tap); padding: 0 var(--sp-4) 0 var(--sp-3); border: 0; border-radius: 999px;
   background: var(--veil); box-shadow: inset 0 0 0 1px var(--line);
@@ -395,6 +398,8 @@ legend { padding: 0; }
   background: var(--field-bg); box-shadow: var(--card-edge); cursor: pointer;
   transition: transform var(--dur-base) var(--spring);
 }
+/* telefon i tablet: podpowiedź to przycisk pod kciuk, nie drobny link w zdaniu */
+@media (max-width: 899px) { .suggest button { min-height: var(--tap); margin: 0 2px; } }
 .suggest button:active { transform: scale(.96); transition-duration: .1s; }
 .suggest button:focus-visible { outline: 3px solid var(--focus); }
 
@@ -500,6 +505,7 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
 }
 .check:has(input:checked) { background: var(--field-on); box-shadow: inset 0 0 0 2px var(--primary), var(--field-shadow); }
 .reveal .check { margin-top: var(--sp-3); }
+.page[data-page="consents"] .q { margin-bottom: var(--sp-4); }
 .check input {
   appearance: none; -webkit-appearance: none;
   flex: 0 0 24px; width: 24px; height: 24px; margin: 0;
@@ -525,6 +531,10 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
   text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--text) 45%, transparent); text-underline-offset: 3px;
 }
 .check a:hover, .foot a:hover, .note a:hover { text-decoration-color: currentColor; }
+/* większe pole dotyku dla linków w zdaniu; pionowy padding elementu w wierszu nie zmienia wysokości wiersza */
+.foot a, .note a { padding: 14px var(--sp-1); margin: 0 calc(var(--sp-1) * -1); }
+/* numer telefonu zawsze w jednym wierszu („116” i „111” w osobnych wierszach wyglądały jak dwa numery) */
+.note a[href^="tel:"] { white-space: nowrap; }
 :is(.check, .foot, .note) a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
 .reveal { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--dur-base) ease, opacity var(--dur-base) ease; }
@@ -620,8 +630,6 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
    ================================================================ */
 .step-done { text-align: center; padding: var(--sp-2) 0 0; }
 .step-done:focus { outline: none; }
-/* telefon: znaczek z kwiatkiem znika — nad tekstem kwitnie cała roślinka i to ona jest nagrodą */
-@media (max-width: 899px) { .badge { display: none; } }
 .badge {
   position: relative; width: 64px; height: 64px; margin: var(--sp-1) auto var(--sp-4); border-radius: 50%;
   display: grid; place-items: center;
@@ -638,6 +646,9 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
 .step-done.is-entering .badge svg { animation: bloom var(--dur-slow) var(--spring) .4s both; }
 @keyframes bloom { from { transform: scale(.2) rotate(-90deg); opacity: 0; } }
 @keyframes pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.35); opacity: 0; } }
+/* telefon: znaczek z kwiatkiem znika — nad tekstem kwitnie cała roślinka i to ona jest nagrodą
+   (reguła stoi po .badge, bo wcześniej display: grid ją nadpisywał i znaczek zostawał) */
+@media (max-width: 899px) { .badge { display: none; } }
 .step-done h2 { margin: 0 0 var(--sp-3); font-family: var(--font-serif); font-size: 2rem; line-height: 1.08; font-weight: 500; letter-spacing: -.02em; text-wrap: balance; }
 .step-done p { max-width: 340px; margin: 0 auto; color: var(--text-body); line-height: 1.55; }
 
@@ -718,6 +729,7 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
   .scene-copy { left: var(--sp-8); max-width: 360px; }
   .scene-copy p { font-size: 1.6rem; }
   .auth-top { padding-left: var(--sp-8); padding-right: var(--sp-8); }
+  .sos { right: calc(env(safe-area-inset-right) + var(--sp-8)); }
   .q, .title { font-size: 2.2rem; }
   .card { padding-bottom: var(--sp-8); }
 }
@@ -736,6 +748,7 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
   .mobile-only, .q-hint { display: none; }
 
   .auth-top { padding: var(--sp-8) var(--sp-10) 0; }
+  .sos { top: var(--sp-8); right: var(--sp-10); }
 
   .layout {
     display: grid; justify-content: normal;
@@ -744,6 +757,9 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
     align-items: center;
     padding: 96px clamp(var(--sp-6), 6vw, 110px) var(--sp-8);
   }
+
+  /* szeroki ekran: kolumna formularza kończy się przed przyklejonym SOS, więc przy przewijaniu nic pod niego nie wjeżdża */
+  @media (min-width: 1200px) { .layout { padding-right: 144px; } }
 
   .scene-copy { top: 92px; left: var(--sp-10); max-width: min(340px, 30vw); }
   .scene-copy .eyebrow { margin-bottom: var(--sp-1); font-size: .82rem; }
@@ -846,6 +862,41 @@ fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0
 
 @media (min-width: 900px) and (hover: hover) and (pointer: fine) {
   .kbd-hint { display: block; }
+}
+
+/* Niski telefon (np. 375 × 667): ciaśniejsze odpowiedzi, żeby wszystkie formy i kolory mieściły się nad „Dalej”.
+   Pas nieba (--hero) zostaje, bo roślina musi stać nad formularzem. */
+@media (max-height: 700px) and (max-width: 699px) {
+  .q-hint { margin-bottom: var(--sp-3); }
+  .choices { gap: var(--sp-2); }
+  .choice span { min-height: 52px; padding-top: var(--sp-2); padding-bottom: var(--sp-2); }
+  .swatches { gap: var(--sp-2); }
+  .swatch span { padding: 10px var(--sp-1) var(--sp-2); }
+  .swatch i { width: 34px; height: 34px; }
+  .swatch i::after { width: 14px; height: 14px; }
+}
+
+/* Niski ekran komputera (laptop 1366 × 768 z paskami przeglądarki, ok. 640 px wysokości):
+   ciaśniej, żeby „Dalej” na pierwszym ekranie rejestracji było widać bez przewijania. Stoi po regule .kbd-hint. */
+@media (min-width: 900px) and (max-height: 760px) {
+  .auth-top { padding-top: var(--sp-5); }
+  .sos { top: var(--sp-5); }
+  .layout { padding-top: 72px; padding-bottom: var(--sp-4); }
+  .scene-copy { top: 72px; }
+  .stepper { height: 50px; margin-bottom: var(--sp-2); }
+  .stepper .lbl { top: 30px; }
+  .step-head { margin-bottom: var(--sp-3); }
+  .step-head h2, .title { font-size: 2rem; }
+  .lead { margin-bottom: var(--sp-3); }
+  .panel { padding: var(--sp-4) var(--sp-5); }
+  .page + .page { margin-top: var(--sp-3); }
+  .input-wrap { min-height: 50px; padding-top: var(--sp-1); padding-bottom: var(--sp-1); }
+  .f-ico { width: 40px; height: 40px; }
+  .actions { margin-top: var(--sp-4); }
+  .btn { height: 48px; }
+  .btn-back { flex-basis: 48px; }
+  .kbd-hint { display: none; }
+  .foot { margin-top: var(--sp-3); padding-top: var(--sp-3); }
 }
 
 @media (prefers-reduced-motion: reduce) {

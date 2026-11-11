@@ -206,7 +206,8 @@
   //  Powitanie
   // ================================================================
   function welcome(email) {
-    const me = saved && saved.email === email ? saved : null;
+    // adres e-mail nie rozróżnia wielkości liter („Ola@…” to to samo konto co „ola@…”)
+    const me = saved && saved.email && saved.email.toLowerCase() === email.toLowerCase() ? saved : null;
     $('#welcome-title').textContent = me ? `Witaj ponownie, ${me.nick}!` : 'Witaj ponownie!';
     const back = { f: 'Cieszymy się, że wróciłaś.', m: 'Cieszymy się, że wróciłeś.' }[me && me.form] || 'Dobrze, że znów jesteś.';
     const plant = me && me.plant ? `Twoja roślinka, ${me.plant}, zakwitła na powitanie.` : 'Twoja roślinka zakwitła na powitanie.';
@@ -247,6 +248,8 @@
   }
 
   $('#forgot-open').addEventListener('click', () => {
+    // w trakcie logowania nie zmieniamy widoku: powitanie nie miałoby jak się pokazać, a roślinka i tak by zakwitła
+    if (loginForm.getAttribute('aria-busy') === 'true') return;
     resetForgot();
     femailInput.value = emailInput.value.trim();
     setCaption('forgot');
