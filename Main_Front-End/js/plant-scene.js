@@ -849,6 +849,67 @@
     ctx.beginPath(); ctx.arc(cx, cy, R - .75, Math.PI, TAU); ctx.stroke();
   }
 
+  // Życie na planecie: grunt pod formularzem nie jest pustą plamą koloru.
+  //  • warstwy gruntu: kilka jasnych pasów biegnących łukiem planety (im głębiej, tym rzadziej),
+  //  • opadłe liście leżące na gruncie (blade, w kolorze krawędzi planety),
+  //  • kiełki-sąsiedzi na horyzoncie: pojawiają się razem ze wzrostem rośliny, kołyszą się na wietrze,
+  //    a po rozkwicie każdy dostaje mały kwiatek.
+  // Wszystko jest jaśniejsze od --planet tylko o kilka procent, więc tekst na gruncie zachowuje kontrast.
+  const BANDS = [[64, 22], [136, 30], [226, 38], [336, 46], [468, 54], [624, 62]];   // [głębokość pod łukiem, szerokość pasa] w px
+  const LITTER = [
+    [-.44, 96, 26, .5], [-.2, 182, 34, 2.4], [.3, 120, 22, -.7], [.43, 236, 30, 1.2], [-.36, 318, 28, -1.9], [.1, 286, 20, .3],
+    [.38, 404, 36, 2.9], [-.12, 438, 24, -1.1], [-.42, 520, 30, .9], [.22, 560, 26, -2.5], [0, 640, 22, 1.7], [.44, 664, 28, -.3],
+  ];                                                                                 // [x jako część szerokości, głębokość, długość, obrót]
+  const TUFTS = [
+    { f: -.4, h: 15, at: .1, ci: 1 }, { f: -.27, h: 9, at: .7, ci: 3 }, { f: -.15, h: 12, at: 1.3, ci: 0 },
+    { f: .17, h: 10, at: .4, ci: 2 }, { f: .29, h: 16, at: 1, ci: 5 }, { f: .42, h: 11, at: 1.7, ci: 1 },
+  ];
+  function drawGroundLife(g) {
+    const cx = baseX, cy = baseY + R, span = wide ? skySpan * 1.15 : W, wk = clamp(W / 375, 1, 1.6);
+    const light = rgba(tint(SC.rim, SC.dark ? 0 : .35), SC.dark ? .09 : .2);
+    // warstwy
+    ctx.strokeStyle = light;
+    for (const [d, w] of BANDS) {
+      if (R - d <= 0) continue;
+      ctx.lineWidth = w;
+      ctx.beginPath(); ctx.arc(cx, cy, R - d, Math.PI, TAU); ctx.stroke();
+    }
+    // opadłe liście
+    const leafCol = [rgba(tint(SC.rim, SC.dark ? 0 : .4), SC.dark ? .14 : .34), rgba(tint(SC.rim, SC.dark ? 0 : .2), SC.dark ? .1 : .22)];
+    for (const [f, d, len, rot] of LITTER) {
+      const x = cx + f * span, y = arcY(x) + d;
+      if (y > H + 30) continue;
+      const a = rot + Math.sin(clock * .5 + d) * .05 * motion + wind * .08 * Math.sin(clock * 5 + d);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+      for (const [side, col] of [[-1, leafCol[0]], [1, leafCol[1]]]) {
+        ctx.beginPath(); ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(len * .28, side * len * .4, len * .7, side * len * .3, len, 0);
+        ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+      }
+      ctx.restore();
+    }
+    // kiełki na horyzoncie
+    TUFTS.forEach((t, i) => {
+      const k = easeOutBack(clamp((g - t.at) / .35));
+      if (k <= 0) return;
+      const x = cx + t.f * span, y = arcY(x) + 1, h = t.h * wk * k;
+      const sway = (Math.sin(clock * 1.1 + i * 1.7) * .1 + Math.sin(clock * 7 + i) * .22 * wind) * motion;
+      const tx = x + Math.sin(sway) * h, ty = y - Math.cos(sway) * h;
+      ctx.strokeStyle = C.stems[1]; ctx.lineWidth = Math.max(1.4, h * .12); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x, y - h * .6, tx, ty); ctx.stroke();
+      const up = -Math.PI / 2 + sway;
+      drawLeaf(tx, ty, up - .85, h * .8, .42, C.leaves[t.ci], 1, 0);
+      drawLeaf(tx, ty, up + .85, h * .7, .42, C.leaves[(t.ci + 1) % 6], 1, 0);
+      const bl = clamp((g - 2.3 - i * .08) / .4);
+      if (bl > 0) {
+        const r = h * .2 * easeOutBack(bl);
+        ctx.fillStyle = C.flower;
+        for (let p = 0; p < 5; p++) { const a = up + p * TAU / 5; ctx.beginPath(); ctx.arc(tx + Math.cos(a) * r, ty - h * .12 + Math.sin(a) * r, r * .72, 0, TAU); ctx.fill(); }
+        ctx.fillStyle = C.core; ctx.beginPath(); ctx.arc(tx, ty - h * .12, r * .55, 0, TAU); ctx.fill();
+      }
+    });
+  }
+
   // Kopczyk u nasady łodygi: roślinka wyrasta z gruntu planety, a nie stoi na osobnej wysepce
   function drawMound() {
     ctx.fillStyle = rgba(mixC(SC.near, pal.stems[0], SC.dark ? .3 : .2));
@@ -899,6 +960,7 @@
     drawSky();
     drawSkyThings();
     drawPlanet();
+    drawGroundLife(g);
 
     // poświata za rośliną — mocniejsza, im roślina większa; na ciemnym niebie spokojniejsza
     const ph = plantH(g);
