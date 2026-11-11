@@ -1,0 +1,512 @@
+/* Listek wyłania się zza nazwy, wybija się, obraca i sprężyście ląduje na napisie. */
+[data-start] {
+  --start-ink: var(--text);
+  --start-sky: light-dark(
+    color-mix(in srgb, var(--plant-glow) 48%, var(--bg)),
+    color-mix(in srgb, var(--primary) 20%, var(--bg))
+  );
+  --start-ground: light-dark(
+    color-mix(in srgb, var(--plant-ground) 61%, var(--bg)),
+    color-mix(in srgb, var(--plant-ground) 15%, var(--bg))
+  );
+  --start-bloom: color-mix(in srgb, var(--plant-leaf-2) 24%, var(--start-sky));
+  --start-seed-ink: light-dark(var(--plant-stem), var(--plant-leaf-2));
+  --start-font: Figtree, system-ui, sans-serif;
+  --start-heading: "Bricolage Grotesque", var(--start-font);
+  --start-radius: var(--sp-4);
+  --start-seed-y: 29%;
+  --start-story: calc(var(--dur-slow) * 3);
+  --start-seed-time: calc(var(--start-story) + var(--dur-base));
+  --start-next: calc(var(--start-seed-time) + var(--dur-base));
+  --start-reveal-duration: var(--dur-slow);
+  --start-actions-time: calc(var(--start-next) + var(--dur-base));
+  --start-jump: clamp(44px, 12svh, 102px);
+  --start-ease: cubic-bezier(.24,.82,.22,1);
+  background: var(--bg);
+  color: var(--start-ink);
+}
+
+[data-start="zalogowany"] {
+  --start-reveal-duration: calc(var(--dur-slow) + var(--dur-fast));
+}
+
+[data-start] *, [data-start] *::before, [data-start] *::after { box-sizing: border-box; }
+[data-start] body { margin: 0; font: 400 1rem/1.5 var(--start-font); }
+
+.start-screen, .start-destination {
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: max(var(--sp-5), env(safe-area-inset-top)) max(var(--sp-6), env(safe-area-inset-right))
+    max(var(--sp-8), env(safe-area-inset-bottom)) max(var(--sp-6), env(safe-area-inset-left));
+}
+
+.start-screen {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--start-sky);
+}
+
+/* Niski horyzont nawiązuje do planety w Domu i daje tło akcjom. */
+.start-screen::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  width: 180%;
+  height: 43%;
+  inset: auto -40% -18%;
+  border-radius: 50% 50% 0 0;
+  background: var(--start-ground);
+}
+
+.start-art {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+}
+
+.start-figure { display: grid; place-items: center; }
+
+.start-logo {
+  display: grid;
+  justify-items: center;
+  width: min(52vw, 200px);
+}
+
+.start-logo img { display: block; width: 100%; height: auto; }
+.start-character {
+  position: relative;
+  z-index: 1;
+  width: 58%;
+  aspect-ratio: 360 / 476;
+  margin-block-end: calc(-1 * var(--sp-4));
+}
+
+.start-flight { position: absolute; inset: 0; transform-origin: 50% 94%; }
+.start-mascot { position: relative; transform-origin: 50% 57%; }
+.start-mascot canvas {
+  position: absolute;
+  /* Zapas po 36 px wokół oryginału 360 × 476, żeby nie obcinać ruchu. */
+  inset: calc(-36 / 476 * 100%) auto auto -10%;
+  width: 120%;
+  height: auto;
+  visibility: hidden;
+}
+.start-mascot.is-moving img { visibility: hidden; }
+.start-mascot.is-moving canvas { visibility: visible; }
+.start-peek-window { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.start-logo .start-peek { position: absolute; bottom: 0; opacity: 0; transform-origin: 50% 100%; }
+.start-word { position: relative; z-index: 2; width: 100%; transform-origin: 50% 18%; }
+
+.start-shadow {
+  position: absolute;
+  inset: auto 19% 3%;
+  height: 7px;
+  border-radius: 50%;
+  opacity: .13;
+  background: var(--start-seed-ink);
+}
+
+.start-landing {
+  position: absolute;
+  inset: auto -26% -1%;
+  height: 16px;
+  border: 2px solid var(--plant-leaf-1);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-logo .start-logo-dark,
+[data-mode="dark"] .start-logo .start-logo-light { display: none; }
+[data-mode="dark"] .start-logo .start-logo-dark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="light"]) .start-logo .start-logo-light { display: none; }
+  :root:not([data-mode="light"]) .start-logo .start-logo-dark { display: block; }
+}
+
+.start-seed, .start-seed-rest {
+  position: absolute;
+  z-index: 3;
+  width: var(--sp-3);
+  aspect-ratio: 1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.start-seed {
+  inset: var(--start-seed-y) auto auto 50%;
+  border-radius: 50%;
+  background: var(--start-bloom);
+}
+
+.start-seed-rest {
+  inset: 81% auto auto 99%;
+  transform: translate(-50%, -50%);
+}
+
+.start-seed::after, .start-seed-rest::after {
+  content: "";
+  position: absolute;
+  inset: 8% 16%;
+  border: 1px solid var(--start-seed-ink);
+  border-radius: 70% 45% 65% 55%;
+  background: var(--plant-core);
+  transform: rotate(35deg);
+}
+
+.start-actions {
+  position: relative;
+  display: grid;
+  gap: var(--sp-2);
+  width: min(100%, 320px);
+  margin-inline: auto;
+}
+
+[data-start="zalogowany"] .start-actions {
+  position: absolute;
+  inset: auto 0 max(var(--sp-8), env(safe-area-inset-bottom));
+}
+
+.start-link {
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--start-radius);
+  color: var(--start-ink);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.start-link.is-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  text-decoration: none;
+}
+
+.start-link:active { transform: scale(.98); }
+.start-link:focus-visible { outline: 2px solid var(--start-ink); outline-offset: 3px; }
+
+.start-destination {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: var(--sp-3);
+  width: min(100%, 420px);
+  margin-inline: auto;
+}
+
+.start-destination:target { display: flex; }
+.start-destination:target ~ .start-screen { display: none; }
+.start-destination h1 { margin: 0; font: 500 2.25rem/1.1 var(--start-heading); }
+.start-destination p { margin: 0; color: var(--text-muted); }
+.start-destination .start-link { padding-inline: 0; }
+
+@keyframes start-logo-in {
+  from { opacity: 0; transform: translateY(var(--sp-2)) scale(.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Wszystkie odcinki mają wspólny czas: lądowanie wypada w 76% sekwencji. */
+@keyframes start-peek {
+  0% { opacity: 0; transform: translateY(76%) rotate(-9deg); }
+  13% { opacity: 1; transform: translateY(4%) rotate(-8deg); }
+  21% { opacity: 1; transform: translateY(0) rotate(7deg); }
+  28% { opacity: 1; transform: translateY(17%) rotate(-4deg); }
+  35%, 100% { opacity: 0; transform: translateY(-32%); }
+}
+
+@keyframes start-flight {
+  0%, 28% { opacity: 0; transform: translate(-8px, 25%); }
+  34% { opacity: 1; transform: translate(-24px, -12%); }
+  46% { opacity: 1; transform: translate(-48px, calc(-.77 * var(--start-jump))); }
+  55% { opacity: 1; transform: translate(0, calc(-1.15 * var(--start-jump))); }
+  66% { opacity: 1; transform: translate(44px, calc(-.58 * var(--start-jump))); }
+  76% { opacity: 1; transform: translate(5px, 3%); }
+  85% { opacity: 1; transform: translate(-3px, -9%); }
+  92% { opacity: 1; transform: translate(1px, 1%); }
+  100% { opacity: 1; transform: translate(0, 0); }
+}
+
+@keyframes start-tumble {
+  0%, 32% { transform: rotate(-12deg); }
+  42% { transform: rotate(-28deg); }
+  55% { transform: rotate(145deg); }
+  68% { transform: rotate(337deg); }
+  76% { transform: rotate(369deg); }
+  87% { transform: rotate(352deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes start-word-spring {
+  0% { opacity: 0; transform: translateY(var(--sp-3)) scale(.82); }
+  12%, 27% { opacity: 1; transform: translateY(0) scale(1); }
+  32% { transform: translateY(3px) rotate(-2deg) scale(1.05,.9); }
+  43%, 69% { transform: translateY(0) rotate(0) scale(1); }
+  76% { transform: translateY(8px) rotate(2deg) scale(1.09,.78); }
+  84% { transform: translateY(-4px) rotate(-1deg) scale(.98,1.06); }
+  93%, 100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+}
+
+@keyframes start-shadow {
+  0%, 30% { opacity: .12; transform: scaleX(.7); }
+  52% { opacity: .04; transform: scaleX(.4); }
+  76% { opacity: .24; transform: scaleX(1.3); }
+  85% { opacity: .08; transform: scaleX(.7); }
+  100% { opacity: .13; transform: scaleX(1); }
+}
+
+@keyframes start-landing {
+  0%, 72% { opacity: 0; transform: scale(.2); }
+  77% { opacity: .6; transform: scale(.8); }
+  95%, 100% { opacity: 0; transform: scale(1.4); }
+}
+
+@keyframes start-nod {
+  0%, 100% { transform: rotate(360deg); }
+  28% { transform: rotate(346deg); }
+  60% { transform: rotate(367deg); }
+}
+
+@keyframes start-seed-launch {
+  from {
+    opacity: 1;
+    transform: translate(calc(-50% + var(--seed-from-x)), calc(-50% + var(--seed-from-y))) rotate(0);
+  }
+  72% {
+    transform: translate(calc(-50% + var(--seed-from-x) * .26), calc(-50% - var(--sp-3))) rotate(270deg);
+  }
+  to { opacity: 1; transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes start-seed-wait {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Przesuwa się tylko rysunek nasionka. Jego punkt startowy do lotu jest stały. */
+@keyframes start-seed-arrive {
+  0% {
+    opacity: 0;
+    transform: translate(var(--sp-8), var(--sp-10)) rotate(-155deg);
+  }
+  22% { opacity: 1; }
+  82%, 100% { opacity: 1; transform: translate(0, 0) rotate(35deg); }
+}
+
+@keyframes start-bloom {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  79% { opacity: 1; }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(152); }
+}
+
+@keyframes start-raise {
+  from { transform: translateY(var(--sp-8)); }
+  to { transform: translateY(0); }
+}
+
+@keyframes start-actions-in {
+  from { opacity: 0; transform: translateY(var(--sp-3)); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes start-logo-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes start-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.start.is-waiting .start-figure,
+[data-start="niezalogowany"] .start.is-waiting .start-actions:not(:focus-within) { opacity: 0; }
+
+.start.is-opening:not(.is-reduced) .start-logo {
+  animation: start-logo-in var(--dur-base) var(--start-ease) both;
+}
+
+.start.is-opening:not(.is-reduced) .start-mascot {
+  animation: start-tumble var(--start-story) linear both,
+    start-nod var(--dur-slow) var(--start-seed-time) var(--ease-out) forwards;
+}
+
+.start.is-opening:not(.is-reduced) .start-peek { animation: start-peek var(--start-story) var(--ease-out) both; }
+.start.is-opening:not(.is-reduced) .start-flight { animation: start-flight var(--start-story) var(--ease-in-out) both; }
+.start.is-opening:not(.is-reduced) .start-word { animation: start-word-spring var(--start-story) var(--ease-out) both; }
+.start.is-opening:not(.is-reduced) .start-shadow { animation: start-shadow var(--start-story) ease both; }
+.start.is-opening:not(.is-reduced) .start-landing { animation: start-landing var(--start-story) ease-out both; }
+
+.start.is-opening:not(.is-reduced) .start-seed {
+  animation: start-seed-launch var(--dur-base) var(--start-seed-time) var(--ease-out) forwards,
+    start-bloom var(--start-reveal-duration) var(--start-next) var(--ease-in-out) forwards;
+}
+
+.start.is-opening:not(.is-reduced) .start-seed-rest {
+  animation: start-seed-wait var(--dur-base) var(--start-story) steps(1, end) forwards;
+}
+
+.start.is-opening:not(.is-reduced) .start-seed-rest::after {
+  animation: start-seed-arrive var(--dur-base) var(--start-story) var(--start-ease) both;
+}
+
+.start.is-opening:not(.is-reduced) .start-seed::after {
+  animation: start-logo-out var(--dur-fast) var(--start-next) ease-out forwards;
+}
+
+[data-start="niezalogowany"] .start.is-opening:not(.is-reduced) .start-figure {
+  animation: start-raise var(--dur-slow) var(--start-next) var(--start-ease) both;
+}
+
+[data-start="niezalogowany"] .start.is-opening:not(.is-reduced) .start-actions a {
+  animation: start-actions-in var(--dur-base) var(--start-actions-time) var(--start-ease) both;
+}
+
+[data-start="niezalogowany"] .start.is-opening:not(.is-reduced) .start-actions a + a {
+  animation-delay: calc(var(--start-actions-time) + var(--dur-fast));
+}
+
+[data-start="zalogowany"] .start.is-opening:not(.is-reduced) .start-logo {
+  animation: start-logo-in var(--dur-base) var(--start-ease) both,
+    start-logo-out var(--dur-base) var(--start-next) ease-in forwards;
+}
+
+/* Przy ograniczonym ruchu zmienia się tylko przezroczystość. */
+.start.is-opening.is-reduced .start-figure {
+  animation: start-fade-in var(--dur-base) ease-out both;
+}
+
+[data-start="niezalogowany"] .start.is-opening.is-reduced .start-actions {
+  animation: start-fade-in var(--dur-base) var(--dur-slow) ease-out both;
+}
+
+[data-start="zalogowany"] .start.is-opening.is-reduced .start-figure {
+  animation: start-fade-in var(--dur-base) ease-out both,
+    start-logo-out var(--dur-base) var(--dur-slow) ease-in forwards;
+}
+
+[data-start="niezalogowany"] .start.is-opening .start-actions:focus-within,
+[data-start="niezalogowany"] .start.is-opening:not(.is-reduced) .start-actions:focus-within a {
+  animation: none;
+}
+
+/* Skaluje się obudowa, ale dokumenty wewnątrz zawsze mają 390 × 844 px. */
+.phone-preview {
+  --phone-screen-width: 390px;
+  --phone-screen-height: 844px;
+  --phone-bezel: 10px;
+  --phone-width: calc(var(--phone-screen-width) + 2 * var(--phone-bezel));
+  --phone-height: calc(var(--phone-screen-height) + 2 * var(--phone-bezel));
+  --phone-scale: 1;
+  --phone-case: color-mix(in srgb, var(--plant-stem) 12%, var(--toast-bg));
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--sp-3);
+  min-height: 100vh;
+  padding: var(--sp-4);
+  background: var(--glow), var(--bg);
+}
+
+:root[data-mode="dark"] .phone-preview { --phone-case: var(--bg-2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="light"]) .phone-preview { --phone-case: var(--bg-2); }
+}
+
+.phone-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  width: calc(var(--phone-width) * var(--phone-scale));
+}
+
+.phone-size {
+  color: var(--text-muted);
+  font-size: .84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.phone-replay {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--start-radius);
+  background: var(--sheet);
+  color: var(--text);
+  font: 600 .88rem/1.3 var(--start-font);
+  cursor: pointer;
+}
+
+.phone-replay:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+
+.phone-footprint {
+  position: relative;
+  width: calc(var(--phone-width) * var(--phone-scale));
+  height: calc(var(--phone-height) * var(--phone-scale));
+}
+
+.phone-case {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: var(--phone-width);
+  height: var(--phone-height);
+  padding: var(--phone-bezel);
+  border-radius: 44px;
+  background: var(--phone-case);
+  box-shadow: var(--shadow-float), inset 0 0 0 1px color-mix(in srgb, var(--plant-leaf-2) 38%, var(--phone-case));
+  transform: scale(var(--phone-scale));
+  transform-origin: top left;
+}
+
+.phone-screen {
+  position: relative;
+  width: var(--phone-screen-width);
+  height: var(--phone-screen-height);
+  overflow: hidden;
+  border-radius: 35px;
+  background: var(--bg);
+  isolation: isolate;
+}
+
+.phone-screen iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--bg);
+}
+
+.phone-screen iframe[inert] { pointer-events: none; }
+.phone-intro { z-index: 1; }
+
+.phone-preview:not(.is-reduced) .phone-intro {
+  clip-path: ellipse(150% 145% at 0 0);
+  transition: clip-path var(--start-reveal-duration) var(--ease-in-out);
+}
+
+.phone-preview:not(.is-reduced) .phone-intro.is-leaving { clip-path: ellipse(0% 0% at 0 0); }
+
+/* Otwór zaczyna się dokładnie w punkcie, w którym zatrzymało się nasionko. */
+@property --phone-opening {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: -1px;
+}
+
+@supports (mask-image: radial-gradient(circle, transparent, black)) {
+  .phone-preview:not(.is-reduced) .phone-intro {
+    clip-path: none;
+    mask-image: radial-gradient(circle at 50% var(--start-seed-y),
+      transparent var(--phone-opening), var(--start-ink) calc(var(--phone-opening) + 1px));
+    transition: --phone-opening var(--start-reveal-duration) var(--ease-in-out);
+  }
+
+  .phone-preview:not(.is-reduced) .phone-intro.is-leaving {
+    clip-path: none;
+    --phone-opening: 800px;
+  }
+}

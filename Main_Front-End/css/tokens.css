@@ -19,6 +19,7 @@
   --text-muted: #53636C;   /* 4,5:1 także na przyciemnionych tłach (--bg-2, odcienie motywu) we wszystkich motywach */
   --text-soft: #5E6E77;    /* najjaśniejszy tekst (podpisy, daty): 4,5:1 na --bg-2 każdego motywu — narzedzia/sprawdz-kontrast.js */
   --surface: #FFFFFF;
+  --on-primary: #FFFFFF;
   --error: #C4553C;
   --glass: rgba(255, 255, 255, .6);      /* półprzezroczyste tło na scenie i listach */
   --toast-bg: #1E2A32;                   /* ciemny dymek (toast) i przycisk „Usuń” */

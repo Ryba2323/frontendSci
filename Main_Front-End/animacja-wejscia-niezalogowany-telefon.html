@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pl" data-start="niezalogowany" data-sciezka>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>ReLeaf — wejście</title>
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600&family=Bricolage+Grotesque:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/start.css">
+  <script src="js/theme.js"></script>
+  <script src="js/start-character.js" defer></script>
+  <script src="js/start.js" defer></script>
+</head>
+<body>
+  <main class="start">
+    <!-- Prowizoryczne cele wejścia. Po uzgodnieniu ekranów wystarczy zmienić odnośniki w menu poniżej. -->
+    <section class="start-destination" id="logowanie" aria-labelledby="start-login">
+      <h1 id="start-login" tabindex="-1">Logowanie</h1>
+      <p>Ten ekran jest w przygotowaniu.</p>
+      <a class="start-link" href="#wejscie">Wróć</a>
+    </section>
+    <section class="start-destination" id="rejestracja" aria-labelledby="start-register">
+      <h1 id="start-register" tabindex="-1">Rejestracja</h1>
+      <p>Ten ekran jest w przygotowaniu.</p>
+      <a class="start-link" href="#wejscie">Wróć</a>
+    </section>
+    <section class="start-screen" id="wejscie" aria-label="Wejście do ReLeaf">
+      <span class="start-seed" aria-hidden="true"></span>
+      <div class="start-art">
+        <div class="start-figure">
+          <div class="start-logo" role="img" aria-label="ReLeaf">
+            <div class="start-character">
+              <span class="start-shadow" aria-hidden="true"></span>
+              <div class="start-peek-window">
+                <img class="start-peek" src="img/listek.webp" alt="" width="360" height="255">
+              </div>
+              <div class="start-flight">
+                <div class="start-mascot">
+                  <img src="img/listek-hop.webp" alt="" width="360" height="476">
+                </div>
+              </div>
+              <span class="start-landing" aria-hidden="true"></span>
+              <span class="start-seed-rest" aria-hidden="true"></span>
+            </div>
+            <div class="start-word">
+              <img class="start-logo-light" src="img/releaf-wordmark.webp" alt="" width="360" height="171">
+              <img class="start-logo-dark" src="img/releaf-wordmark-dark.webp" alt="" width="360" height="171">
+            </div>
+          </div>
+        </div>
+      </div>
+      <nav class="start-actions" aria-label="Konto ReLeaf">
+        <a class="start-link is-primary" href="#rejestracja">Załóż konto</a>
+        <a class="start-link" href="#logowanie">Zaloguj się</a>
+      </nav>
+    </section>
+  </main>
+</body>
+</html>
