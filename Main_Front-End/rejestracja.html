@@ -1,14 +1,20 @@
 <!doctype html>
-<html lang="pl">
+<!-- data-sciezka: jak w aplikacji, ciemne niebo (wieczór, noc) = ciemny ekran (js/theme.js) -->
+<html lang="pl" data-sciezka>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#F4FAFB">
   <title>Rejestracja</title>
 
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="apple-touch-icon" href="img/ikona-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Te same czcionki co w aplikacji: Bricolage Grotesque (tytuły, pytania) + Figtree (reszta) -->
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
+  <!-- Napis ReLeaf: tylko litery z nazwy, kilka kB -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/auth.css">
@@ -23,9 +29,21 @@
 
 <canvas id="scene" aria-hidden="true"></canvas>
 
+<!-- Górny pasek na niebie: napis ReLeaf i SOS, jak w aplikacji -->
+<header class="auth-top">
+  <span class="brand" role="img" aria-label="ReLeaf">
+    <span class="brand-word" aria-hidden="true"><span class="bw-re">Re</span><span class="bw-leaf">Leaf<svg class="bw-swoosh" viewBox="0 0 60 8" preserveAspectRatio="none"><path d="M2 5.5C18 2.2 38 1.6 58 3.4"/></svg></span></span>
+  </span>
+  <button type="button" class="sos" data-sos aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+    <span>SOS</span>
+  </button>
+</header>
+
 <!--
   Każdy etap (form.step) składa się z ekranów (div.page).
-  Telefon: jeden ekran na raz. Komputer: wszystkie ekrany etapu naraz.
+  Telefon: jeden ekran na raz, pytanie i odpowiedzi leżą na gruncie planety pod rośliną.
+  Komputer: wszystkie ekrany etapu naraz w jednej karcie (.panel), tytuł etapu na niebie.
   data-auto     — wybór od razu przechodzi dalej (telefon)
   data-optional — pusty ekran można pominąć (przycisk „Pomiń”)
 -->
@@ -38,10 +56,11 @@
   <section class="card intro" aria-labelledby="page-title">
     <h1 id="page-title" class="visually-hidden">Rejestracja</h1>
 
+    <!-- Postęp: gałązka z trzema pąkami. Bieżący etap to pąk w obwódce, z każdym pytaniem rośnie przy nim liść (css/auth.css). -->
     <ol class="stepper" aria-label="Postęp rejestracji">
-      <li class="is-current" aria-current="step"><span class="bar"><i></i></span><span class="dot">1</span><span class="lbl">Konto</span></li>
-      <li><span class="bar"><i></i></span><span class="dot">2</span><span class="lbl">O Tobie</span></li>
-      <li><span class="bar"><i></i></span><span class="dot">3</span><span class="lbl">Roślinka</span></li>
+      <li class="is-current" aria-current="step"><span class="lbl">Konto</span></li>
+      <li><span class="lbl">O Tobie</span></li>
+      <li><span class="lbl">Roślinka</span></li>
     </ol>
 
     <div class="steps" id="steps">
@@ -53,6 +72,7 @@
           <p>Zacznijmy od podstaw. To zajmie mniej niż minutę.</p>
         </header>
 
+        <div class="panel">
         <div class="pages">
           <div class="page" data-page="nick" tabindex="-1">
             <div class="field">
@@ -119,6 +139,7 @@
         </div>
         <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
         <p class="foot">Masz już konto? <a href="logowanie.html">Zaloguj się</a></p>
+        </div>
       </form>
 
       <!-- ========== ETAP 2: o Tobie ========== -->
@@ -128,6 +149,7 @@
           <p>Kilka pytań, żeby aplikacja lepiej do Ciebie pasowała.</p>
         </header>
 
+        <div class="panel">
         <div class="pages">
           <div class="page" data-page="age" data-auto tabindex="-1">
             <fieldset class="field" id="age" aria-describedby="age-hint age-err">
@@ -164,13 +186,13 @@
               <legend class="q">Nad czym chcesz popracować? <small class="desktop-only">(opcjonalnie, możesz wybrać kilka)</small></legend>
               <p class="q-hint" id="topics-hint">Możesz wybrać kilka albo pominąć ten krok.</p>
               <div class="chips">
-                <label class="chip" style="--c:var(--mood)"><input type="checkbox" name="topics" value="Nastrój"><span><i></i>Nastrój</span></label>
-                <label class="chip" style="--c:var(--energy)"><input type="checkbox" name="topics" value="Energia"><span><i></i>Energia</span></label>
-                <label class="chip" style="--c:var(--stress)"><input type="checkbox" name="topics" value="Stres"><span><i></i>Stres</span></label>
-                <label class="chip" style="--c:var(--sleep)"><input type="checkbox" name="topics" value="Sen"><span><i></i>Sen</span></label>
-                <label class="chip" style="--c:#8FC3D1"><input type="checkbox" name="topics" value="Szkoła"><span><i></i>Szkoła</span></label>
-                <label class="chip" style="--c:var(--peach)"><input type="checkbox" name="topics" value="Relacje"><span><i></i>Relacje</span></label>
-                <label class="chip" style="--c:#E9A58A"><input type="checkbox" name="topics" value="Pewność siebie"><span><i></i>Pewność siebie</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Nastrój"><span>Nastrój</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Energia"><span>Energia</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Stres"><span>Stres</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Sen"><span>Sen</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Szkoła"><span>Szkoła</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Relacje"><span>Relacje</span></label>
+                <label class="chip"><input type="checkbox" name="topics" value="Pewność siebie"><span>Pewność siebie</span></label>
               </div>
             </fieldset>
           </div>
@@ -186,6 +208,7 @@
           </button>
         </div>
         <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
+        </div>
       </form>
 
       <!-- ========== ETAP 3: roślinka ========== -->
@@ -195,6 +218,7 @@
           <p>Będzie rosła razem z Tobą — za każdym razem, gdy zadbasz o siebie.</p>
         </header>
 
+        <div class="panel">
         <div class="pages">
           <div class="page" data-page="plant" data-optional tabindex="-1">
             <div class="field">
@@ -283,10 +307,12 @@
           </button>
         </div>
         <p class="kbd-hint">albo wciśnij <kbd>Enter ↵</kbd></p>
+        </div>
       </form>
 
       <!-- ========== GOTOWE ========== -->
       <div class="step step-done" id="step4" hidden>
+        <div class="panel">
         <div class="badge" aria-hidden="true">
           <svg viewBox="0 0 64 64">
             <g transform="translate(32 32)">
@@ -306,17 +332,39 @@
         <p id="done-text"></p>
         <ul class="pills" id="done-pills"></ul>
         <div class="actions">
-          <a href="strona-glowna.html" class="btn btn-primary" id="enter-app">
+          <a href="aplikacja.html" class="btn btn-primary" id="enter-app">
             Przejdź do aplikacji
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
           <button type="button" class="btn-link" id="replay">Obejrzyj animację jeszcze raz</button>
+        </div>
         </div>
       </div>
 
     </div>
   </section>
 </main>
+
+<!-- Arkusz SOS: te same numery co w aplikacji (do potwierdzenia przez zespół, notes/CLAUDE.md). Otwiera js/auth-common.js. -->
+<dialog class="sos-sheet" id="auth-sos" aria-labelledby="sos-title">
+  <h2 class="sos-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sos-sub">Rozmowa naprawdę może pomóc. Nie musisz mieć konta, żeby zadzwonić.</p>
+  <ul class="sos-list">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sos-close" data-sos-close>Zamknij</button>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

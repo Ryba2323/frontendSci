@@ -1,14 +1,20 @@
 <!doctype html>
-<html lang="pl">
+<!-- data-sciezka: jak w aplikacji, ciemne niebo (wieczór, noc) = ciemny ekran (js/theme.js) -->
+<html lang="pl" data-sciezka>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#F4FAFB">
   <title>Logowanie</title>
 
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="apple-touch-icon" href="img/ikona-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Te same czcionki co w aplikacji: Bricolage Grotesque (tytuły, pytania) + Figtree (reszta) -->
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
+  <!-- Napis ReLeaf: tylko litery z nazwy, kilka kB -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/auth.css">
@@ -23,9 +29,21 @@
 
 <canvas id="scene" aria-hidden="true"></canvas>
 
+<!-- Górny pasek na niebie: napis ReLeaf i SOS, jak w aplikacji -->
+<header class="auth-top">
+  <span class="brand" role="img" aria-label="ReLeaf">
+    <span class="brand-word" aria-hidden="true"><span class="bw-re">Re</span><span class="bw-leaf">Leaf<svg class="bw-swoosh" viewBox="0 0 60 8" preserveAspectRatio="none"><path d="M2 5.5C18 2.2 38 1.6 58 3.4"/></svg></span></span>
+  </span>
+  <button type="button" class="sos" data-sos aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+    <span>SOS</span>
+  </button>
+</header>
+
 <!--
-  Trzy widoki w jednej karcie: logowanie → (opcjonalnie) reset hasła → powitanie.
+  Trzy widoki: logowanie → (opcjonalnie) reset hasła → powitanie.
   Roślinka czeka już wyrośnięta z pąkami, podrasta przy wpisywaniu danych i rozkwita po zalogowaniu.
+  Telefon: tytuł i pola leżą na gruncie planety pod rośliną. Komputer: tytuł na niebie, pola w karcie (.panel).
 -->
 <main class="layout">
   <div class="scene-copy" aria-hidden="true">
@@ -38,10 +56,10 @@
 
       <!-- ========== LOGOWANIE ========== -->
       <form class="step" id="login" novalidate>
-        <p class="kicker">Logowanie</p>
         <h1 class="title" id="login-title" tabindex="-1">Dobrze Cię widzieć!</h1>
         <p class="lead">Zaloguj się, żeby zajrzeć do swojej roślinki.</p>
 
+        <div class="panel">
         <div class="field">
           <label class="lbl" for="email">E-mail</label>
           <div class="input-wrap">
@@ -81,14 +99,15 @@
           </button>
         </div>
         <p class="foot">Nie masz jeszcze konta? <a href="rejestracja.html">Załóż je</a></p>
+        </div>
       </form>
 
       <!-- ========== RESET HASŁA ========== -->
       <form class="step" id="forgot" novalidate hidden>
-        <p class="kicker">Reset hasła</p>
         <h2 class="title" tabindex="-1">Nie pamiętasz hasła?</h2>
         <p class="lead" id="forgot-lead">Spokojnie, zdarza się. Podaj e-mail, a wyślemy Ci link do ustawienia nowego hasła.</p>
 
+        <div class="panel">
         <div class="field" id="forgot-field">
           <label class="lbl" for="femail">E-mail</label>
           <div class="input-wrap">
@@ -113,10 +132,12 @@
             <span class="btn-label">Wyślij link</span>
           </button>
         </div>
+        </div>
       </form>
 
       <!-- ========== POWITANIE ========== -->
       <div class="step step-done" id="welcome" hidden>
+        <div class="panel">
         <div class="badge" aria-hidden="true">
           <svg viewBox="0 0 64 64">
             <g transform="translate(32 32)">
@@ -135,17 +156,39 @@
         <h2 id="welcome-title" tabindex="-1">Witaj ponownie!</h2>
         <p id="welcome-text"></p>
         <div class="actions">
-          <a href="strona-glowna.html" class="btn btn-primary" id="enter-app">
+          <a href="aplikacja.html" class="btn btn-primary" id="enter-app">
             Przejdź do aplikacji
             <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
           <button type="button" class="btn-link" id="switch-account">Zaloguj się na inne konto</button>
+        </div>
         </div>
       </div>
 
     </div>
   </section>
 </main>
+
+<!-- Arkusz SOS: te same numery co w aplikacji (do potwierdzenia przez zespół, notes/CLAUDE.md). Otwiera js/auth-common.js. -->
+<dialog class="sos-sheet" id="auth-sos" aria-labelledby="sos-title">
+  <h2 class="sos-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sos-sub">Rozmowa naprawdę może pomóc. Nie musisz mieć konta, żeby zadzwonić.</p>
+  <ul class="sos-list">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sos-close" data-sos-close>Zamknij</button>
+</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

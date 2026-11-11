@@ -4,7 +4,14 @@
  * Nasionko → kiełek i pierwsze liście (etap 1) → łodyga z gałązkami, liście zlatują się wirem (etap 2)
  * → korona i pąki (etap 3) → po rejestracji kwitnie i gubi płatki. Roślina rośnie z każdym
  * wypełnionym polem, nie tylko przy zmianie etapu.
- * Do tego świetliki krążące wokół rośliny, miękki bokeh, reakcja na kursor i na pisanie.
+ * Do tego świetliki krążące wokół rośliny, reakcja na kursor i na pisanie.
+ *
+ * ŚWIAT JAK W APLIKACJI („Ścieżka”, js/home2-scene.js): roślinka stoi na planecie, a tłem jest niebo pory dnia
+ * (rano, dzień, wieczór, noc; podgląd: ?pora=rano|dzien|wieczor|noc). W dzień kilka chmur i poświata słońca,
+ * wieczorem i nocą gwiazdy i trzy księżyce. Ciemne niebo = ciemny ekran (js/theme.js, <html data-sciezka>).
+ * Scena liczy kolory nieba i gruntu w OKLCH z motywu i zapisuje je do <html> (--ground, --sky-top, --sky-low, --planet),
+ * więc canvas i CSS (css/auth.css) nie mogą się rozjechać. Telefon: horyzont jest na dole pasa z rośliną,
+ * formularz leży na gruncie planety. Komputer: wielki łuk planety na dole, roślinka z lewej, formularz na niebie z prawej.
  *
  * API (window.PlantScene):
  *   setStage(n, progress)      n: 1–3 = etapy formularza, 4 = rozkwit; progress 0–1 = wypełnienie etapu
@@ -14,6 +21,7 @@
  *
  * Kolory rośliny i tła bierze z motywu (css/tokens.css, zmienne --plant-*); po zdarzeniu 'themechange'
  * (js/theme.js) płynnie się przebarwia.
+ * W React Native: dwie warstwy Skii (niebo + planeta, roślinka), kolory nieba w konfiguracji NativeWind.
  */
 (function () {
   'use strict';
@@ -63,6 +71,40 @@
   const shade = (c, t) => mixC(c, INK, t);
   const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
 
+  // OKLCH (te same wzory co w js/home2-scene.js): jasność i nasycenie nieba ustawiamy niezależnie od odcienia motywu
+  const toLin = v => { v /= 255; return v <= .04045 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); };
+  const fromLin = v => 255 * clamp(v <= .0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - .055);
+  function rgbToOklch(c) {
+    const [r, g, b] = c.map(toLin);
+    const l = Math.cbrt(.4122214708 * r + .5363325363 * g + .0514459929 * b);
+    const m = Math.cbrt(.2119034982 * r + .6806995451 * g + .1073969566 * b);
+    const s = Math.cbrt(.0883024619 * r + .2817188376 * g + .6299787005 * b);
+    const A = 1.9779984951 * l - 2.428592205 * m + .4505937099 * s;
+    const B = .0259040371 * l + .7827717662 * m - .808675766 * s;
+    return [.2104542553 * l + .793617785 * m - .0040720468 * s, Math.hypot(A, B), Math.atan2(B, A)];
+  }
+  function OK(L, C, h) {
+    const A = C * Math.cos(h), B = C * Math.sin(h);
+    const l = Math.pow(L + .3963377774 * A + .2158037573 * B, 3);
+    const m = Math.pow(L - .1055613458 * A - .0638541728 * B, 3);
+    const s = Math.pow(L - .0894841775 * A - 1.291485548 * B, 3);
+    return [
+      fromLin(4.0767416621 * l - 3.3077115913 * m + .2309699292 * s),
+      fromLin(-1.2684380046 * l + 2.6097574011 * m - .3413193965 * s),
+      fromLin(-.0041960771 * l - .7034186147 * m + 1.707614701 * s),
+    ];
+  }
+
+  // Pora dnia: liczona tak samo jak w aplikacji (js/home2-scene.js) i w js/theme.js
+  const PORY = { rano: 'morning', dzien: 'day', wieczor: 'evening', noc: 'night' };
+  const poraParam = PORY[new URLSearchParams(location.search).get('pora')] || null;
+  const now0 = new Date();
+  const hour = poraParam ? { morning: 8, day: 13, evening: 19, night: 23 }[poraParam] : now0.getHours() + now0.getMinutes() / 60;
+  const DAYPART = poraParam || (hour >= 5 && hour < 11 ? 'morning' : hour >= 11 && hour < 17 ? 'day' : hour >= 17 && hour < 21 ? 'evening' : 'night');
+  const darkMode = () => !!(window.Theme && window.Theme.isDark && window.Theme.isDark());
+  // Tryb ciemny w dzień daje noc, tryb „Dzienny” wieczorem daje dzień: tekst zawsze leży na pasującym niebie
+  const skyPart = () => (darkMode() ? (DAYPART === 'evening' ? 'evening' : 'night') : DAYPART === 'morning' ? 'morning' : 'day');
+
   // Z kilku kolorów motywu wyprowadzamy całą paletę sceny
   function readPalette() {
     const cs = getComputedStyle(document.documentElement);
@@ -80,9 +122,9 @@
       calyx: shade(l2, .18),
       flower, tip, petal: mixC(flower, tip, .35), core: v('--plant-core'),
       seed: v('--primary'),
-      ground: [tint(v('--plant-ground'), .4), v('--plant-ground')],
       halo: l2, glow: v('--plant-glow'),
-      bokeh: [v('--mist'), v('--mint'), v('--accent-light'), flower],
+      // do nieba i planety
+      primary: v('--primary'), l2, l3,
     };
   }
   const lerpDeep = (a, b, t) => typeof a[0] === 'number' ? mixC(a, b, t) : a.map((x, i) => lerpDeep(x, b[i], t));
@@ -101,8 +143,43 @@
       leaves: pal.leaves.map(([a, b]) => [rgba(a), rgba(b)]),
       sprout: pal.sprout.map(c => rgba(c)),
       calyx: rgba(pal.calyx), flower: rgba(pal.flower), tip: rgba(pal.tip), petal: rgba(pal.petal), core: rgba(pal.core),
-      seed: rgba(pal.seed), ground: pal.ground.map(c => rgba(c)),
+      seed: rgba(pal.seed),
     };
+  }
+
+  // ================================================================
+  //  Niebo i planeta: kolory (jak scPaint w js/home2-scene.js), zapisywane też do CSS
+  // ================================================================
+  let SC = null, scCss = '';
+  function paintWorld() {
+    const part = skyPart();
+    const hLeaf = rgbToOklch(pal.l2)[2], hPrim = rgbToOklch(pal.primary)[2];
+    let top, mid, rose = null, low, near, rim;
+    if (part === 'night') {
+      top = OK(.17, .05, 4.62); mid = OK(.205, .055, 4.62); low = mixC(OK(.3, .06, 4.5), pal.primary, .18);
+      near = OK(.255, .04, hLeaf); rim = OK(.4, .06, hLeaf);
+    } else if (part === 'evening') {
+      top = OK(.245, .07, 5.5); mid = OK(.3, .085, 5.85);
+      rose = mixC([196, 112, 128], pal.flower, .2); low = mixC([246, 178, 138], pal.tip, .25);
+      near = mixC(OK(.27, .05, hLeaf), OK(.25, .06, 5.8), .35); rim = mixC(low, near, .5);
+    } else if (part === 'morning') {
+      top = mixC(OK(.94, .035, hPrim), [252, 222, 200], .55); mid = mixC(OK(.95, .03, hPrim), [253, 228, 206], .55); low = mixC([255, 238, 212], pal.glow, .2);
+      near = OK(.85, .075, hLeaf); rim = OK(.935, .06, hLeaf);
+    } else {
+      top = OK(.925, .048, hPrim); mid = OK(.95, .034, hPrim); low = mixC(OK(.975, .02, 1.4), pal.glow, .12);
+      near = OK(.84, .08, hLeaf); rim = OK(.935, .07, hLeaf);
+    }
+    SC = { part, dark: part === 'night' || part === 'evening', top, mid, rose, low, near, rim };
+    const css = c => `rgb(${c.map(v => Math.round(v)).join(',')})`;
+    const key = part + css(mid) + css(near) + css(top);
+    if (key === scCss) return;
+    scCss = key;
+    const root = document.documentElement, rs = root.style;
+    root.dataset.pora = { morning: 'rano', day: 'dzien', evening: 'wieczor', night: 'noc' }[part];
+    rs.setProperty('--ground', css(mid)); rs.setProperty('--sky-top', css(top)); rs.setProperty('--sky-low', css(low));
+    rs.setProperty('--planet', css(near));
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', css(top));
   }
 
   // ================================================================
@@ -191,7 +268,11 @@
   //  Stan
   // ================================================================
   let W = 0, H = 0, baseX = 0, baseY = 0, S = 6;
-  let fieldY = 0, fieldH = 0;    // pas, w którym unoszą się luźne listki (telefon: między podpisem a kartą)
+  let R = 800;                   // promień łuku planety (px); baseY = najwyższy punkt łuku, tam stoi roślinka
+  let skyTop = 0, skySpan = 0;   // niebo na chmury i księżyce: od dołu podpisu do horyzontu, na komputerze tylko z lewej od formularza
+  let wide = false, pinned = true;   // komputer · canvas przyklejony do okna (na telefonie przewija się ze stroną)
+  let fieldY = 0, fieldH = 0;    // pas, w którym unoszą się luźne listki (nad horyzontem)
+  let fieldW = 0;                // szerokość tego pasa: na komputerze tylko niebo z lewej, żeby listki nie latały pod tekstem formularza
   let floatScale = 1;            // rozmiar luźnych listków (na telefonie mniejsze)
   let clock = 0;                 // zegar sceny (stoi, gdy karta jest w tle)
   let lastMs = performance.now();
@@ -244,7 +325,7 @@
 
   function floatPose(L) {
     return {
-      x: L.nx * W + Math.sin(clock * L.f1 + L.ph) * L.ax + L.ox,
+      x: L.nx * fieldW + Math.sin(clock * L.f1 + L.ph) * L.ax + L.ox,
       y: fieldY + L.ny * fieldH + Math.cos(clock * L.f2 + L.ph * 1.3) * L.ay + L.oy,
       a: L.rot + Math.sin(clock * L.f3 + L.ph) * .6 * motion,
       s: L.fs * floatScale, al: L.fal,
@@ -387,7 +468,7 @@
   }
 
   // ================================================================
-  //  Świetliki, bokeh, płatki, kręgi
+  //  Świetliki, gwiazdy i księżyce, płatki, kręgi
   // ================================================================
   const fireflySprite = document.createElement('canvas');
   fireflySprite.width = fireflySprite.height = 64;
@@ -418,29 +499,14 @@
     };
   });
 
-  const bokehSprites = [0, 1, 2, 3].map(() => {
-    const c = document.createElement('canvas');
-    c.width = c.height = 128;
-    return c;
-  });
-  // Rysowane od nowa przy zmianie motywu
-  function paintBokeh() {
-    bokehSprites.forEach((c, i) => {
-      const g = c.getContext('2d'), col = pal.bokeh[i];
-      const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-      gr.addColorStop(0, rgba(col, 1));
-      gr.addColorStop(.55, rgba(col, .5));
-      gr.addColorStop(1, rgba(col, 0));
-      g.clearRect(0, 0, 128, 128);
-      g.fillStyle = gr;
-      g.fillRect(0, 0, 128, 128);
-    });
-  }
-  const bokeh = Array.from({ length: 8 }, (_, i) => ({
-    nx: rand(0, 1), ny: rand(0, 1), r: rand(60, 160),
-    spr: bokehSprites[i % 4], a: i % 4 === 3 ? rand(.12, .2) : rand(.2, .34),
-    f: rand(.03, .07), ph: rand(0, TAU), ax: rand(20, 60), ay: rand(14, 40),
-  }));
+  // Gwiazdy (wieczór, noc), księżyce i chmury: jak w aplikacji, tylko bez obracania planety
+  const stars = Array.from({ length: 26 }, () => ({ nx: rand(0, 1), ny: rand(0, .82), r: rand(.6, 1.5), ph: rand(0, TAU), sp: rand(.6, 1.6) }));
+  const MOONS = [
+    { nx: .8, alt: .78, r: 15, tone: 0, phase: .68, par: 1 },      // główny, kremowy
+    { nx: .22, alt: .5, r: 8, tone: 1, phase: .32, par: 1.7 },     // mały sierp w odcieniu roślinki
+    { nx: .66, alt: .1, r: 30, tone: 2, phase: 1, par: .5 },       // duży i ciepły, wschodzi zza planety
+  ];
+  const CLOUDS = [{ nx: .08, alt: .56, w: 74, par: 1.3 }, { nx: .72, alt: .34, w: 96, par: .8 }, { nx: .4, alt: .12, w: 60, par: .55 }];
 
   const petals = [];
   const emittedFor = new Set();
@@ -510,7 +576,7 @@
         rx = f.rx * S; ry = f.ry * S;
       } else {
         // Po rejestracji świetliki z całego ekranu zlatują się wokół kwitnącej rośliny
-        cx = lerp(f.nx * W, baseX + f.cxf * 45 * S, gather * .65);
+        cx = lerp(f.nx * fieldW, baseX + f.cxf * 45 * S, gather * .65);
         cy = lerp(fieldY + f.ny * fieldH, crownY + (f.cyf - .6) * 60 * S, gather * .65);
         rx = f.rx; ry = f.ry;
       }
@@ -694,37 +760,99 @@
     ctx.restore();
   }
 
-  function drawGround() {
-    ctx.save();
-    ctx.translate(baseX, baseY + 1.5 * S);
-    ctx.scale(1, .24);
-    const R = 34 * S;
-    const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-    halo.addColorStop(0, rgba(pal.halo, .35));
-    halo.addColorStop(1, rgba(pal.halo, 0));
-    ctx.fillStyle = halo;
-    ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
-    ctx.restore();
+  const wrap = (v, span) => ((v % span) + span) % span;
+  const arcY = x => { const d = x - baseX; return baseY + R - Math.sqrt(Math.max(0, R * R - d * d)); };
 
-    const rx = 17 * S, ry = 3.8 * S, cy = baseY + 1.2 * S;
-    const mg = ctx.createLinearGradient(0, cy - ry, 0, cy + ry);
-    mg.addColorStop(0, C.ground[0]);
-    mg.addColorStop(1, C.ground[1]);
-    ctx.fillStyle = mg;
-    ctx.beginPath(); ctx.ellipse(baseX, cy, rx, ry, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,.55)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.ellipse(baseX, cy, rx * .96, ry * .9, 0, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+  // Niebo: gradient pory dnia, gwiazdy albo miękka poświata słońca
+  function drawSky() {
+    const gy = baseY, at = y => clamp(y / H);
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, rgba(SC.top));
+    g.addColorStop(at(gy - Math.min(SC.rose ? 250 : 330, gy * .6)), rgba(SC.mid));
+    // wieczorna łuna dopiero nad samym horyzontem: wyżej niebo zostaje ciemne, żeby jasny tekst był czytelny
+    if (SC.rose) { g.addColorStop(at(gy - Math.min(100, gy * .3)), rgba(mixC(SC.mid, SC.rose, .5))); g.addColorStop(at(gy - 28), rgba(SC.rose)); }
+    g.addColorStop(Math.max(at(gy + 24), at(gy - 27)), rgba(SC.low));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    if (SC.dark) {
+      const n = SC.part === 'night' ? stars.length : 9;
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < n; i++) {
+        const s0 = stars[i];
+        ctx.globalAlpha = (SC.part === 'night' ? .3 : .18) + .45 * (.5 + .5 * Math.sin(clock * s0.sp * motion + s0.ph));
+        ctx.beginPath(); ctx.arc(s0.nx * W, s0.ny * gy, s0.r, 0, TAU); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    } else {
+      // słońce: tylko poświata, od rana (lewo) do popołudnia (prawo)
+      const p = clamp((hour - 6) / 14);
+      const sx = skySpan * (.2 + .6 * p), sy = gy * (.62 - .3 * Math.sin(Math.PI * p));
+      const warm = SC.part === 'day' ? [255, 248, 226] : [255, 226, 190];
+      const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(W, H) * .42);
+      halo.addColorStop(0, rgba(warm, .5)); halo.addColorStop(1, rgba(warm, 0));
+      ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+    }
   }
 
-  function drawBokeh() {
-    for (const o of bokeh) {
-      const x = o.nx * W + Math.sin(clock * o.f + o.ph) * o.ax * motion;
-      const y = o.ny * H + Math.cos(clock * o.f * 1.3 + o.ph) * o.ay * motion;
-      ctx.globalAlpha = o.a;
-      ctx.drawImage(o.spr, x - o.r, y - o.r, o.r * 2, o.r * 2);
+  // Księżyce (wieczór, noc) i chmury (dzień). Żyją w pasie między podpisem a horyzontem: nigdy pod tekstem.
+  function drawSkyThings() {
+    const span = skySpan + 140, skyH = Math.max(90, baseY - skyTop), wk = clamp(W / 375, 1, 1.5);
+    const drift = reduceMotion ? 0 : clock * .9;
+    if (SC.dark) {
+      const all = SC.part === 'night' ? 1 : .6;
+      const tones = [[255, 246, 222], tint(pal.l3, .5), mixC(pal.tip, [255, 232, 196], .5)];
+      for (const m of MOONS) {
+        const x = wrap(m.nx * span - drift * .25 * m.par, span) - 70;
+        const r = m.r * wk, y = arcY(x) - m.alt * skyH, col = tones[m.tone];
+        const gl = ctx.createRadialGradient(x, y, r * .6, x, y, r * 4.2);
+        gl.addColorStop(0, rgba(col, .2 * all)); gl.addColorStop(1, rgba(col, 0));
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r * 4.2, 0, TAU); ctx.fill();
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.clip();
+        ctx.globalAlpha = all;
+        ctx.fillStyle = rgba(col); ctx.fillRect(x - r, y - r, r * 2, r * 2);
+        ctx.fillStyle = rgba(mixC(col, SC.top, .22));
+        for (const [cx0, cy0, cr] of [[-.3, -.25, .22], [.32, .28, .16], [.05, .5, .1], [.42, -.34, .09]]) { ctx.beginPath(); ctx.arc(x + cx0 * r, y + cy0 * r, cr * r, 0, TAU); ctx.fill(); }
+        if (m.phase < 1) {                                       // cień fazy: ciemna strona prawie w kolorze nieba
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = rgba(mixC(SC.top, col, .1), .93);
+          ctx.beginPath(); ctx.arc(x - r * 2 * m.phase, y - r * .12, r * 1.08, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+      }
+    } else {
+      ctx.fillStyle = `rgba(255,255,255,${SC.part === 'day' ? .62 : .5})`;
+      for (const cl of CLOUDS) {
+        const x = wrap(cl.nx * span - drift * cl.par, span) - 70;
+        const y = arcY(x) - cl.alt * skyH, w = cl.w * wk;
+        ctx.beginPath();
+        ctx.ellipse(x, y, w * .5, w * .13, 0, 0, TAU);
+        ctx.ellipse(x - w * .16, y - w * .09, w * .2, w * .14, 0, 0, TAU);
+        ctx.ellipse(x + w * .12, y - w * .12, w * .24, w * .17, 0, 0, TAU);
+        ctx.fill();
+      }
     }
-    ctx.globalAlpha = 1;
+  }
+
+  // Planeta: łuk, na którym stoi roślinka. Grunt ma ten sam kolor co --planet w CSS, przy krawędzi jest jaśniejszy.
+  function drawPlanet() {
+    const cx = baseX, cy = baseY + R;
+    const atm = ctx.createRadialGradient(cx, cy, R * .98, cx, cy, R + 90);
+    atm.addColorStop(0, rgba(SC.dark ? SC.rim : SC.low, SC.dark ? .32 : .7)); atm.addColorStop(1, rgba(SC.low, 0));
+    ctx.fillStyle = atm; ctx.beginPath(); ctx.arc(cx, cy, R + 90, Math.PI, TAU); ctx.fill();
+
+    const g = ctx.createRadialGradient(cx, cy, R - 46, cx, cy, R);
+    g.addColorStop(0, rgba(SC.near)); g.addColorStop(1, rgba(mixC(SC.near, SC.rim, .7)));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
+    ctx.fillStyle = rgba(SC.near); ctx.fillRect(0, Math.min(H, arcY(W * .5) + 150), W, H);
+    ctx.strokeStyle = rgba(tint(SC.rim, SC.dark ? .1 : .5), SC.dark ? .55 : .9); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, R - .75, Math.PI, TAU); ctx.stroke();
+  }
+
+  // Kopczyk u nasady łodygi: roślinka wyrasta z gruntu planety, a nie stoi na osobnej wysepce
+  function drawMound() {
+    ctx.fillStyle = rgba(mixC(SC.near, pal.stems[0], SC.dark ? .3 : .2));
+    ctx.beginPath(); ctx.ellipse(baseX, baseY + .4 * S, 8 * S, 1.5 * S, 0, 0, TAU); ctx.fill();
   }
 
   function drawPetals() {
@@ -768,13 +896,15 @@
 
   function draw(g) {
     ctx.clearRect(0, 0, W, H);
-    drawBokeh();
+    drawSky();
+    drawSkyThings();
+    drawPlanet();
 
-    // poświata za rośliną — mocniejsza, im roślina większa
+    // poświata za rośliną — mocniejsza, im roślina większa; na ciemnym niebie spokojniejsza
     const ph = plantH(g);
     const gy = baseY - ph * .45 * S;
     const glow = ctx.createRadialGradient(baseX, gy, 0, baseX, gy, Math.max(ph, 40) * .95 * S);
-    glow.addColorStop(0, rgba(pal.glow, .32 + .2 * clamp(g / 3)));
+    glow.addColorStop(0, rgba(pal.glow, (.32 + .2 * clamp(g / 3)) * (SC.dark ? .3 : 1)));
     glow.addColorStop(1, rgba(pal.glow, 0));
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, H);
@@ -793,7 +923,7 @@
       if (r > 0) drawStem(b, r, g);
     }
     drawSprout(g);
-    drawGround();
+    drawMound();
 
     for (const L of leaves) {
       if (L.state === 'attached') {
@@ -826,7 +956,7 @@
       palT = Math.min(1, palT + dt / 1.1);
       pal = lerpPalette(palFrom, palTo, easeInOut(palT));
       bakeColors();
-      paintBokeh();
+      paintWorld();
     }
     wind *= Math.exp(-dt * 1.4);
     gather += (gatherTarget - gather) * Math.min(1, dt * .8);
@@ -843,32 +973,44 @@
   // ================================================================
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = window.innerWidth;
-    H = window.innerHeight;
+    // telefon: canvas leży na górze strony i przewija się razem z nią (css/auth.css); komputer: przyklejony do okna
+    pinned = getComputedStyle(canvas).position === 'fixed';
+    W = canvas.clientWidth || window.innerWidth;
+    H = canvas.clientHeight || window.innerHeight;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    if (W >= 900) {
-      // Komputer: roślina na środku wolnej przestrzeni po lewej od karty
+    const copy = document.querySelector('.scene-copy');
+    const copyBottom = copy && copy.offsetHeight ? copy.getBoundingClientRect().bottom + window.scrollY : 0;
+    wide = W >= 900;
+    let drop;                    // o ile łuk planety opada przy dalszej krawędzi ekranu (px)
+    if (wide) {
+      // Komputer: roślina na środku wolnej przestrzeni po lewej od formularza, pod nią wielki łuk planety
       const area = Math.max(260, card.getBoundingClientRect().left - 20);
       baseX = area / 2 + 10;
-      baseY = H - Math.max(36, H * .075);
-      S = Math.min(H * .7, area * 1.05) / 100;
-      fieldY = 0; fieldH = H;
+      baseY = H - Math.max(150, H * .2);
+      skyTop = Math.max(copyBottom + 20, H * .12);
+      S = clamp(Math.min((baseY - skyTop) / 106, area / 100), .8, 7);
+      skySpan = area; drop = 96;
       floatScale = 1;
     } else {
-      // Telefon: roślina w pasie nad arkuszem z formularzem (wysokość = górny padding layoutu),
-      // doniczka tuż nad krawędzią karty, korona pod podpisem u góry
-      const hero = parseFloat(getComputedStyle(layout).paddingTop) || 220;
-      const copy = document.querySelector('.scene-copy');
-      const top = copy && copy.offsetHeight ? copy.getBoundingClientRect().bottom + window.scrollY + 6 : 16;
+      // Telefon: roślina w pasie nad formularzem (wysokość = górny padding layoutu, --hero),
+      // horyzont tuż nad pierwszym elementem formularza, korona pod podpisem u góry
+      const hero = parseFloat(getComputedStyle(layout).paddingTop) || 260;
+      const wk = clamp(W / 375, 1, 2);
+      drop = 22 * wk;
       baseX = W / 2;
-      baseY = hero - 16;
-      S = clamp(Math.min((baseY - top) / 104, W * .9 / 100), .8, 4);
-      fieldY = top; fieldH = Math.max(60, hero - top - 20);
+      baseY = hero - drop - 8;
+      skyTop = copyBottom ? copyBottom + 10 : 16;
+      S = clamp(Math.min((baseY - skyTop) / 104, W * .9 / 100), .6, 5);
+      skySpan = W;
       floatScale = .8;
     }
+    const reach = Math.max(baseX, W - baseX);
+    R = (drop * drop + reach * reach) / (2 * drop);
+    fieldY = skyTop; fieldH = Math.max(60, baseY - fieldY - 14);   // pod podpisem: listki nie latają pod tekstem
+    fieldW = wide ? skySpan + 10 : W;
   }
 
   // ================================================================
@@ -880,12 +1022,13 @@
       && y < baseY + 10 && y > baseY - plantH(g) * S * 1.1;
   }
   window.addEventListener('pointermove', e => {
-    if (pointer.active && overPlant(e.clientX, e.clientY)) {
-      const d = Math.hypot(e.clientX - pointer.x, e.clientY - pointer.y);
+    const px = e.clientX, py = e.clientY + (pinned ? 0 : window.scrollY);   // współrzędne canvasu
+    if (pointer.active && overPlant(px, py)) {
+      const d = Math.hypot(px - pointer.x, py - pointer.y);
       wind = Math.min(1.5, wind + d * .0025 * motion);
     }
-    pointer.x = e.clientX;
-    pointer.y = e.clientY;
+    pointer.x = px;
+    pointer.y = py;
     pointer.active = true;
     pointer.overCard = e.target instanceof Element && !!e.target.closest('.card');
   }, { passive: true });
@@ -950,12 +1093,13 @@
     palFrom = pal;
     palTo = readPalette();
     palT = 0;
-    if (reduceMotion) { pal = palTo; palT = 1; bakeColors(); paintBokeh(); }
+    if (reduceMotion) { pal = palTo; palT = 1; bakeColors(); }
+    paintWorld();                // tryb dzienny / nocny zmienia porę nieba od razu, kolory motywu dochodzą płynnie
     wind = Math.min(1.5, wind + .5 * motion);
   });
 
   bakeColors();
-  paintBokeh();
+  paintWorld();
   window.addEventListener('resize', resize);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(resize);
   resize();

@@ -9,7 +9,7 @@
   'use strict';
 
   const Scene = window.PlantScene || { setGrowth() {}, rustle() {} };
-  const { EMAIL_RE, haptic, passwordField, account } = window.AuthCommon;
+  const { EMAIL_RE, haptic, passwordField, stagger, account } = window.AuthCommon;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(pointer: fine)').matches;
 
@@ -40,7 +40,7 @@
   let busy = false;
 
   // Kolejne elementy widoku wjeżdżają z lekkim opóźnieniem
-  Object.values(views).forEach(v => [...v.children].forEach((c, i) => c.style.setProperty('--i', i)));
+  Object.values(views).forEach(stagger);
   card.addEventListener('animationend', e => { if (e.animationName === 'card-in') card.classList.remove('intro'); });
 
   // ================================================================

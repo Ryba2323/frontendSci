@@ -7,7 +7,9 @@
  *   haptic(pattern)                   krótka wibracja (tylko telefony)
  *   toast(text)                       komunikat na dole ekranu (#toast)
  *   passwordField(input, toggle, caps) pokaż/ukryj hasło + ostrzeżenie o Caps Locku; zwraca { reset() }
+ *   stagger(step)                     numeruje elementy widoku (--i), żeby wjeżdżały po kolei (css/auth.css)
  *   account.save(data) / .load()      TYMCZASOWO, do czasu backendu: profil w localStorage (bez hasła)
+ * Do tego SOS: przycisk [data-sos] otwiera arkusz <dialog id="auth-sos"> z numerami pomocowymi (jak w aplikacji).
  */
 (function () {
   'use strict';
@@ -50,6 +52,26 @@
     return { reset() { show(false); if (caps) caps.hidden = true; } };
   }
 
+  // Kolejne elementy widoku wjeżdżają z lekkim opóźnieniem. Na telefonie .panel tylko grupuje pola (display: contents),
+  // więc numerujemy też jego dzieci; na komputerze .panel to karta i wjeżdża w całości.
+  function stagger(step) {
+    let i = 0;
+    [...step.children].forEach(c => {
+      c.style.setProperty('--i', i++);
+      if (c.classList.contains('panel')) [...c.children].forEach(pc => pc.style.setProperty('--i', i++));
+    });
+  }
+
+  // SOS: natywny <dialog> (Escape i fokus obsługuje przeglądarka); stuknięcie w tło zamyka.
+  // Tylko logowanie i rejestracja: aplikacja.html ma własny arkusz SOS (js/app.js), a tego elementu tam nie ma.
+  const sosSheet = document.getElementById('auth-sos');
+  if (sosSheet && sosSheet.showModal) {
+    document.querySelectorAll('[data-sos]').forEach(btn => btn.addEventListener('click', () => sosSheet.showModal()));
+    sosSheet.addEventListener('click', e => {
+      if (e.target === sosSheet || e.target.closest('[data-sos-close]')) sosSheet.close();
+    });
+  }
+
   const KEY = 'sci.account';
   const account = {
     save(data) {
@@ -62,6 +84,6 @@
 
   window.AuthCommon = {
     EMAIL_RE: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
-    haptic, toast, passwordField, account,
+    haptic, toast, passwordField, stagger, account,
   };
 })();

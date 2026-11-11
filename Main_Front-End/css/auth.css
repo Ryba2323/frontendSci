@@ -1,23 +1,122 @@
 /*
- * Logowanie i rejestracja — wspólne style ekranów.
- * Mobile-first: bazowe style są pod telefon (roślina u góry, formularz jako arkusz od dołu,
- * jedno pytanie na ekran). Układ na komputer: @media (min-width: 900px) na końcu pliku.
- * Kolory i fonty: css/tokens.css
+ * Logowanie i rejestracja — wspólne style ekranów, w tym samym kierunku co aplikacja („Ścieżka” + design Bartka,
+ * css/sciezka.css, css/zywa.css, css/pola.css). Branch tymson-design-logowanie, 11.11.2026.
+ *
+ * Zasady (te same co w aplikacji):
+ *  • NIEBO JEST TŁEM, PLANETA JEST GRUNTEM. Scena (js/plant-scene.js) rysuje niebo pory dnia i planetę, na której
+ *    rośnie roślinka, i zapisuje kolory do <html>: --ground (niebo pod treścią), --sky-top, --sky-low, --planet (grunt).
+ *    Niżej są tylko wartości na pierwszą klatkę.
+ *  • TELEFON: jak pierwszy ekran Domu. U góry niebo z rośliną, pod horyzontem grunt planety, a na nim formularz —
+ *    bez białego arkusza. Pytania i tytuły leżą prosto na gruncie, pola i odpowiedzi to pełne karty (--surface, cień --e1).
+ *  • KOMPUTER (od 900 px): roślinka z lewej na wielkim łuku planety, z prawej tytuł prosto na niebie,
+ *    a pod nim jedna pełna karta z liściastym rogiem (.panel) z polami etapu.
+ *  • CIEMNE NIEBO = CIEMNY EKRAN (js/theme.js, <html data-sciezka>): wieczorem i nocą tekst jest jasny.
+ *  • Kształty --radius-*, liściasty róg (--leaf), Bricolage Grotesque (tytuły, pytania) + Figtree (reszta), waga 400/500/600.
+ *  • Jeden pełny kolor na ekran: „Dalej” / „Zaloguj się”. Wybrana odpowiedź = odcień motywu z obwódką 2 px.
+ *  • Ciepłe światło (--pole-warm) tylko dla wsparcia: notka o 116 111 i SOS.
+ * Kolory i odstępy: css/tokens.css. W React Native: te tokeny do konfiguracji NativeWind, scena w Skii.
  */
 
+/* ================================================================
+   Tokeny kierunku (te same wartości co :root[data-uklad="d"] w css/zywa.css, css/pola.css i css/sciezka.css —
+   przy zmianie tam popraw też tutaj)
+   ================================================================ */
+:root {
+  --font: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* nazwa tokenu jak w aplikacji; to czcionka tytułów i pytań, bez szeryfów */
+  --font-serif: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --text: #16222A;
+  --text-body: #2B3942;
+  --text-muted: #42525B;
+  --text-soft: #4A5A63;
+  --line: color-mix(in srgb, var(--text) 18%, transparent);
+  --track: color-mix(in srgb, var(--text) 12%, transparent);
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 30px;
+  --e1: 0 1px 2px rgba(16, 44, 48, .05), 0 12px 28px -16px rgba(16, 44, 48, .24);
+  --e2: 0 2px 6px rgba(16, 44, 48, .06), 0 24px 48px -20px rgba(16, 44, 48, .38);
+  --spring: linear(0, .009, .035 2.1%, .141 4.4%, .723 12.9%, .938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, .991, .977 51%, .974 53.8%, .975 57.1%, .997 69.8%, 1.003 76.9%, 1);
+  --tap: 44px;
+
+  /* pola koloru (css/pola.css) */
+  --pole-soft: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  --pole-warm: color-mix(in srgb, var(--plant-core) 30%, var(--surface));
+  --pole-warm-ico: color-mix(in srgb, var(--plant-core) 58%, var(--surface));
+  --leaf: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--sp-2);
+  --leaf-sm: var(--radius-sm) var(--radius-sm) var(--radius-sm) 6px;
+  --card-edge: inset 0 0 0 1px color-mix(in srgb, var(--primary) 16%, transparent);
+
+  /* świat (css/sciezka.css): wartości na pierwszą klatkę, potem liczy je scena */
+  --ground: oklch(from var(--primary) .95 .034 h);
+  --sky-top: oklch(from var(--primary) .925 .048 h);
+  --sky-low: var(--ground);
+  --planet: oklch(from var(--plant-leaf-2) .84 .08 h);
+  --veil: color-mix(in srgb, var(--surface) 86%, transparent);
+
+  /* tylko te ekrany */
+  --hero: clamp(250px, 40vh, 360px);            /* telefon: pas nieba z rośliną nad formularzem */
+  --under: var(--planet);                       /* tło, na którym leży formularz (telefon: grunt, komputer: niebo) */
+  --focus: color-mix(in srgb, var(--primary-dark) 75%, transparent);
+  --err-ink: color-mix(in srgb, var(--error) 54%, var(--text));   /* błąd musi mieć 4,5:1 także na gruncie planety */
+  --stem: var(--plant-stem);                    /* gałązka postępu */
+  /* pola i odpowiedzi: pełna karta na gruncie; na komputerze, wewnątrz karty etapu, odcień motywu bez cienia */
+  --field-bg: var(--surface);
+  --field-on: var(--pole-soft);
+  --field-shadow: var(--e1), var(--card-edge);
+}
+@supports (height: 1svh) { :root { --hero: clamp(250px, 40svh, 360px); } }
+/* Niskie telefony (np. iPhone SE): mniej miejsca na roślinkę, więcej na formularz */
+@media (max-height: 700px) {
+  :root { --hero: clamp(230px, 38vh, 260px); }
+  @supports (height: 1svh) { :root { --hero: clamp(230px, 38svh, 260px); } }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode="light"]) {
+    --text: #F2F7F8; --text-body: #DBE6E9; --text-muted: #B9C9CE; --text-soft: #A8B9BE; --surface: #263C44;
+    --line: color-mix(in srgb, var(--text) 16%, transparent); --track: color-mix(in srgb, var(--text) 16%, transparent);
+    --e1: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 28px -16px rgba(0, 0, 0, .7);
+    --e2: inset 0 1px 0 rgba(255, 255, 255, .08), 0 24px 48px -18px rgba(0, 0, 0, .8);
+    --pole-soft: color-mix(in srgb, var(--primary) 20%, var(--surface));
+    --pole-warm: color-mix(in srgb, var(--plant-core) 17%, var(--surface));
+    --pole-warm-ico: color-mix(in srgb, var(--plant-core) 32%, var(--surface));
+    --ground: oklch(.205 .055 265); --sky-top: oklch(.17 .05 265); --planet: oklch(from var(--plant-leaf-2) .255 .04 h);
+    --focus: color-mix(in srgb, var(--accent-light) 80%, transparent);
+    --err-ink: color-mix(in srgb, var(--error) 45%, #fff);
+    --stem: var(--plant-leaf-1);
+  }
+}
+:root[data-mode="dark"] {
+  --text: #F2F7F8; --text-body: #DBE6E9; --text-muted: #B9C9CE; --text-soft: #A8B9BE; --surface: #263C44;
+  --line: color-mix(in srgb, var(--text) 16%, transparent); --track: color-mix(in srgb, var(--text) 16%, transparent);
+  --e1: inset 0 1px 0 rgba(255, 255, 255, .07), 0 14px 28px -16px rgba(0, 0, 0, .7);
+  --e2: inset 0 1px 0 rgba(255, 255, 255, .08), 0 24px 48px -18px rgba(0, 0, 0, .8);
+  --pole-soft: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  --pole-warm: color-mix(in srgb, var(--plant-core) 17%, var(--surface));
+  --pole-warm-ico: color-mix(in srgb, var(--plant-core) 32%, var(--surface));
+  --ground: oklch(.205 .055 265); --sky-top: oklch(.17 .05 265); --planet: oklch(from var(--plant-leaf-2) .255 .04 h);
+  --focus: color-mix(in srgb, var(--accent-light) 80%, transparent);
+  --err-ink: color-mix(in srgb, var(--error) 45%, #fff);
+  --stem: var(--plant-leaf-1);
+}
+
+/* ================================================================
+   Podstawy
+   ================================================================ */
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; background: var(--planet); }
 
 body {
+  position: relative;
   margin: 0;
   font-family: var(--font);
   color: var(--text);
+  /* zanim scena narysuje pierwszą klatkę: niebo nad horyzontem, niżej grunt (ten sam podział co na canvasie) */
   background:
-    radial-gradient(1100px 700px at 12% 115%, rgba(var(--mint-rgb), .6), transparent 60%),
-    radial-gradient(900px 600px at 92% -12%, rgba(var(--mist-rgb), .65), transparent 60%),
-    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
-  background-attachment: fixed;
+    linear-gradient(var(--sky-top), var(--ground) 55%, var(--sky-low)) top / 100% calc(var(--hero) - 30px) no-repeat,
+    var(--planet);
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
@@ -26,10 +125,11 @@ body {
 }
 button, a, label, input { touch-action: manipulation; }
 
+/* Scena. Telefon: leży na górze strony i przewija się razem z formularzem (horyzont nie może odkleić się od gruntu). */
 #scene {
-  position: fixed; inset: 0; width: 100%; height: 100%;
+  position: absolute; left: 0; top: 0; width: 100%; height: 100vh;
   z-index: 0; pointer-events: none;
-  animation: fade-in 1.6s ease both;
+  animation: fade-in var(--dur-slow) ease both;
 }
 @keyframes fade-in { from { opacity: 0; } }
 
@@ -40,51 +140,86 @@ button, a, label, input { touch-action: manipulation; }
 .desktop-only { display: none; }
 
 /* ================================================================
-   Layout (telefon): pas z rośliną u góry, pod nim arkusz z formularzem
+   Górny pasek na niebie: napis ReLeaf i SOS (jak .app-top w aplikacji)
+   ================================================================ */
+.auth-top {
+  position: absolute; z-index: 3; left: 0; right: 0; top: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: calc(env(safe-area-inset-top) + var(--sp-3)) var(--sp-5) 0;
+  pointer-events: none;
+}
+.auth-top > * { pointer-events: auto; }
+
+/* Napis ReLeaf: ten sam co w aplikacji (css/home2.css) */
+.brand {
+  --wm-accent: light-dark(var(--primary), color-mix(in srgb, var(--accent-light) 70%, white));
+  display: inline-flex; align-items: center; height: 36px;
+  color: light-dark(var(--text), #F4F8F6); text-decoration: none;
+}
+.brand-word {
+  display: inline-flex; align-items: baseline;
+  font: 600 27px/1 "Fredoka", "Bricolage Grotesque", var(--font);
+  letter-spacing: -.02em; transform: rotate(-3deg); transform-origin: left center;
+}
+.brand-word .bw-leaf { position: relative; color: var(--wm-accent); margin-left: .02em; }
+.brand-word .bw-swoosh { position: absolute; left: -38%; right: -4%; bottom: -7px; width: 142%; height: 7px; overflow: visible; }
+.brand-word .bw-swoosh path { fill: none; stroke: var(--wm-accent); stroke-width: 2.6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+
+/* SOS: pigułka ze „Ścieżki”; wieczorem i nocą świeci jak latarnia (ciepłe światło) */
+.sos {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  height: var(--tap); padding: 0 var(--sp-4) 0 var(--sp-3); border: 0; border-radius: 999px;
+  background: var(--veil); box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit; font-size: .8rem; font-weight: 600; letter-spacing: .05em; color: var(--text);
+  cursor: pointer; transition: transform var(--dur-base) var(--spring);
+}
+.sos svg { width: 17px; height: 17px; }
+.sos:active { transform: scale(.96); transition-duration: .1s; }
+.sos:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+:root[data-pora="noc"] .sos, :root[data-pora="wieczor"] .sos {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--plant-core) 80%, transparent), 0 0 22px 2px color-mix(in srgb, var(--plant-core) 32%, transparent);
+}
+
+/* ================================================================
+   Layout (telefon): pas nieba z rośliną, pod horyzontem formularz na gruncie planety
    ================================================================ */
 .layout {
   position: relative; z-index: 1;
   display: flex; flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
-  padding-top: clamp(200px, 38vh, 340px);
-  padding-top: clamp(200px, 38svh, 340px);
+  padding-top: var(--hero);
 }
 
-/* Niskie telefony (np. iPhone SE): mniej miejsca na roślinkę, więcej na formularz */
-@media (max-height: 700px) {
-  .layout { padding-top: clamp(170px, 32vh, 240px); padding-top: clamp(170px, 32svh, 240px); }
-}
-
-/* Podpis nad roślinką (telefon: u góry pasa ze sceną) */
+/* Podpis na niebie, pod napisem ReLeaf — jak powitanie na Domu (data małymi literami, pod nią zdanie w Bricolage) */
 .scene-copy {
-  position: absolute; top: calc(env(safe-area-inset-top) + 14px); left: 16px; right: 16px;
-  text-align: center; pointer-events: none;
+  position: absolute; top: calc(env(safe-area-inset-top) + 62px); left: var(--sp-5);
+  max-width: min(72%, 300px); pointer-events: none;
 }
 .scene-copy .eyebrow {
-  display: block; margin-bottom: 3px;
-  font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--primary-dark);
+  display: block; margin-bottom: 2px;
+  font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-body);
 }
 .scene-copy p {
-  margin: 0; font-size: .86rem; line-height: 1.4; font-weight: 600; color: #56727B;
+  margin: 0; font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.12; font-weight: 500; letter-spacing: -.02em;
+  text-wrap: balance; color: var(--text);
   transition: opacity var(--dur-base) ease, transform var(--dur-base) ease;
 }
 .scene-copy p.fade { opacity: 0; transform: translateY(4px); }
+/* niskie telefony: sam podpis, bez nazwy roślinki nad nim — całe miejsce pod spodem dostaje roślina */
+@media (max-height: 700px) and (max-width: 899px) {
+  .scene-copy .eyebrow { display: none; }
+  .scene-copy p { font-size: 1.15rem; }
+}
 
+/* .card to cały formularz: na telefonie nie ma własnego tła (leży na gruncie), na komputerze kartą jest .panel */
 .card {
-  --intro-y: 48px;
+  --intro-y: 32px;
   position: relative;
   flex: 1;
   display: flex; flex-direction: column;
   width: 100%;
-  padding: var(--sp-5) var(--sp-4) var(--sp-2);
-  /* Na telefonie bez backdrop-filter — rozmywanie animowanego canvasu w każdej klatce zacina słabsze telefony */
-  background: var(--sheet);
-  border: 1px solid rgba(255, 255, 255, .9);
-  border-bottom: 0;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: 0 -16px 40px -24px rgba(30, 42, 50, .28);
+  padding: var(--sp-1) var(--sp-5) 0;
 }
 .card > .stepper,
 .card > .steps { width: 100%; max-width: 492px; margin-left: auto; margin-right: auto; }
@@ -99,34 +234,52 @@ button, a, label, input { touch-action: manipulation; }
   40%, 60% { transform: translateX(6px); }
 }
 
-/* ---------- Postęp (telefon: trzy paski, wypełniane pytanie po pytaniu) ---------- */
-.stepper { list-style: none; margin: 0 0 var(--sp-5); padding: 0 var(--sp-2); display: flex; gap: var(--sp-2); }
-.stepper li { flex: 1; min-width: 0; }
-.stepper .dot { display: none; }
-.stepper .lbl {
-  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+/* ---------- Postęp: gałązka z trzema pąkami (jak w podlewaniu) ----------
+   Bieżący etap = pąk w obwódce, a z każdym pytaniem etapu rośnie przy nim liść (--fill 0–1, js/rejestracja.js);
+   ukończony etap = pełny liść. Nazwy etapów widać na komputerze, na telefonie nazwę bieżącego pokazuje .step-head. */
+.stepper { position: relative; list-style: none; display: flex; height: 30px; margin: 0 0 var(--sp-3); padding: 0; }
+.stepper::before {
+  content: ""; position: absolute; left: calc(100% / 6); right: calc(100% / 6); top: 15px; height: 2px; margin-top: -1px; border-radius: 2px;
+  background: color-mix(in srgb, var(--stem) 45%, transparent);
 }
-.stepper .bar { display: block; height: 4px; border-radius: 4px; background: var(--track); overflow: hidden; }
-.stepper .bar i {
-  display: block; height: 100%; border-radius: inherit; background: var(--primary);
-  width: calc(var(--fill, 0) * 100%);
-  transition: width var(--dur-slow) var(--ease-in-out);
+.stepper li { position: relative; flex: 1; min-width: 0; }
+.stepper li::before {
+  content: ""; position: absolute; left: 50%; top: 15px; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+  background: color-mix(in srgb, var(--stem) 55%, var(--under));
+  transition: transform var(--dur-base) var(--spring), background var(--dur-base), box-shadow var(--dur-base);
 }
+.stepper li.is-current::before {
+  width: 16px; height: 16px; margin: -8px 0 0 -8px;
+  background: var(--under); box-shadow: inset 0 0 0 2px var(--primary);
+}
+.stepper li.is-done::before { transform: scale(.6); background: var(--stem); box-shadow: none; }
+.stepper li::after {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 24px; height: 24px; margin-left: -4px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--plant-leaf-2) 70%, var(--primary)) 50%, var(--primary) 50%);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+  transform-origin: 18% 88%; transform: scale(var(--fill, 0));
+  transition: transform var(--dur-slow) var(--spring);
+}
+.stepper .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Etapy, ekrany i przejścia ---------- */
 .steps {
   position: relative;
   flex: 1;
   display: flex; flex-direction: column;
-  padding: 0 var(--sp-2);
   transition: height var(--dur-slow) var(--ease-in-out);
 }
+/* przycinamy tylko na czas przejścia; margines zostawia miejsce na cienie kart */
 .steps.is-animating { overflow: hidden; }
+@supports (overflow-clip-margin: 1px) { .steps.is-animating { overflow: clip; overflow-clip-margin: 32px; } }
 .step { flex: 1; display: flex; flex-direction: column; }
 .step.is-leaving {
-  position: absolute; top: 0; bottom: 0; left: 6px; right: 6px;
+  position: absolute; top: 0; bottom: 0; left: 0; right: 0;
   animation: step-out var(--dur-base) ease forwards; pointer-events: none;
 }
+/* .panel: na telefonie tylko grupuje (pola leżą prosto na gruncie), na komputerze to pełna karta etapu */
+.panel { display: contents; }
 .pages { position: relative; flex: 1 0 auto; }
 .page:focus { outline: none; }
 .page.is-leaving {
@@ -134,6 +287,7 @@ button, a, label, input { touch-action: manipulation; }
   animation: step-out var(--dur-base) ease forwards; pointer-events: none;
 }
 .step.is-entering > *,
+.step.is-entering > .panel > *,
 .page.is-entering > :not(.field),
 .page.is-entering > .field > * {
   animation: rise var(--dur-slow) var(--ease-out) both;
@@ -142,159 +296,154 @@ button, a, label, input { touch-action: manipulation; }
 @keyframes step-out { to { opacity: 0; transform: translateX(var(--dx)); } }
 @keyframes rise { from { opacity: 0; transform: translateX(var(--dx)); } }
 
-/* Nazwa etapu — na telefonie mała etykieta nad pytaniem */
-.step-head { margin-bottom: var(--sp-3); }
+/* Nazwa etapu — na telefonie mała etykieta z listkiem nad pytaniem (jak „Podlewanie” w pasku podlewania) */
+.step-head { margin-bottom: var(--sp-2); }
 .step-head h2 {
-  margin: 0; font-size: .74rem; font-weight: 700; line-height: 1.4;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--primary-dark);
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin: 0; font-size: .9rem; font-weight: 600; line-height: 1.4; color: var(--text-body);
+}
+.step-head h2::before {
+  content: ""; flex: 0 0 15px; height: 15px; background: var(--primary-dark);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 .step-head p { display: none; }
 h2:focus { outline: none; }
 
-/* Pytanie — na telefonie duży nagłówek ekranu */
+/* Pytanie — na telefonie duży nagłówek ekranu, prosto na gruncie */
 .q {
   display: block; margin: 0 0 var(--sp-2);
-  font-size: 1.5rem; line-height: 1.25; font-weight: 800; letter-spacing: -.02em; color: var(--text);
+  font-family: var(--font-serif); font-size: 1.75rem; line-height: 1.12; font-weight: 500; letter-spacing: -.02em;
+  text-wrap: balance; color: var(--text);
 }
-.q small { font-size: .9rem; font-weight: 500; letter-spacing: 0; color: var(--text-muted); }
-.q-hint { margin: 0 0 var(--sp-5); font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
+.q small { font-family: var(--font); font-size: .9rem; font-weight: 500; letter-spacing: 0; color: var(--text-body); }
+.q-hint { margin: 0 0 var(--sp-4); font-size: .98rem; line-height: 1.5; color: var(--text-body); }
 
 /* ================================================================
-   Pola
+   Pola: pełne karty bez ramek (cień --e1), jak odpowiedzi w podlewaniu
    ================================================================ */
 fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 legend { padding: 0; }
 .field { margin: 0; }
 
 .input {
-  width: 100%; height: 54px; padding: 0 var(--sp-4);
-  border-radius: 16px; border: 1.5px solid var(--line);
-  background: rgba(255, 255, 255, .95);
+  width: 100%; height: 56px; padding: 0 var(--sp-4);
+  border: 0; border-radius: var(--leaf-sm);
+  background: var(--field-bg); box-shadow: var(--field-shadow);
   font: inherit; font-size: 1.05rem; color: var(--text);
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast), background var(--dur-fast);
+  transition: box-shadow var(--dur-fast), background var(--dur-fast);
 }
-.input::placeholder { color: #9AABB3; }
-.input:hover { border-color: var(--line-hover); }
-.input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); background: var(--surface); }
-.input[aria-invalid="true"] { border-color: var(--error); box-shadow: 0 0 0 4px rgba(196, 85, 60, .12); }
+.input::placeholder { color: var(--text-soft); opacity: 1; }
+.input:focus { outline: none; box-shadow: inset 0 0 0 2px var(--primary), var(--field-shadow); }
+.input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--err-ink), var(--field-shadow); }
 
 .input-wrap { position: relative; }
 .input-wrap .input { padding-right: var(--sp-16); }
 
 .input-btn {
   position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-  width: 44px; height: 44px; border: 0; border-radius: 12px;
+  width: var(--tap); height: var(--tap); border: 0; border-radius: 12px;
   display: grid; place-items: center;
-  background: transparent; color: #7A8D96; cursor: pointer;
+  background: transparent; color: var(--text-muted); cursor: pointer;
   transition: background var(--dur-fast), color var(--dur-fast);
 }
-.input-btn:hover { background: rgba(var(--primary-rgb), .08); color: var(--primary); }
-.input-btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 0; }
-.input-btn svg { width: 20px; height: 20px; transition: transform var(--dur-base) var(--ease-spring); }
+.input-btn:hover { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--text); }
+.input-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 0; }
+.input-btn svg { width: 20px; height: 20px; transition: transform var(--dur-base) var(--spring); }
 .input-btn.roll svg { transform: rotate(200deg) scale(.9); }
 
 /* Znaczek „pole poprawne” */
 .ok-mark {
   position: absolute; right: 16px; top: 50%;
   width: 22px; height: 22px; padding: var(--sp-1); border-radius: 50%;
-  background: rgba(120, 201, 183, .22); color: #3E9C88;
+  background: color-mix(in srgb, var(--primary) 16%, transparent); color: var(--primary-dark);
   transform: translateY(-50%) scale(.3); opacity: 0;
-  transition: transform var(--dur-base) var(--ease-spring), opacity var(--dur-fast);
+  transition: transform var(--dur-base) var(--spring), opacity var(--dur-fast);
   pointer-events: none;
 }
 .field.is-valid .ok-mark { opacity: 1; transform: translateY(-50%) scale(1); }
 
-.err { margin: var(--sp-2) 2px 0; font-size: .85rem; font-weight: 500; color: var(--error); }
+.err { margin: var(--sp-2) 2px 0; font-size: .88rem; font-weight: 600; color: var(--err-ink); }
 .err:empty { display: none; }
 
-.suggest { margin: var(--sp-3) 2px 0; font-size: .88rem; color: var(--text-muted); }
+.suggest { margin: var(--sp-3) 2px 0; font-size: .9rem; color: var(--text-body); }
 .suggest button {
-  font: inherit; font-weight: 700; color: var(--primary-dark);
-  padding: var(--sp-1) var(--sp-3); border: 0; border-radius: 8px;
-  background: rgba(var(--primary-rgb), .09); cursor: pointer;
-  transition: background var(--dur-fast);
+  font: inherit; font-weight: 600; color: var(--text);
+  padding: var(--sp-1) var(--sp-3); border: 0; border-radius: 10px;
+  background: var(--field-bg); box-shadow: var(--card-edge); cursor: pointer;
+  transition: transform var(--dur-base) var(--spring);
 }
-.suggest button:hover { background: rgba(var(--primary-rgb), .16); }
-.suggest button:focus-visible { outline: 3px solid var(--ring); }
+.suggest button:active { transform: scale(.96); transition-duration: .1s; }
+.suggest button:focus-visible { outline: 3px solid var(--focus); }
 
 .caps {
   display: flex; align-items: center; gap: var(--sp-2);
-  margin: var(--sp-3) 2px 0; font-size: .82rem; font-weight: 600; color: var(--warning);
+  margin: var(--sp-3) 2px 0; font-size: .85rem; font-weight: 600; color: var(--text);
 }
 .caps svg { width: 15px; height: 15px; }
 
-/* Siła hasła */
+/* Siła hasła: od ciepłego światła (za krótkie) do koloru roślinki (mocne), bez czerwieni */
 .meter {
   display: flex; align-items: center; gap: var(--sp-2);
   height: 0; margin-top: 0; opacity: 0; overflow: hidden;
   transition: height var(--dur-base) ease, margin var(--dur-base) ease, opacity var(--dur-base) ease;
 }
-.meter.show { height: 16px; margin-top: var(--sp-3); opacity: 1; }
-.meter i { flex: 1; height: 4px; border-radius: 4px; background: var(--track); transition: background var(--dur-base); }
-.meter span { flex: 0 0 auto; min-width: 76px; text-align: right; font-size: .78rem; font-weight: 700; color: var(--text-muted); }
-.meter[data-level="1"] i:nth-of-type(-n+1) { background: #E8957A; }
-.meter[data-level="2"] i:nth-of-type(-n+2) { background: var(--energy); }
-.meter[data-level="3"] i:nth-of-type(-n+3) { background: var(--accent-light); }
+.meter.show { height: 18px; margin-top: var(--sp-3); opacity: 1; }
+.meter i { flex: 1; height: 5px; border-radius: 5px; background: var(--track); transition: background var(--dur-base); }
+.meter span { flex: 0 0 auto; min-width: 76px; text-align: right; font-size: .82rem; font-weight: 600; color: var(--text-body); }
+.meter[data-level="1"] i:nth-of-type(-n+1) { background: var(--plant-core); }
+.meter[data-level="2"] i:nth-of-type(-n+2) { background: var(--plant-core); }
+.meter[data-level="3"] i:nth-of-type(-n+3) { background: var(--primary); }
 .meter[data-level="4"] i:nth-of-type(-n+4) { background: var(--primary); }
 
-/* ---------- Chipsy (radio / checkbox) ---------- */
+/* ---------- Odpowiedzi do wyboru (radio / checkbox): miękkie płytki ----------
+   Zaznaczona = odcień motywu z obwódką 2 px; pełny kolor zostaje dla „Dalej”. */
 .chips { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 .chip { position: relative; display: inline-flex; }
 .chip input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
-.chip span {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
-  width: 100%; height: 46px; padding: 0 var(--sp-4); border-radius: 999px;
-  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
-  font-size: .95rem; font-weight: 600; color: #3D4E57;
-  transition: background var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast), transform var(--dur-fast), box-shadow var(--dur-fast);
+.chip span, .choice span, .swatch span {
+  background: var(--field-bg); box-shadow: var(--field-shadow);
+  transition: transform var(--dur-base) var(--spring), background-color var(--dur-fast), box-shadow var(--dur-fast), color var(--dur-fast);
   user-select: none;
 }
-.chip i { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--c); transition: transform var(--dur-base) var(--ease-spring); }
-.chip input:hover + span { border-color: var(--line-hover); }
-.chip input:active + span { transform: scale(.96); }
-.chip input:focus-visible + span { box-shadow: 0 0 0 4px var(--ring); }
-.chip input:checked + span {
-  border-color: var(--c, var(--primary));
-  background: rgba(var(--primary-rgb), .1);
-  background: color-mix(in srgb, var(--c, var(--primary)) 15%, white);
-  color: var(--text);
+.chip span {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  width: 100%; height: 48px; padding: 0 var(--sp-4); border-radius: var(--radius-sm);
+  font-size: .95rem; font-weight: 600; color: var(--text-body);
 }
-.chip input:checked + span i { transform: scale(1.35); }
+:is(.chip, .choice, .swatch) input:active + span { transform: scale(.96); transition-duration: .1s; }
+:is(.chip, .choice, .swatch) input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+:is(.chip, .choice, .swatch) input:checked + span {
+  background: var(--field-on); color: var(--text);
+  box-shadow: inset 0 0 0 2px var(--primary), var(--field-shadow);
+}
 
 /* Kafelki: większe pola wyboru w siatce */
 .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
-.tiles .chip span { height: 56px; border-radius: 16px; }
+.tiles .chip span { height: 56px; }
 
 .age-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); }
-.age-grid .chip span { height: 58px; padding: 0; border-radius: 16px; font-size: 1.15rem; }
+.age-grid .chip span { height: 58px; padding: 0; font-family: var(--font-serif); font-size: 1.3rem; font-weight: 500; }
 
 .choices { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
 .choice { position: relative; display: flex; }
 .choice input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .choice span {
-  position: relative; width: 100%; min-height: 62px;
-  display: flex; flex-direction: column; justify-content: center; gap: 3px;
-  padding: var(--sp-4) var(--sp-12) var(--sp-3) var(--sp-5); border-radius: 16px;
-  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
-  transition: background var(--dur-fast), border-color var(--dur-fast), box-shadow var(--dur-fast), transform var(--dur-fast);
-  user-select: none;
+  position: relative; width: 100%; min-height: 60px;
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  padding: var(--sp-3) var(--sp-12) var(--sp-3) var(--sp-5); border-radius: var(--leaf-sm);
 }
 .choice span::after {
   content: ""; position: absolute; right: 18px; top: 50%;
   width: 22px; height: 22px; margin-top: -11px; border-radius: 50%;
-  border: 2px solid var(--line-strong); background: #fff;
-  transition: border-color var(--dur-fast), background var(--dur-fast), box-shadow var(--dur-fast);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--text) 32%, transparent);
+  transition: box-shadow var(--dur-fast), background var(--dur-fast);
 }
-.choice b { font-size: 1rem; font-weight: 700; }
-.choice small { font-size: .85rem; color: var(--text-muted); line-height: 1.35; }
-.choice input:hover + span { border-color: var(--line-hover); }
-.choice input:active + span { transform: scale(.98); }
-.choice input:focus-visible + span { box-shadow: 0 0 0 4px var(--ring); }
-.choice input:checked + span { border-color: var(--primary); background: rgba(var(--primary-rgb), .08); }
-.choice input:checked + span::after { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 4px #fff; }
+.choice b { font-size: 1rem; font-weight: 600; }
+.choice small { font-size: .88rem; color: var(--text-body); line-height: 1.35; }
+.choice input:checked + span::after { background: var(--primary); box-shadow: inset 0 0 0 5px var(--field-on), 0 0 0 2px var(--primary); }
 
-fieldset[aria-invalid="true"] .chip span,
-fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55); }
+fieldset[aria-invalid="true"] :is(.chip, .choice) span { box-shadow: inset 0 0 0 2px var(--err-ink), var(--field-shadow); }
 
 /* ---------- Kolor roślinki: próbki motywów ----------
    Każda próbka ma data-palette="…", więc w środku działają zmienne swojego motywu (css/tokens.css) */
@@ -303,134 +452,133 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
 .swatch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .swatch span {
   width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
-  padding: var(--sp-4) var(--sp-1) var(--sp-3); border-radius: 16px;
-  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
-  font-size: .86rem; font-weight: 600; color: #3D4E57;
-  transition: background var(--dur-fast), border-color var(--dur-fast), box-shadow var(--dur-fast), transform var(--dur-fast);
-  user-select: none;
+  padding: var(--sp-4) var(--sp-1) var(--sp-3); border-radius: var(--leaf-sm);
+  font-size: .88rem; font-weight: 600; color: var(--text-body);
 }
 .swatch i {
   position: relative; width: 44px; height: 44px; border-radius: 50%;
   background: linear-gradient(150deg, var(--plant-leaf-2) 8%, var(--plant-leaf-1) 55%, var(--plant-stem));
-  box-shadow: 0 6px 14px -6px rgba(var(--primary-rgb), .75);
-  transition: transform var(--dur-base) var(--ease-spring);
+  transition: transform var(--dur-base) var(--spring);
 }
 /* kwiatek w rogu próbki */
 .swatch i::after {
   content: ""; position: absolute; right: -3px; top: -3px; width: 17px; height: 17px; border-radius: 50%;
   background: radial-gradient(circle, var(--plant-core) 0 32%, var(--plant-flower) 36%);
-  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px var(--surface);
 }
-.swatch input:hover + span { border-color: var(--line-hover); }
-.swatch input:active + span { transform: scale(.97); }
-.swatch input:focus-visible + span { box-shadow: 0 0 0 4px var(--ring); }
-.swatch input:checked + span { border-color: var(--primary); background: rgba(var(--primary-rgb), .09); color: var(--text); }
 .swatch input:checked + span i { transform: scale(1.12); }
 
 /* ---------- Zgody ---------- */
 .check {
   display: flex; gap: var(--sp-3); align-items: flex-start; cursor: pointer;
-  padding: var(--sp-4) var(--sp-4); border-radius: 16px;
-  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .9);
-  font-size: .95rem; line-height: 1.45; color: #3D4E57;
-  transition: border-color var(--dur-fast), background var(--dur-fast);
+  padding: var(--sp-4); border-radius: var(--leaf-sm);
+  background: var(--field-bg); box-shadow: var(--field-shadow);
+  font-size: .95rem; line-height: 1.45; color: var(--text-body);
+  transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
 }
-.check:has(input:checked) { border-color: rgba(var(--primary-rgb), .55); background: rgba(var(--primary-rgb), .06); }
+.check:has(input:checked) { background: var(--field-on); box-shadow: inset 0 0 0 2px var(--primary), var(--field-shadow); }
 .reveal .check { margin-top: var(--sp-3); }
 .check input {
   appearance: none; -webkit-appearance: none;
   flex: 0 0 24px; width: 24px; height: 24px; margin: 0;
   display: grid; place-content: center;
-  border-radius: 7px; border: 1.5px solid var(--line-strong); background: var(--surface);
+  border: 0; border-radius: 8px; background: var(--surface);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--text) 32%, transparent);
   cursor: pointer;
-  transition: background var(--dur-fast), border-color var(--dur-fast), box-shadow var(--dur-fast);
+  transition: background var(--dur-fast), box-shadow var(--dur-fast);
 }
 .check input::after {
   content: ""; width: 12px; height: 12px; background: #fff;
   clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
-  transform: scale(0); transition: transform var(--dur-fast) cubic-bezier(.3, 1.6, .5, 1);
+  transform: scale(0); transition: transform var(--dur-base) var(--spring);
 }
-.check input:checked { background: var(--primary); border-color: var(--primary); }
+.check input:checked { background: var(--primary); box-shadow: none; }
 .check input:checked::after { transform: scale(1); }
-.check input:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--ring); }
-.check input[aria-invalid="true"] { border-color: var(--error); }
-.check small { display: block; color: var(--text-muted); font-size: .8rem; }
-.check a, .foot a, .note a { color: var(--primary-dark); font-weight: 700; text-decoration: none; }
-.check a:hover, .foot a:hover, .note a:hover { text-decoration: underline; }
+.check input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.check input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--err-ink); }
+.check small { display: block; color: var(--text-muted); font-size: .84rem; }
+/* linki: kolor tekstu z podkreśleniem — sam kolor motywu nie ma kontrastu 4,5:1 na gruncie planety */
+.check a, .foot a, .note a {
+  color: var(--text); font-weight: 600;
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--text) 45%, transparent); text-underline-offset: 3px;
+}
+.check a:hover, .foot a:hover, .note a:hover { text-decoration-color: currentColor; }
+:is(.check, .foot, .note) a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
 .reveal { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--dur-base) ease, opacity var(--dur-base) ease; }
 .reveal.open { grid-template-rows: 1fr; opacity: 1; }
 .reveal > div { overflow: hidden; }
+/* miejsce na cień i obwódkę karty wewnątrz przyciętego rozwinięcia */
+.reveal.open > div { margin: 0 -6px -18px; padding: 0 6px 18px; }
 
+/* Notka o wsparciu (116 111): ciepłe światło, jak SOS i podpowiedzi w aplikacji */
 .note {
   display: flex; gap: var(--sp-3); align-items: flex-start;
-  margin: var(--sp-4) 0 0; padding: var(--sp-4) var(--sp-4); border-radius: 16px;
-  background: rgba(var(--mist-rgb), .35); border: 1px solid rgba(var(--mist-rgb), .8);
-  font-size: .84rem; line-height: 1.5; color: #3F5660;
+  margin: var(--sp-4) 0 0; padding: var(--sp-4); border-radius: var(--leaf-sm);
+  background: var(--pole-warm); box-shadow: var(--e1);
+  font-size: .88rem; line-height: 1.5; color: var(--text-body);
 }
-.note svg { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px; color: var(--primary); }
+.note svg { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 1px; color: var(--text); }
+/* potwierdzenie wysłania linku to zwykła informacja, nie wsparcie: karta w odcieniu motywu */
+.note.sent { margin-top: 0; background: var(--field-bg); box-shadow: var(--field-shadow); }
 
 /* ================================================================
-   Przyciski — na telefonie przyklejone do dołu arkusza (strefa kciuka)
+   Przyciski — na telefonie przyklejone do dołu ekranu (strefa kciuka)
    ================================================================ */
 /* Przyklejone do dołu ekranu — CTA widoczne nawet, gdy treść ekranu jest dłuższa niż telefon */
 .actions {
   position: sticky; bottom: 0; z-index: 2;
   display: flex; gap: var(--sp-3); margin-top: auto;
   padding: var(--sp-6) 0 calc(var(--sp-3) + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, var(--sheet) 75%, transparent);
+  background: linear-gradient(to top, var(--under) 72%, color-mix(in srgb, var(--under) 0%, transparent));
 }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-3);
-  height: 56px; padding: 0 var(--sp-6); border: 0; border-radius: 16px;
-  font: inherit; font-size: 1.02rem; font-weight: 700; text-decoration: none; cursor: pointer;
-  transition: background var(--dur-fast), transform var(--dur-fast), box-shadow var(--dur-fast), color var(--dur-fast);
+  height: 56px; padding: 0 var(--sp-6); border: 0; border-radius: var(--radius-md);
+  font: inherit; font-size: 1.08rem; font-weight: 600; text-decoration: none; cursor: pointer;
+  transition: transform var(--dur-base) var(--spring), background-color var(--dur-fast), box-shadow var(--dur-fast), color var(--dur-fast);
 }
 .btn svg { width: 20px; height: 20px; }
-.btn:focus-visible { outline: 3px solid rgba(var(--primary-rgb), .4); outline-offset: 2px; }
+.btn:active { transform: scale(.96); transition-duration: .1s; }
+.btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* jak „Podlej roślinkę” na Domu: jedyny pełny kolor na ekranie */
 .btn-primary {
-  flex: 1; background: var(--primary); color: #fff;
-  box-shadow: 0 12px 26px -12px rgba(var(--primary-rgb), .85);
+  flex: 1; color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, .1)), var(--primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 10px 20px -14px color-mix(in srgb, var(--primary) 70%, #000);
 }
-.btn-primary:hover { background: var(--primary-hover); box-shadow: 0 14px 30px -12px rgba(var(--primary-rgb), .95); }
-.btn-primary:active { transform: translateY(1px) scale(.99); }
 .btn-primary svg { transition: transform var(--dur-fast) var(--ease-out); }
-.btn-primary:hover .arrow { transform: translateX(3px); }
-.btn-primary:hover .sprout { transform: rotate(-12deg) scale(1.1); }
-.btn-back { flex: 0 0 56px; padding: 0; background: rgba(var(--primary-rgb), .09); color: var(--primary); }
-.btn-back:hover { background: rgba(var(--primary-rgb), .16); }
+@media (hover: hover) {
+  .btn-primary:hover .arrow { transform: translateX(3px); }
+  .btn-primary:hover .sprout { transform: rotate(-12deg) scale(1.1); }
+}
+.btn-back { flex: 0 0 56px; padding: 0; background: var(--field-bg); box-shadow: var(--field-shadow); color: var(--text); }
 
 #step3[data-last="true"] .arrow,
 #step3:not([data-last="true"]) .sprout { display: none; }
 
-.kbd-hint { display: none; margin: var(--sp-3) 0 0; text-align: center; font-size: .78rem; color: #8698A1; }
+.kbd-hint { display: none; margin: var(--sp-3) 0 0; text-align: center; font-size: .8rem; color: var(--text-muted); }
 .kbd-hint kbd {
-  font: inherit; font-weight: 700; font-size: .72rem; color: var(--text-muted);
-  padding: 2px var(--sp-2); border-radius: 6px; background: var(--surface);
-  border: 1px solid var(--line); box-shadow: 0 1px 0 var(--line);
+  font: inherit; font-weight: 600; font-size: .74rem; color: var(--text-body);
+  padding: 2px var(--sp-2); border-radius: 6px; background: var(--field-bg); box-shadow: var(--card-edge);
 }
 
-.foot { margin: var(--sp-4) 0 0; text-align: center; font-size: .9rem; color: var(--text-muted); }
+.foot { margin: var(--sp-1) 0 var(--sp-4); text-align: center; font-size: .92rem; color: var(--text-body); }
 
 /* ================================================================
    Logowanie (oba pola na jednym ekranie, także na telefonie)
    ================================================================ */
-.kicker {
-  margin: 0 0 var(--sp-3); font-size: .74rem; font-weight: 700; line-height: 1.4;
-  letter-spacing: .12em; text-transform: uppercase; color: var(--primary-dark);
-}
 .title {
-  margin: 0 0 var(--sp-2); font-size: 1.6rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; color: var(--text);
+  margin: 0 0 var(--sp-2); font-family: var(--font-serif); font-size: 2rem; line-height: 1.08; font-weight: 500; letter-spacing: -.02em;
+  text-wrap: balance; color: var(--text);
 }
 .title:focus { outline: none; }
-.lead { margin: 0 0 var(--sp-6); font-size: .95rem; line-height: 1.5; color: var(--text-muted); }
-.lbl { display: block; margin: 0 0 var(--sp-2); font-size: .875rem; font-weight: 700; color: var(--text); }
+.lead { margin: 0 0 var(--sp-5); font-size: 1rem; line-height: 1.5; color: var(--text-body); }
+.lbl { display: block; margin: 0 0 var(--sp-2); font-size: .9rem; font-weight: 600; color: var(--text); }
 .login .field + .field { margin-top: var(--sp-4); }
 
-.row-end { display: flex; justify-content: flex-end; margin: var(--sp-2) 0 0; }
-.btn-link.sm { align-self: auto; margin-right: -10px; padding: var(--sp-2) var(--sp-3); font-size: .86rem; color: var(--primary-dark); }
-
-.note.sent { margin-top: 0; }
+.row-end { display: flex; justify-content: flex-end; margin: var(--sp-1) 0 0; }
+.btn-link.sm { align-self: auto; margin-right: calc(var(--sp-3) * -1); min-height: var(--tap); padding: var(--sp-2) var(--sp-3); font-size: .9rem; color: var(--text); }
 
 /* Przycisk w trakcie wysyłania: kręciołek zamiast strzałki */
 .spinner {
@@ -447,185 +595,229 @@ fieldset[aria-invalid="true"] .choice span { border-color: rgba(196, 85, 60, .55
 /* ================================================================
    Ekran końcowy
    ================================================================ */
-.step-done { text-align: center; padding: var(--sp-3) 0 0; }
+.step-done { text-align: center; padding: var(--sp-2) 0 0; }
 .step-done:focus { outline: none; }
 .badge {
-  position: relative; width: 88px; height: 88px; margin: var(--sp-2) auto var(--sp-6); border-radius: 50%;
+  position: relative; width: 64px; height: 64px; margin: var(--sp-1) auto var(--sp-4); border-radius: 50%;
   display: grid; place-items: center;
-  background: radial-gradient(circle at 35% 30%, #fff, rgba(var(--mint-rgb), .55) 70%);
-  box-shadow: 0 0 0 8px rgba(var(--mint-rgb), .45), 0 18px 34px -14px rgba(var(--primary-rgb), .6);
+  background: var(--surface); box-shadow: var(--e2), var(--card-edge);
 }
 .badge::before {
-  content: ""; position: absolute; inset: -8px; border-radius: 50%;
-  border: 2px solid var(--plant-leaf-2);
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--plant-core) 70%, transparent);
   animation: pulse 3s ease-out infinite;
 }
-.badge svg { width: 54px; height: 54px; }
+.badge svg { width: 40px; height: 40px; }
 .badge .petals { fill: var(--plant-flower); }
 .badge .core { fill: var(--plant-core); }
-.step-done.is-entering .badge svg { animation: bloom var(--dur-slow) var(--ease-spring) .4s both; }
+.step-done.is-entering .badge svg { animation: bloom var(--dur-slow) var(--spring) .4s both; }
 @keyframes bloom { from { transform: scale(.2) rotate(-90deg); opacity: 0; } }
 @keyframes pulse { from { transform: scale(1); opacity: .9; } to { transform: scale(1.35); opacity: 0; } }
-.step-done h2 { margin: 0 0 var(--sp-3); font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; }
-.step-done > p { max-width: 340px; margin: 0 auto; color: var(--text-muted); line-height: 1.6; }
+.step-done h2 { margin: 0 0 var(--sp-3); font-family: var(--font-serif); font-size: 2rem; line-height: 1.08; font-weight: 500; letter-spacing: -.02em; text-wrap: balance; }
+.step-done p { max-width: 340px; margin: 0 auto; color: var(--text-body); line-height: 1.55; }
 
 .pills { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin: var(--sp-5) 0 0; padding: 0; list-style: none; }
 .pills li {
-  display: inline-flex; align-items: center; gap: var(--sp-2); height: 32px; padding: 0 var(--sp-3); border-radius: 999px;
-  background: rgba(255, 255, 255, .9); border: 1px solid var(--line);
-  font-size: .8rem; font-weight: 600; color: #3D4E57;
+  display: inline-flex; align-items: center; gap: var(--sp-2); height: 34px; padding: 0 var(--sp-3); border-radius: 12px 12px 12px 4px;
+  background: var(--field-bg); box-shadow: var(--card-edge);
+  font-size: .84rem; font-weight: 600; color: var(--text-body);
 }
-.pills i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--primary)); }
+/* listek zamiast kolorowej kropki: kolory kategorii zostają tylko w Trackerze */
+.pills i {
+  width: 12px; height: 12px; background: var(--primary-dark);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 21C3.5 10.5 10 4 21 3c-.5 11-7 18-16 18z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 
-.step-done .actions { flex-direction: column; align-items: stretch; }
+/* tu nic nie jest dłuższe niż ekran, więc przyciski nie muszą być przyklejone (zasłaniały pigułki) */
+.step-done .actions { position: static; flex-direction: column; align-items: stretch; gap: var(--sp-1); background: none; }
 .step-done .btn-primary { flex: 0 0 auto; }
 .btn-link {
-  align-self: center; padding: var(--sp-3); border: 0; border-radius: 8px; background: none;
-  font: inherit; font-size: .9rem; font-weight: 600; color: var(--text-muted); cursor: pointer;
+  align-self: center; min-height: var(--tap); padding: var(--sp-2) var(--sp-3); border: 0; border-radius: 10px; background: none;
+  font: inherit; font-size: .92rem; font-weight: 600; color: var(--text-body); cursor: pointer;
+  text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 45%, transparent); text-underline-offset: 3px;
 }
-.btn-link:hover { color: var(--primary-dark); }
-.btn-link:focus-visible { outline: 3px solid var(--ring); }
+.btn-link:hover { text-decoration-color: currentColor; }
+.btn-link:focus-visible { outline: 3px solid var(--focus); }
 
 /* ---------- Toast ---------- */
 /* width: max-content — przy left: 50% przeglądarka dawała komunikatowi tylko połowę ekranu (wąska kolumna) */
 .toast {
   position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 5;
   width: max-content; max-width: calc(100% - 32px);
-  padding: var(--sp-3) var(--sp-5); border-radius: var(--radius-md);
-  background: var(--text); color: #fff; font-size: .88rem; font-weight: 600;
-  box-shadow: 0 16px 30px -12px rgba(30, 42, 50, .5);
+  padding: var(--sp-3) var(--sp-5); border-radius: var(--radius-sm);
+  background: var(--toast-bg); color: var(--toast-fg); font-size: .9rem; font-weight: 600;
+  box-shadow: var(--e2);
   transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
   transition: opacity var(--dur-base), transform var(--dur-base);
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* ================================================================
-   Komputer (od 900 px): roślina po lewej, karta po prawej,
+   SOS: arkusz z numerami pomocowymi (te same numery i teksty co w aplikacji; js/auth-common.js)
+   ================================================================ */
+.sos-sheet {
+  width: 100%; max-width: 520px; max-height: 92dvh; margin: auto auto 0; padding: var(--sp-6) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom));
+  border: 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--sheet); color: var(--text); box-shadow: var(--e2);
+}
+.sos-sheet::backdrop { background: rgba(10, 20, 24, .45); }
+.sos-sheet[open] { animation: sheet-in var(--dur-base) var(--ease-out) both; }
+@keyframes sheet-in { from { opacity: 0; transform: translateY(24px); } }
+.sos-title { margin: 0 0 var(--sp-1); font-family: var(--font-serif); font-size: 1.6rem; line-height: 1.12; font-weight: 500; letter-spacing: -.02em; }
+.sos-sub { margin: 0 0 var(--sp-5); font-size: .95rem; line-height: 1.5; color: var(--text-body); }
+.sos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-3); }
+.sos-item {
+  display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4); border-radius: var(--radius-md) var(--radius-md) var(--radius-md) var(--sp-2);
+  background: var(--pole-soft); box-shadow: var(--card-edge); color: var(--text); text-decoration: none;
+  transition: transform var(--dur-base) var(--spring);
+}
+.sos-item:active { transform: scale(.97); transition-duration: .1s; }
+.sos-item:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sos-item b { display: block; font-size: 1rem; font-weight: 600; }
+.sos-item small { display: block; margin-top: 2px; font-size: .84rem; line-height: 1.4; color: var(--text-body); }
+.sos-ico { flex: 0 0 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--text); }
+.sos-ico svg { width: 21px; height: 21px; }
+/* telefon zaufania: ciepłe światło wsparcia */
+.sos-item.is-main { background: var(--pole-warm); box-shadow: none; }
+.sos-item.is-main .sos-ico { background: var(--pole-warm-ico); }
+.sos-close {
+  width: 100%; height: 52px; margin-top: var(--sp-4); border: 0; border-radius: var(--radius-md);
+  background: var(--pole-soft); box-shadow: var(--card-edge); color: var(--text); font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
+}
+.sos-close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Tablet: ten sam układ co telefon, tylko więcej nieba i większe litery.
+   Przyciski stoją zaraz pod polami (na tak wysokim ekranie dół nie jest już strefą kciuka). */
+@media (min-width: 700px) and (max-width: 899px) and (min-height: 800px) {
+  :root { --hero: clamp(340px, 46vh, 540px); }
+  .scene-copy { left: var(--sp-8); max-width: 360px; }
+  .scene-copy p { font-size: 1.6rem; }
+  .auth-top { padding-left: var(--sp-8); padding-right: var(--sp-8); }
+  .q, .title { font-size: 2.2rem; }
+  .steps, .step, .pages { flex: none; }
+  .actions { position: static; margin-top: var(--sp-2); background: none; }
+}
+
+/* ================================================================
+   Komputer (od 900 px): roślinka z lewej na łuku planety, z prawej tytuł na niebie i jedna karta etapu;
    wszystkie pytania etapu na jednym ekranie
    ================================================================ */
 @media (min-width: 900px) {
+  :root { --under: var(--ground); }
+  html { background: var(--ground); }
+  body { background: linear-gradient(var(--sky-top), var(--ground) 55%, var(--sky-low)) fixed; }
+  #scene { position: fixed; height: 100%; }
+
   .desktop-only { display: revert; }
   .mobile-only, .q-hint { display: none; }
 
+  .auth-top { padding: var(--sp-8) var(--sp-10) 0; }
+
   .layout {
     display: grid;
-    grid-template-columns: 1fr minmax(0, 460px);
+    grid-template-columns: 1fr minmax(0, 480px);
     column-gap: var(--sp-10);
     align-items: center;
-    min-height: 100vh;
-    padding: var(--sp-10) clamp(var(--sp-6), 6vw, 110px);
+    padding: 96px clamp(var(--sp-6), 6vw, 110px) var(--sp-8);
   }
 
-  .scene-copy {
-    position: static;
-    grid-column: 1; grid-row: 1;
-    align-self: start; justify-self: center;
-    text-align: center; max-width: 380px; margin-top: 1vh;
-  }
-  .scene-copy .eyebrow { display: inline-block; margin-bottom: var(--sp-2); font-size: .72rem; }
-  .scene-copy p { font-size: 1.05rem; line-height: 1.5; font-weight: 500; }
+  .scene-copy { top: 92px; left: var(--sp-10); max-width: min(340px, 30vw); }
+  .scene-copy .eyebrow { margin-bottom: var(--sp-1); font-size: .82rem; }
+  .scene-copy p { font-size: 1.7rem; }
   .scene-copy p.fade { transform: translateY(6px); }
 
   .card {
     --intro-y: 18px;
     grid-column: 2; grid-row: 1;
-    flex: none; display: block;
-    padding: var(--sp-8) var(--sp-6) var(--sp-6);
-    background: rgba(255, 255, 255, .76);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    backdrop-filter: blur(18px) saturate(140%);
-    border-bottom: 1px solid rgba(255, 255, 255, .9);
-    border-radius: var(--radius-lg);
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, .9) inset,
-      0 28px 64px -24px rgba(30, 42, 50, .22),
-      0 10px 28px -14px rgba(var(--primary-rgb), .22);
+    flex: none; display: block; padding: 0;
   }
   .card > .stepper, .card > .steps { max-width: none; }
 
-  /* Stepper z kropkami i podpisami */
-  .stepper { margin-bottom: var(--sp-6); gap: 0; align-items: center; }
-  .stepper .bar { display: none; }
-  .stepper li {
-    display: flex; align-items: center; gap: var(--sp-2);
-    font-size: .8rem; font-weight: 600; color: var(--text-soft);
+  /* Karta etapu: pełna, z liściastym rogiem; pola w środku mają odcień motywu zamiast cienia */
+  .panel {
+    --field-bg: var(--pole-soft);
+    --field-on: color-mix(in srgb, var(--primary) 20%, var(--surface));
+    --field-shadow: var(--card-edge);
+    --under: var(--surface);
+    display: block; padding: var(--sp-5) var(--sp-6);
+    border-radius: var(--leaf); background: var(--surface); box-shadow: var(--e2), var(--card-edge);
+  }
+  .step.is-entering > .panel > * { animation: none; }
+
+  /* Gałązka postępu z nazwami etapów, na niebie nad tytułem */
+  .stepper { height: 56px; margin-bottom: var(--sp-4); }
+  .stepper .lbl {
+    position: absolute; left: 0; right: 0; top: 34px; width: auto; height: auto; overflow: visible; clip: auto;
+    text-align: center; font-size: .86rem; font-weight: 600; color: var(--text-muted);
     transition: color var(--dur-base);
   }
-  .stepper li:last-child { flex: 0 0 auto; }
-  .stepper li::after {
-    content: ""; flex: 1; height: 2px; min-width: 12px; margin: 0 var(--sp-3); border-radius: 2px;
-    background: var(--track) linear-gradient(var(--primary), var(--primary)) no-repeat;
-    background-size: 0% 100%;
-    transition: background-size var(--dur-slow) var(--ease-in-out);
-  }
-  .stepper li:last-child::after { display: none; }
-  .stepper li.is-done::after { background-size: 100% 100%; }
-  .stepper .lbl { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
-  .stepper .dot {
-    flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%;
-    display: grid; place-items: center;
-    font-size: .78rem; font-weight: 700;
-    background: var(--surface); border: 1.5px solid var(--line-strong); color: var(--text-soft);
-    transition: background var(--dur-base), border-color var(--dur-base), color var(--dur-base), box-shadow var(--dur-base);
-  }
-  .stepper .dot svg { width: 14px; height: 14px; }
-  .stepper li.is-current { color: var(--text); }
-  .stepper li.is-current .dot { border-color: var(--primary); color: var(--primary); box-shadow: 0 0 0 4px var(--ring); }
-  .stepper li.is-done { color: var(--primary); }
-  .stepper li.is-done .dot { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .stepper li.is-current .lbl, .stepper li.is-done .lbl { color: var(--text); }
 
   .steps, .step { display: block; }
   .step.is-leaving { bottom: auto; }
   .pages { flex: none; }
 
-  .step-head { margin-bottom: var(--sp-6); }
+  /* Tytuł etapu leży prosto na niebie, jak tytuły zakładek w aplikacji */
+  .step-head { margin-bottom: var(--sp-5); }
   .step-head h2 {
-    margin: 0 0 var(--sp-2); font-size: 1.6rem; line-height: 1.2; font-weight: 800;
-    letter-spacing: -.02em; text-transform: none; color: var(--text);
+    display: block; margin: 0 0 var(--sp-2);
+    font-family: var(--font-serif); font-size: 2.5rem; line-height: 1.04; font-weight: 500; letter-spacing: -.025em;
+    text-wrap: balance; color: var(--text);
   }
-  .step-head p { display: block; margin: 0; color: var(--text-muted); font-size: .95rem; line-height: 1.5; }
+  .step-head h2::before { display: none; }
+  .step-head p { display: block; margin: 0; color: var(--text-body); font-size: 1.05rem; line-height: 1.5; }
+  .title { font-size: 2.5rem; line-height: 1.04; letter-spacing: -.025em; }
+  .lead { margin-bottom: var(--sp-5); font-size: 1.05rem; }
 
-  .q { margin-bottom: var(--sp-2); font-size: .875rem; line-height: 1.4; font-weight: 700; letter-spacing: 0; }
-  .q small { font-size: inherit; font-weight: 500; }
+  .q { margin-bottom: var(--sp-2); font-family: var(--font); font-size: .9rem; line-height: 1.4; font-weight: 600; letter-spacing: 0; }
+  .q small { font-size: inherit; font-weight: 500; color: var(--text-muted); }
 
-  .page + .page { margin-top: var(--sp-5); }
-  .input { height: 50px; border-radius: var(--radius-md); font-size: 1rem; }
+  .page + .page { margin-top: var(--sp-4); }
+  .input { height: 48px; font-size: 1rem; }
   .input-wrap .input { padding-right: var(--sp-12); }
-  .input-btn { right: 5px; width: 40px; height: 40px; border-radius: var(--radius-sm); }
-  .err { margin-top: var(--sp-2); font-size: .8125rem; }
-  .suggest { margin-top: var(--sp-2); font-size: .8125rem; }
-  .suggest button { padding: 2px var(--sp-2); }
-  .caps { margin-top: var(--sp-2); font-size: .78rem; }
-  .meter.show { margin-top: var(--sp-3); }
+  .input-btn { right: 5px; width: 40px; height: 40px; }
+  .err { margin-top: var(--sp-2); font-size: .84rem; }
+  .suggest { margin-top: var(--sp-2); font-size: .84rem; }
+  .suggest button { padding: 2px var(--sp-2); background: var(--surface); }
+  .caps { margin-top: var(--sp-2); font-size: .8rem; }
 
   .chips { gap: var(--sp-2); }
-  .chip span { height: 40px; padding: 0 var(--sp-4); font-size: .9rem; }
+  .chip span { height: 40px; padding: 0 var(--sp-3); border-radius: 14px; font-size: .9rem; }
   .tiles { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
-  .tiles .chip span { height: 40px; border-radius: 999px; }
+  .tiles .chip span { height: 40px; }
   .age-grid { grid-template-columns: repeat(7, 1fr); gap: var(--sp-2); }
-  .age-grid .chip span { height: 44px; border-radius: 12px; font-size: .9rem; }
+  .age-grid .chip span { height: 44px; font-family: var(--font); font-size: .95rem; font-weight: 600; }
   .choices { grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); }
-  .choice span { min-height: 0; padding: var(--sp-3) var(--sp-3) var(--sp-3); border-radius: var(--radius-md); }
+  .choice span { min-height: 0; padding: var(--sp-3); border-radius: 14px 14px 14px 6px; }
   .choice span::after { display: none; }
   .choice b { font-size: .9rem; }
-  .choice small { font-size: .76rem; }
+  .choice small { font-size: .78rem; }
   .swatches { grid-template-columns: repeat(6, 1fr); gap: var(--sp-2); }
-  .swatch span { gap: var(--sp-2); padding: var(--sp-3) 2px var(--sp-2); border-radius: var(--radius-sm); font-size: .72rem; }
+  .swatch span { gap: var(--sp-2); padding: var(--sp-3) 2px var(--sp-2); border-radius: 14px 14px 14px 6px; font-size: .74rem; }
   .swatch i { width: 32px; height: 32px; }
   .swatch i::after { width: 13px; height: 13px; right: -4px; top: -4px; }
 
-  .check { padding: 0; border: 0; border-radius: 0; background: none; font-size: .9rem; }
-  .check:has(input:checked) { background: none; }
+  .check, .check:has(input:checked) { padding: 0; border-radius: 0; background: none; box-shadow: none; font-size: .92rem; }
   .reveal .check { margin-top: var(--sp-3); }
-  .check input { flex-basis: 22px; width: 22px; height: 22px; }
-  .note { margin-top: var(--sp-5); font-size: .82rem; }
+  .reveal.open > div { margin: 0 -6px; padding: 0 6px; }
+  .check input { flex-basis: 22px; width: 22px; height: 22px; background: var(--surface); }
+  .check input:checked { background: var(--primary); }
+  .note { margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); font-size: .84rem; box-shadow: none; }
 
-  .actions { position: static; margin-top: var(--sp-6); padding: 0; background: none; }
-  .btn { height: 52px; border-radius: var(--radius-md); font-size: 1rem; }
+  .actions { position: static; margin-top: var(--sp-5); padding: 0; background: none; }
+  .btn { height: 52px; font-size: 1.02rem; }
   .btn-back { flex-basis: 52px; }
 
-  .foot { margin-top: var(--sp-5); padding-top: var(--sp-5); border-top: 1px solid var(--line); font-size: .88rem; }
-  .step-done { padding: var(--sp-2) 0 var(--sp-1); }
+  .foot { margin: var(--sp-4) 0 0; padding-top: var(--sp-4); border-top: 1px solid var(--line); font-size: .9rem; }
+  .step-done { padding: 0; }
+  .step-done .panel { padding: var(--sp-8) var(--sp-6) var(--sp-5); }
+  .step-done .actions { margin-top: var(--sp-6); }
+  .badge { width: 84px; height: 84px; margin-bottom: var(--sp-5); }
+  .badge svg { width: 52px; height: 52px; }
+
+  /* SOS: na komputerze okienko na środku, nie arkusz od dołu */
+  .sos-sheet { margin: auto; border-radius: var(--leaf); }
 }
 
 @media (min-width: 900px) and (hover: hover) and (pointer: fine) {

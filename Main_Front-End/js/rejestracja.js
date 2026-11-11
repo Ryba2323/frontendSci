@@ -9,7 +9,7 @@
   'use strict';
 
   const Scene = window.PlantScene || { setStage() {}, setProgress() {}, rustle() {} };
-  const { EMAIL_RE, haptic, passwordField, account } = window.AuthCommon;
+  const { EMAIL_RE, haptic, passwordField, stagger, account } = window.AuthCommon;
   const Theme = window.Theme || { list: [], current: null, apply() {} };
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(pointer: fine)').matches;
@@ -49,8 +49,6 @@
   const pagesOf = n => (n >= 1 && n <= 3 ? $$('.page', steps[n]) : []);
   const isTextInput = el => el instanceof HTMLInputElement && el.classList.contains('input');
 
-  const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-
   const MSG = {
     nick: 'Wpisz co najmniej 2 znaki.',
     emailEmpty: 'Podaj adres e-mail.',
@@ -74,7 +72,7 @@
   };
 
   // Kolejne elementy etapu / ekranu wjeżdżają z lekkim opóźnieniem
-  Object.values(steps).forEach(s => [...s.children].forEach((c, i) => c.style.setProperty('--i', i)));
+  Object.values(steps).forEach(stagger);
   $$('.page').forEach(p => {
     let i = 0;
     [...p.children].forEach(c => {
@@ -301,19 +299,18 @@
     updateStepper();
   }
 
+  // Gałązka postępu (css/auth.css): ukończony etap ma pełny liść, a przy bieżącym liść rośnie
+  // z każdym pytaniem, które jest już za użytkownikiem (--fill 0–1; na komputerze etap to jeden ekran, więc 0)
   function updateStepper() {
     const paged = isPaged();
     $$('.stepper li').forEach((li, i) => {
       const s = i + 1;
       li.classList.toggle('is-done', s < current);
       li.classList.toggle('is-current', s === current);
-      const dot = li.querySelector('.dot');
-      const html = s < current ? CHECK_SVG : String(s);
-      if (dot.innerHTML !== html) dot.innerHTML = html;
       if (s === current) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
 
       let fill = s < current ? 1 : 0;
-      if (s === current && s <= 3) fill = paged ? (pageIdx[s] + 1) / pagesOf(s).length : 1;
+      if (s === current && s <= 3 && paged) fill = pageIdx[s] / pagesOf(s).length;
       li.style.setProperty('--fill', fill);
     });
   }
@@ -580,10 +577,6 @@
   // ================================================================
   //  Gotowe
   // ================================================================
-  const TOPIC_COLORS = {
-    'Nastrój': 'var(--mood)', 'Energia': 'var(--energy)', 'Stres': 'var(--stress)', 'Sen': 'var(--sleep)',
-    'Szkoła': '#8FC3D1', 'Relacje': 'var(--peach)', 'Pewność siebie': '#E9A58A',
-  };
   function fillDone() {
     $('#done-title').textContent = `Witaj, ${data.nick}!`;
     const greet = { f: 'Dobrze, że dołączyłaś.', m: 'Dobrze, że dołączyłeś.', n: 'Dobrze, że jesteś z nami.' }[data.form];
@@ -592,17 +585,16 @@
 
     const pills = $('#done-pills');
     pills.innerHTML = '';
-    const add = (text, color) => {
+    // każda pigułka ma listek w kolorze roślinki (css/auth.css); kolory kategorii zostają tylko w Trackerze
+    const add = text => {
       const li = document.createElement('li');
-      const dot = document.createElement('i');
-      if (color) dot.style.setProperty('--c', color);
-      li.append(dot, document.createTextNode(text));
+      li.append(document.createElement('i'), document.createTextNode(text));
       pills.append(li);
     };
     const theme = Theme.list.find(t => t.id === data.theme);
-    if (theme) add(`Kolor: ${theme.name}`, 'var(--plant-leaf-1)');
-    add(data.reminder === 'brak' ? 'Bez przypomnień' : `Check-in ${data.reminder}`, 'var(--accent-light)');
-    data.topics.forEach(tp => add(tp, TOPIC_COLORS[tp]));
+    if (theme) add(`Kolor: ${theme.name}`);
+    add(data.reminder === 'brak' ? 'Bez przypomnień' : `Check-in ${data.reminder}`);
+    data.topics.forEach(tp => add(tp));
   }
 
   $('#replay').addEventListener('click', () => {
