@@ -949,6 +949,7 @@
     const dt = Math.min(.05, Math.max(0, (ms - lastMs) / 1000)) * TEMPO;
     lastMs = ms;
     clock += dt;
+    place(dt / TEMPO, false);
 
     stepGrowth(dt);
     const g = growth.g;
@@ -980,33 +981,39 @@
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    place(0, true);
+  }
 
+  // Ustawienie sceny, liczone w każdej klatce. Na telefonie formularz leży przy dole ekranu, a horyzont stoi tuż nad nim:
+  // krótkie pytanie = nisko położony grunt i wielka roślina, dłuższy ekran = grunt podnosi się, roślina maleje.
+  // Horyzont i skala dochodzą do celu płynnie (jak kamera w aplikacji), więc zmiana pytania nie szarpie sceną.
+  function place(dt, snap) {
     const copy = document.querySelector('.scene-copy');
     const copyBottom = copy && copy.offsetHeight ? copy.getBoundingClientRect().bottom + window.scrollY : 0;
+    const cardBox = card.getBoundingClientRect();
     wide = W >= 900;
-    let drop;                    // o ile łuk planety opada przy dalszej krawędzi ekranu (px)
+    let drop, tx, ty, ts;        // drop: o ile łuk planety opada przy dalszej krawędzi ekranu (px)
     if (wide) {
       // Komputer: roślina na środku wolnej przestrzeni po lewej od formularza, pod nią wielki łuk planety
-      const area = Math.max(260, card.getBoundingClientRect().left - 20);
-      baseX = area / 2 + 10;
-      baseY = H - Math.max(150, H * .2);
+      const area = Math.max(260, cardBox.left - 20);
+      tx = area / 2 + 10;
+      ty = H - Math.max(150, H * .2);
       skyTop = Math.max(copyBottom + 20, H * .12);
-      S = clamp(Math.min((baseY - skyTop) / 106, area / 100), .8, 7);
+      ts = clamp(Math.min((ty - skyTop) / 106, area / 100), .8, 7);
       skySpan = area; drop = 96;
       floatScale = 1;
     } else {
-      // Telefon: roślina w pasie nad formularzem (wysokość = górny padding layoutu, --hero),
-      // horyzont tuż nad pierwszym elementem formularza, korona pod podpisem u góry
-      const hero = parseFloat(getComputedStyle(layout).paddingTop) || 260;
       const wk = clamp(W / 375, 1, 2);
       drop = 22 * wk;
-      baseX = W / 2;
-      baseY = hero - drop - 8;
+      tx = W / 2;
       skyTop = copyBottom ? copyBottom + 10 : 16;
-      S = clamp(Math.min((baseY - skyTop) / 104, W * .9 / 100), .6, 5);
+      ty = clamp(cardBox.top + window.scrollY - drop - 8, skyTop + 80, H - 30);
+      ts = clamp(Math.min((ty - skyTop) / 104, W / 84), .6, 6);
       skySpan = W;
-      floatScale = .8;
+      floatScale = .8 + .25 * clamp((ts - 1.6) / 2);
     }
+    const k = snap || reduceMotion ? 1 : 1 - Math.exp(-7 * dt);
+    baseX += (tx - baseX) * k; baseY += (ty - baseY) * k; S += (ts - S) * k;
     const reach = Math.max(baseX, W - baseX);
     R = (drop * drop + reach * reach) / (2 * drop);
     fieldY = skyTop; fieldH = Math.max(60, baseY - fieldY - 14);   // pod podpisem: listki nie latają pod tekstem
