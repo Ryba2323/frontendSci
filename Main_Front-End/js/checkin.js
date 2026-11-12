@@ -2,8 +2,11 @@
  * Codzienne podlewanie (check-in) — pytania otwierane przyciskiem „Podlej roślinkę” w aplikacji.
  *
  * Pierwszy ekran to design z nastroj.html (suwak-łodyga + wsparcie przy niskim nastroju), dalej krótkie pytania
- * z tabeli `daily_checkins`: sen (godziny, jakość), co miało znaczenie (jedzenie, rodzina, przyjaciele, miłość,
- * natura, nauka) i notatka. Każde pytanie można pominąć („Pomiń” → po odpowiedzi „Dalej”).
+ * z tabeli `daily_checkins`: sen (godziny, pora pójścia spać, jakość), co dziś było (ruch, hobby, odpoczynek, rozmowa,
+ * coś dla kogoś, spakowanie na jutro) i jak poszło (jedzenie, rodzina, przyjaciele, miłość, natura, nauka), na końcu notatka.
+ * Każde pytanie można pominąć („Pomiń” → po odpowiedzi „Dalej”).
+ * Pora snu i „Co dziś było?” doszły 12.11.2026 dla spersonalizowanych wniosków (js/wnioski.js, notes/wnioski.md):
+ * zbieramy tylko to, z czego powstaje jakiś wniosek; listy są w js/wnioski-dane.js (BEDTIME, ACTS).
  * Skale pól poza nastrojem nie są ustalone (notes/CLAUDE.md) — tu propozycja: sen w przedziałach, jakość 1–4,
  * obszary −1 / 0 / 1 („ciężko / ok / dobrze”).
  * Nastrój jest w bazie wymagany, a design z nastroj.html pozwala go pominąć — do ustalenia z zespołem.
@@ -17,7 +20,7 @@
  *   entry    poprzedni dzisiejszy wpis do edycji albo null
  *   step     od którego pytania zacząć: 'mood' (domyślnie), 'sleep', 'areas', 'note' — np. gdy nastrój jest już z Dom
  * window.Checkin.DATA — skale pytań (sen, jakość snu, obszary dnia), żeby strona główna mogła pokazać te same odpowiedzi
- *   onDone   dostaje { mood, sleepHours, sleepQuality, areas: { food: 1, … }, note, toVault }
+ *   onDone   dostaje { mood, sleepHours, bedtime, sleepQuality, acts: { move: 1, … }, areas: { food: 1, … }, note, toVault }
  * W React Native: osobny ekran Expo Router (modal) + Reanimated do przejść.
  */
 (function () {
@@ -57,6 +60,9 @@
     { v: 7.5, label: '7–8 h' },
     { v: 9, label: '9 h i więcej' },
   ];
+  // pora pójścia spać i „co dziś było”: wspólne z silnikiem wniosków (js/wnioski-dane.js)
+  const WD = window.WnioskiDane || { BEDTIME: [], ACTS: [] };
+  const BEDTIME = WD.BEDTIME, ACTS = WD.ACTS;
   const SLEEP_QUALITY = [
     { v: 1, label: 'Źle' },
     { v: 2, label: 'Tak sobie' },
@@ -115,6 +121,10 @@
       <p class="ci-label" id="ci-l-hours">Ile godzin snu?</p>
       ${chips('sleepHours', SLEEP_HOURS)}
     </div>
+    ${BEDTIME.length ? `<div class="ci-group" role="group" aria-labelledby="ci-l-bed">
+      <p class="ci-label" id="ci-l-bed">O której do łóżka?</p>
+      ${chips('bedtime', BEDTIME)}
+    </div>` : ''}
     <div class="ci-group" role="group" aria-labelledby="ci-l-quality">
       <p class="ci-label" id="ci-l-quality">Jak się spało?</p>
       ${chips('sleepQuality', SLEEP_QUALITY)}
@@ -123,6 +133,12 @@
   const stepAreas = () => `
     <h2 class="ci-q">Co dziś miało znaczenie?</h2>
     <p class="ci-hint">Zaznacz tylko to, co chcesz. Reszta może zostać pusta.</p>
+    ${ACTS.length ? `<div class="ci-group ci-acts" role="group" aria-labelledby="ci-l-acts">
+      <p class="ci-label" id="ci-l-acts">Co dziś było?</p>
+      <div class="ci-chips" data-multi="acts">${ACTS.map(a =>
+        `<button type="button" class="ci-chip" data-k="${a.code}" aria-pressed="false">${svg(a.icon)}${a.name}</button>`).join('')}</div>
+    </div>
+    <p class="ci-label ci-label-areas" id="ci-l-areas">Jak poszło?</p>` : ''}
     <ul class="ci-areas">${AREAS.map(a => `
       <li class="ci-area">
         <span class="ci-area-name">${svg(a.icon)}${a.name}</span>
@@ -177,7 +193,7 @@
   // ================================================================
   //  Stan i odpowiedzi
   // ================================================================
-  const blank = () => ({ mood: null, sleepHours: null, sleepQuality: null, areas: {}, note: '', toVault: false });
+  const blank = () => ({ mood: null, sleepHours: null, bedtime: null, sleepQuality: null, acts: {}, areas: {}, note: '', toVault: false });
   let ans = blank(), draft = null, idx = 0, onDone = null, mood = null, fromEl = null, isOpen = false, lastFocus = null;
   const steps = $$('.ci-step');
   const bars = $$('.ci-progress i');
@@ -186,8 +202,8 @@
   function answered(i) {
     const id = STEPS[i].id;
     if (id === 'mood') return ans.mood != null;
-    if (id === 'sleep') return ans.sleepHours != null || ans.sleepQuality != null;
-    if (id === 'areas') return Object.keys(ans.areas).length > 0;
+    if (id === 'sleep') return ans.sleepHours != null || ans.sleepQuality != null || ans.bedtime != null;
+    if (id === 'areas') return Object.keys(ans.areas).length + Object.keys(ans.acts).length > 0;
     return ans.note.trim().length > 0;
   }
 
@@ -231,6 +247,14 @@
     if (!b) return;
     const group = b.parentElement;
     const on = b.getAttribute('aria-pressed') !== 'true';
+    // „Co dziś było?”: można zaznaczyć kilka rzeczy naraz
+    if (group.dataset.multi) {
+      b.setAttribute('aria-pressed', String(on));
+      if (on) ans[group.dataset.multi][b.dataset.k] = 1; else delete ans[group.dataset.multi][b.dataset.k];
+      haptic(6);
+      syncFooter();
+      return;
+    }
     group.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b && on)));
     const v = on ? Number(b.dataset.v) : null;
     if (group.dataset.group) ans[group.dataset.group] = v;
@@ -240,8 +264,10 @@
     syncFooter();
   });
   function paintChoices() {
-    $$('.ci-chips').forEach(g => g.querySelectorAll('button').forEach(b =>
+    $$('.ci-chips[data-group]').forEach(g => g.querySelectorAll('button').forEach(b =>
       b.setAttribute('aria-pressed', String(ans[g.dataset.group] === Number(b.dataset.v)))));
+    $$('.ci-chips[data-multi]').forEach(g => g.querySelectorAll('button').forEach(b =>
+      b.setAttribute('aria-pressed', String(ans[g.dataset.multi][b.dataset.k] === 1))));
     $$('.ci-seg').forEach(g => g.querySelectorAll('button').forEach(b =>
       b.setAttribute('aria-pressed', String(ans.areas[g.dataset.area] === Number(b.dataset.v)))));
   }
@@ -303,7 +329,7 @@
     fromEl = opts.from || null;
     lastFocus = document.activeElement;
     // poprzedni wpis do edycji, a jeśli go nie ma — szkic z niedokończonego otwarcia
-    ans = opts.entry ? JSON.parse(JSON.stringify(opts.entry)) : draft || blank();
+    ans = Object.assign(blank(), opts.entry ? JSON.parse(JSON.stringify(opts.entry)) : draft);   // starsze wpisy nie mają np. `acts`
 
     root.hidden = false;
     document.body.classList.add('ci-open');
@@ -371,6 +397,6 @@
 
   window.Checkin = {
     open, close: () => close(false), get isOpen() { return isOpen; },
-    DATA: { SLEEP_HOURS, SLEEP_QUALITY, AREAS, AREA_SCALE, LOW, blank },
+    DATA: { SLEEP_HOURS, BEDTIME, SLEEP_QUALITY, ACTS, AREAS, AREA_SCALE, LOW, blank },
   };
 })();

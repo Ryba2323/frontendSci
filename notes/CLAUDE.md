@@ -39,6 +39,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 
 ## Check-in (`daily_checkins`)
 - Wymagany **nastrój 1–10**. Opcjonalnie: godziny snu, jakość snu, jedzenie, rodzina, przyjaciele, miłość, natura, nauka, notatka.
+- Od 12.11.2026 także (propozycja, dla spersonalizowanych wniosków): **pora pójścia spać** i **„Co dziś było?”** (ruch, hobby, odpoczynek, szczera rozmowa, coś dla kogoś, spakowanie na jutro). Zasada: zbieramy tylko to, z czego powstaje jakiś wniosek. Szczegóły i pytania do zespołu: `notes/wnioski.md`.
 - Skale pól poza nastrojem i częstotliwość nie są ustalone (zakładamy codziennie).
 - **Streak** jest liczony z danych, nie przechowywany.
 - Nierozstrzygnięte: `moods` (plan) czy `daily_checkins` (rozmowa o bazie).
@@ -88,7 +89,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 3. **Model biznesowy** (przygotował Piotrek; Marcel go przyśle).
 4. **Testy WHO-5 i Big Five** (zakładka Testy), równolegle **podłączenie backendu (Supabase)**.
 5. **Przejście na React Native + Expo** (od razu jako aplikacja), **model Asystenta**.
-6. Z backendem: **zbieranie i interpretacja danych**, żeby aplikacja mówiła, co robisz w dni, kiedy czujesz się gorzej, i dawała spersonalizowane insighty.
+6. Z backendem: **zbieranie i interpretacja danych**, żeby aplikacja mówiła, co robisz w dni, kiedy czujesz się gorzej, i dawała spersonalizowane insighty. **Projekt i silnik są gotowe (12.11.2026): `notes/wnioski.md`.** Zostaje podłączenie do bazy i sprawdzenie progów na prawdziwych danych.
 - Test z nastolatkami: 20.11.2026 (`notes/test-z-nastolatkami.md`).
 
 ## Zespół

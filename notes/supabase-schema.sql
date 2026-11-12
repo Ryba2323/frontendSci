@@ -1,10 +1,11 @@
 -- =====================================================================
---  ReLeaf (SCI++) — schemat bazy, część 1 z 2: konto, zgody, dane aplikacji
+--  ReLeaf (SCI++) — schemat bazy, część 1 z 3: konto, zgody, dane aplikacji
 --  Supabase / PostgreSQL 15+. Region: Frankfurt (RODO).
 --
 --  Kolejność uruchamiania (Supabase → SQL Editor albo migracje):
 --    1. notes/supabase-schema.sql   (ten plik)
---    2. notes/supabase-testy.sql    (testy WHO-5 i Big Five; wymaga tego pliku)
+--    2. notes/supabase-testy.sql    (testy WHO-5 i Big Five; wymaga tego pliku) + supabase-testy-dane.sql
+--    3. notes/supabase-wnioski.sql  (zapis podlewania, znaczniki dnia, wnioski, próby) + supabase-wnioski-dane.sql
 --  Oba pliki przechodzą na czystym Postgresie 16: narzedzia/sprawdz-baze.sh
 --  (atrapa Supabase + testy uprawnień i liczenia wyników).
 --
@@ -421,18 +422,14 @@ create table public.daily_checkins (
   mood           smallint check (mood between 1 and 10),        -- plan: wymagany; design pozwala pominąć → do ustalenia
   sleep_hours    numeric(3,1) check (sleep_hours between 0 and 16),
   sleep_quality  smallint check (sleep_quality between 1 and 4), -- źle / tak sobie / dobrze / świetnie
-  -- obszary dnia: -1 ciężko, 0 ok, 1 dobrze, null = nie zaznaczono
-  food           smallint check (food between -1 and 1),
-  family         smallint check (family between -1 and 1),
-  friends        smallint check (friends between -1 and 1),
-  love           smallint check (love between -1 and 1),
-  nature         smallint check (nature between -1 and 1),
-  study          smallint check (study between -1 and 1),
+  bedtime        smallint check (bedtime between 1 and 4),       -- zeszła noc: 1 przed 22 · 2 22–23 · 3 23–24 · 4 po północy
   note           text check (char_length(note) <= 500),
-  created_at     timestamptz not null default now(),             -- godzina wpisu → wnioski typu „niedzielne wieczory”
+  entry_hour     smallint not null default 12 check (entry_hour between 0 and 23),  -- godzina pierwszego zapisu w strefie użytkownika („niedzielne wieczory”)
+  created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now(),
   unique (user_id, day)                                          -- to także indeks do historii (user_id, day)
 );
+comment on table public.daily_checkins is 'Jedno podlewanie na dzień. Zapisuje wyłącznie save_checkin() (supabase-wnioski.sql). Obszary dnia i „co dziś było” są w checkin_tags, żeby nowe pole nie wymagało zmiany tabeli.';
 create trigger daily_checkins_touch before update on public.daily_checkins
   for each row execute function private.touch_updated_at();
 
@@ -503,34 +500,19 @@ create table public.saved_quotes (
 -- ---------------------------------------------------------------------
 
 -- ---------------------------------------------------------------------
---  8. Wnioski i podsumowania (pisze Edge Function `generate-insights`)
+--  8. Wnioski, znaczniki dnia i próby → osobny plik: notes/supabase-wnioski.sql
 -- ---------------------------------------------------------------------
-create table public.insights (
-  id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null references auth.users(id) on delete cascade,
-  kind          text not null check (kind in ('weekly_summary','weekday','sleep','helps','other')),
-  title         text not null,              -- „Niedzielne wieczory bywają trudniejsze”
-  summary       text not null,              -- jedno krótkie zdanie
-  details       jsonb not null default '{}', -- { reasons: [...], tip: "...", chart: {...} }
-  period_start  date not null,
-  period_end    date not null check (period_end >= period_start),
-  dismissed_at  timestamptz,
-  created_at    timestamptz not null default now()
-);
-create index on public.insights (user_id, created_at desc);
 
--- Wycofanie zgody na dane o zdrowiu usuwa je od razu (RODO art. 17 ust. 1 lit. b): podlewania i wnioski z nich.
--- Testy dopina swoim wyzwalaczem supabase-testy.sql. Roślinka, Skrytka (szyfrogram) i słoik zostają.
+-- Wycofanie zgody na dane o zdrowiu usuwa je od razu (RODO art. 17 ust. 1 lit. b): tu podlewania (ze znacznikami).
+-- Testy dopina swoim wyzwalaczem supabase-testy.sql, wnioski i próby — supabase-wnioski.sql.
+-- Roślinka, Skrytka (szyfrogram) i słoik zostają.
 create or replace function private.erase_health_data() returns trigger
 language plpgsql security definer set search_path = '' as $$
-declare n_checkins int; n_insights int;
+declare n_checkins int;
 begin
-  delete from public.insights i where i.user_id = new.user_id;
-  get diagnostics n_insights = row_count;
   delete from public.daily_checkins d where d.user_id = new.user_id;
   get diagnostics n_checkins = row_count;
-  perform private.log_privacy_event(new.user_id, 'health_data_erased',
-    jsonb_build_object('checkins', n_checkins, 'insights', n_insights));
+  perform private.log_privacy_event(new.user_id, 'health_data_erased', jsonb_build_object('checkins', n_checkins));
   return null;
 end $$;
 create trigger user_consents_erase_health after update of withdrawn_at on public.user_consents
@@ -660,7 +642,6 @@ alter table public.good_moments       enable row level security;
 alter table public.trusted_contacts   enable row level security;
 alter table public.daily_quotes       enable row level security;
 alter table public.saved_quotes       enable row level security;
-alter table public.insights           enable row level security;
 alter table public.posts              enable row level security;
 alter table public.comments           enable row level security;
 alter table public.votes              enable row level security;
@@ -689,17 +670,13 @@ begin
   end loop;
 end $$;
 
--- Podlewania: zapis tylko przy aktywnej zgodzie na dane o zdrowiu; czytać i kasować swoje można zawsze.
-grant select, insert, update, delete on public.daily_checkins to authenticated;
+-- Podlewania: czytać i kasować swoje można zawsze; ZAPIS tylko przez save_checkin() (supabase-wnioski.sql),
+-- które sprawdza zgodę na dane o zdrowiu, dzień i znaczniki.
+grant select, delete on public.daily_checkins to authenticated;
 grant select on public.herbarium to authenticated;
 grant execute on function private.has_consent(uuid, public.legal_doc_kind) to authenticated;
 create policy own_select on public.daily_checkins for select to authenticated using (user_id = (select auth.uid()));
 create policy own_delete on public.daily_checkins for delete to authenticated using (user_id = (select auth.uid()));
-create policy own_insert on public.daily_checkins for insert to authenticated
-  with check (user_id = (select auth.uid()) and (select private.has_consent((select auth.uid()), 'health_data')));
-create policy own_update on public.daily_checkins for update to authenticated
-  using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()) and (select private.has_consent((select auth.uid()), 'health_data')));
 
 -- Dokumenty: każdy zalogowany czyta. Zgody, dziennik i prośby do opiekuna: czytasz swoje, zapisuje serwer.
 grant select on public.legal_documents, public.user_consents, public.privacy_events, public.guardian_requests to authenticated;
@@ -715,12 +692,8 @@ grant select on public.my_consents to authenticated;
 grant execute on function private.current_document(public.legal_doc_kind) to authenticated;
 grant execute on function public.health_consent_status() to authenticated;
 
--- Wnioski i Asystent: czytasz swoje, zapisuje tylko serwer (service_role omija RLS). Wniosek można schować.
-grant select on public.insights, public.assistant_messages to authenticated;
-grant update (dismissed_at) on public.insights to authenticated;
-create policy own_select  on public.insights for select to authenticated using (user_id = (select auth.uid()));
-create policy own_dismiss on public.insights for update to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+-- Asystent: czytasz swoje, zapisuje tylko serwer (service_role omija RLS).
+grant select on public.assistant_messages to authenticated;
 create policy own_select on public.assistant_messages for select to authenticated using (user_id = (select auth.uid()));
 
 -- Myśli na dziś: każdy zalogowany czyta

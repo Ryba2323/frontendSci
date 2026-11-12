@@ -1,5 +1,5 @@
 -- =====================================================================
---  ReLeaf — schemat bazy, część 2 z 2: testy WHO-5 i Big Five (IPIP-BFM-20)
+--  ReLeaf — schemat bazy, część 2 z 3: testy WHO-5 i Big Five (IPIP-BFM-20)
 --  Uruchamiać PO notes/supabase-schema.sql (korzysta z jego zgód i funkcji),
 --  a po tym pliku: notes/supabase-testy-dane.sql (pytania i opisy wyników).
 --

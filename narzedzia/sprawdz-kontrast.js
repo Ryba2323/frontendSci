@@ -100,6 +100,18 @@ function audit() {
     await p.evaluate(() => [...document.querySelectorAll('.tst-hrow')].find(r => r.textContent.includes('Osobowość')).click()); await p.waitForTimeout(500);
     await p.click('.tst-trait summary'); await p.waitForTimeout(200); note('test: pięć cech', await p.evaluate(audit));
     await p.click('[data-tst-close]'); await p.waitForTimeout(300);
+    // Wnioski w Trackerze (js/tracker.js): wsparcie przy niskich dniach, próba w trakcie i po tygodniu, pierwszy tydzień z obserwacjami
+    for (const sc of ['niski', 'proba', 'koniec', 'tydzien', 'szum']) {
+      await p.goto(`${URL}motyw=${theme}&widok=statyczny&wnioski=${sc}&r=${Math.random()}#/tracker`); await p.waitForTimeout(400);
+      note(`tracker (${sc})`, await p.evaluate(audit));
+    }
+    await p.goto(`${URL}motyw=${theme}&widok=statyczny&r=${Math.random()}#/tracker`); await p.waitForTimeout(400);
+    await p.evaluate(() => document.querySelectorAll('.insight-more').forEach(d => { d.open = true; })); await p.waitForTimeout(200);
+    note('tracker: rozwinięte wnioski', await p.evaluate(audit));
+    // podlewanie: „Co dziś było?” z zaznaczoną odpowiedzią
+    await p.evaluate(() => window.Podlewanie.open({ step: 'areas' })); await p.waitForTimeout(700);
+    await p.click('#checkin [data-k="move"]'); await p.waitForTimeout(200); note('podlewanie: co dziś było', await p.evaluate(audit));
+    await p.goto(`${URL}motyw=${theme}&widok=statyczny&r=${Math.random()}#/testy`); await p.waitForTimeout(400);
     // Konto i prywatność (js/konto.js): zgody, potwierdzenie wycofania i usunięcia konta z aktywnym przyciskiem
     await p.evaluate(() => window.Konto.open()); await p.waitForTimeout(500); note('konto', await p.evaluate(audit));
     await p.evaluate(() => window.Konto.open('wycofaj')); await p.waitForTimeout(400); await p.click('.kp-check'); await p.waitForTimeout(150);

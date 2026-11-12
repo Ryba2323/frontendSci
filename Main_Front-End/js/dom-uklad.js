@@ -91,6 +91,9 @@
     if (status === 'egzaminy') return { icon: ICON.breath, title: 'Minuta oddechu przed nauką', why: 'spokojniejsza głowa lepiej zapamiętuje', attr: 'data-breath' };
     if (status === 'choroba') return { icon: ICON.moon, title: 'Odpocznij', why: 'dzień bez wpisu nic nie psuje — roślinka poczeka', attr: 'data-breath' };
     if (mood >= 7) return { icon: ICON.jar, title: 'Wrzuć dobrą chwilę do słoika', why: 'przyda się w gorszy dzień', attr: 'data-du-jar' };
+    // dzień „pół na pół”: najpierw to, co tej osobie zwykle pomaga (js/tracker.js → window.WnioskiStan), dopiero potem oddech
+    const top = window.WnioskiStan && window.WnioskiStan.najlepsze;
+    if (mood && top) return { icon: ICON.breath, title: `Zwykle pomaga Ci: ${top.nazwa.toLowerCase()}`, why: `może ${top.sprobuj}?`, attr: 'data-go="tracker"' };
     if (mood) return { icon: ICON.breath, title: 'Minuta oddechu z roślinką', why: 'gdy dzień jest pół na pół', attr: 'data-breath' };
     return { icon: ICON.breath, title: 'Minuta oddechu', why: 'dobry początek, zanim zaczniesz dzień', attr: 'data-breath' };
   }
@@ -232,7 +235,7 @@
       $('#zy-low-text').textContent = said;
       $('#du-more').hidden = !m;
       $('#du-suggest').innerHTML = Suggest(suggestion(m));
-      if (entry) [['sleep', entry.sleepHours != null || entry.sleepQuality != null], ['areas', Object.keys(entry.areas || {}).length], ['note', !!(entry.note || '').trim()]]
+      if (entry) [['sleep', entry.sleepHours != null || entry.sleepQuality != null], ['areas', Object.keys(entry.areas || {}).length + Object.keys(entry.acts || {}).length], ['note', !!(entry.note || '').trim()]]
         .forEach(([k, done]) => { const c = $(`[data-step="${k}"]`, next); c.classList.toggle('is-done', !!done); c.querySelector('svg').innerHTML = done ? ICON.check : ICON.plus; });
     }
     paint(P.entry);
@@ -332,7 +335,7 @@
       paintSupport(root, m);
       $('#du-suggest').innerHTML = Suggest(suggestion(m));
       // co już jest we wpisie: „+” zmienia się w ✓
-      if (entry) [['sleep', entry.sleepHours != null || entry.sleepQuality != null], ['areas', Object.keys(entry.areas || {}).length], ['note', !!(entry.note || '').trim()]]
+      if (entry) [['sleep', entry.sleepHours != null || entry.sleepQuality != null], ['areas', Object.keys(entry.areas || {}).length + Object.keys(entry.acts || {}).length], ['note', !!(entry.note || '').trim()]]
         .forEach(([k, done]) => { const c = $(`[data-step="${k}"]`, root); c.classList.toggle('is-done', !!done); c.querySelector('svg').innerHTML = done ? ICON.check : ICON.plus; });
     }
     paint(P.entry);

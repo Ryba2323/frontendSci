@@ -90,6 +90,10 @@ select t.raises('select * from public.test_sessions',            'permission den
 select t.raises('select * from public.questionnaire_questions',  'permission denied', 'anon: pytania zamknięte');
 select t.raises('select * from public.blog_posts',               'permission denied', 'anon: blog zamknięty');
 select t.raises('select * from public.test_history',             'permission denied', 'anon: historia zamknięta');
+select t.raises('select * from public.checkin_days',             'permission denied', 'anon: podlewania zamknięte');
+select t.raises('select * from public.my_insights',              'permission denied', 'anon: wnioski zamknięte');
+select t.raises('select * from public.checkin_fields',           'permission denied', 'anon: katalog pól zamknięty');
+select t.raises($$select public.save_checkin(current_date, 5::smallint)$$, 'permission denied', 'anon: save_checkin zamknięty');
 select t.raises($$select public.submit_test('who5', array[1,1,1,1,1]::smallint[])$$, 'permission denied', 'anon: submit_test zamknięty');
 select t.raises($$select public.give_consent(array['terms']::public.legal_doc_kind[])$$, 'permission denied', 'anon: give_consent zamknięty');
 select t.raises('select public.delete_my_account()',             'permission denied', 'anon: delete_my_account zamknięty');
@@ -104,8 +108,8 @@ select t.ok((select question_count = 5 from public.test_overview where code = 'w
 select t.ok((select count(*) = 25 from public.questionnaire_questions), 'zalogowany czyta pytania');
 select t.ok((public.health_consent_status()->>'reason') = 'no_consent', 'status zgody: brak');
 select t.raises($$select public.submit_test('who5', array[3,3,3,3,3]::smallint[])$$, 'consent_required', 'test bez zgody: consent_required');
-select t.raises($$insert into public.daily_checkins (user_id, day, mood) values (auth.uid(), current_date, 7)$$,
-                'row-level security', 'podlewanie bez zgody: odrzucone');
+select t.raises($$select public.save_checkin(current_date, 7::smallint)$$, 'consent_required', 'podlewanie bez zgody: odrzucone');
+select t.raises($$select public.start_experiment('czynnik:ruch', 'ruch', 3::smallint)$$, 'consent_required', 'próba bez zgody: odrzucona');
 
 -- ---------------------------------------------------------------- zgody
 select t.raises($$select public.give_consent(array['guardian']::public.legal_doc_kind[])$$, 'forbidden', 'zgody opiekuna nie da się wpisać samemu');
@@ -127,11 +131,78 @@ select t.raises('update public.profiles set birth_year = 1995', 'permission deni
 update public.profiles set nick = 'Alicja';
 select t.ok((select nick = 'Alicja' and updated_at >= created_at from public.profiles), 'własny profil da się poprawić');
 
--- ---------------------------------------------------------------- podlewanie po zgodzie
-insert into public.daily_checkins (user_id, day, mood) values (auth.uid(), current_date, 7);
+-- ---------------------------------------------------------------- podlewanie: jedna droga zapisu, znaczniki dnia
+select public.save_checkin(current_date, 7::smallint, 7.5, 3::smallint, 2::smallint, '{"friends": 1, "study": -1, "move": 1}', '  dobry dzień  ') as checkin \gset
 select t.ok((select count(*) = 1 from public.daily_checkins), 'podlewanie po zgodzie: zapisane');
-select t.raises(format($$insert into public.daily_checkins (user_id, day, mood) values (%L, current_date, 2)$$, :'ola'),
-                'row-level security', 'podlewania za kogoś innego nie da się zapisać');
+select t.ok((select mood = 7 and bedtime = 2 and note = 'dobry dzień' and entry_hour between 0 and 23 from public.daily_checkins), 'wpis ma nastrój, porę snu, przyciętą notatkę i godzinę');
+select t.ok((select areas = '{"friends": 1, "study": -1}'::jsonb and acts = '{"move": 1}'::jsonb from public.checkin_days), 'checkin_days oddaje obszary i „co dziś było” osobno');
+select t.ok(public.save_checkin(current_date, 6::smallint, null, null, null, '{"hobby": 1}') = :'checkin', 'drugi zapis tego dnia trafia do tego samego wpisu');
+select t.ok((select count(*) = 1 and bool_and(mood = 6 and sleep_hours is null) from public.daily_checkins)
+        and (select count(*) = 1 and bool_and(field_code = 'hobby') from public.checkin_tags), 'drugi zapis zastępuje wpis i znaczniki');
+select t.raises($$select public.save_checkin(current_date + 2, 5::smallint)$$, 'invalid_day', 'podlewania nie da się zapisać w przyszłość');
+select t.raises($$select public.save_checkin(current_date - 30, 5::smallint)$$, 'invalid_day', 'ani miesiąc wstecz');
+select t.raises($$select public.save_checkin(current_date, 5::smallint, null, null, null, '{"waga": 1}')$$, 'invalid_tags', 'nieznane pole: odrzucone');
+select t.raises($$select public.save_checkin(current_date, 5::smallint, null, null, null, '{"friends": 5}')$$, 'invalid_tags', 'wartość poza zakresem: odrzucona');
+select t.raises($$select public.save_checkin(current_date, 5::smallint, null, null, null, '{"move": 0}')$$, 'invalid_tags', '„co dziś było” przyjmuje tylko 1');
+select t.raises($$select public.save_checkin(current_date, 5::smallint, null, null, null, '{"friends": "1"}')$$, 'invalid_tags', 'wartość musi być liczbą');
+select t.raises($$select public.save_checkin(current_date, 5::smallint, null, null, null, '[1]')$$, 'invalid_tags', 'znaczniki muszą być obiektem');
+select t.raises($$select public.save_checkin(current_date, 11::smallint)$$, '23514', 'nastrój poza skalą 1–10: odrzucony');
+select t.ok((select count(*) = 1 and bool_and(mood = 6) from public.daily_checkins), 'po błędach wpis jest nietknięty');
+select t.raises($$insert into public.daily_checkins (user_id, day, mood) values (auth.uid(), current_date - 1, 7)$$, 'permission denied', 'bezpośredni zapis podlewania: brak prawa');
+select t.raises($$update public.daily_checkins set mood = 10$$, 'permission denied', 'bezpośrednia zmiana podlewania: brak prawa');
+select t.raises($$insert into public.checkin_tags values ('00000000-0000-0000-0000-000000000000', 'move', 1)$$, 'permission denied', 'bezpośredni zapis znaczników: brak prawa');
+select t.ok((select count(*) = 12 from public.checkin_fields), 'katalog ma 6 obszarów i 6 rzeczy „co dziś było”');
+
+-- ---------------------------------------------------------------- wnioski: zapisuje serwer, osoba czyta i ocenia
+select t.raises($$select public.replace_insights(auth.uid(), 1::smallint, 30::smallint, '[]')$$, 'permission denied', 'wniosków nie zapisuje telefon');
+select t.raises($$insert into public.insights (user_id, key, kind, tone, confidence, effect, n_days, title, summary, engine_version)
+                  values (auth.uid(), 'czynnik:ruch', 'czynnik', 'pomaga', 3, 9, 1, 'x', 'y', 1)$$, 'permission denied', 'bezpośredni zapis wniosku: brak prawa');
+reset role;
+select t.ok((select needs_run from public.insight_runs where user_id = :'ala'), 'zapis podlewania zgłasza osobę do przeliczenia wniosków');
+set role service_role;
+select t.ok(public.replace_insights(:'ala', 1::smallint, 40::smallint, $j$[
+  {"key": "czynnik:ruch", "typ": "czynnik", "ton": "pomaga", "czynnik": "ruch", "pewnosc": 2, "efekt": 1.234, "n": 40, "n1": 15, "n0": 25,
+   "tytul": "Ruch dodaje Ci energii", "zdanie": "W dni z ruchem…", "tag": "Ruch", "kat": "--cat-nature", "powody": ["a"], "sprobuj": "ruszyć się", "proba": {"czynnik": "ruch", "ile": 3}},
+  {"key": "czynnik:rodzina_ciezko", "typ": "czynnik", "ton": "wsparcie", "czynnik": "rodzina_ciezko", "pewnosc": 2, "efekt": -1.5, "n": 40, "n1": 8, "n0": 32,
+   "tytul": "Gdy w domu jest ciężko, to czuć", "zdanie": "…", "wsparcie": "To nie Twoja wina.", "sprobuj": "TEGO NIE WOLNO ZAPISAĆ"},
+  {"key": "dzien:0", "typ": "dzien_tygodnia", "ton": "zauwazone", "pewnosc": 1, "efekt": -1.1, "n": 40, "n1": 6, "n0": 34, "tytul": "Niedzielne wieczory…", "zdanie": "…"}
+]$j$) = 3, 'serwer zapisuje trzy wnioski');
+select t.ok((select not needs_run and days_used = 40 from public.insight_runs where user_id = :'ala'), 'przeliczenie zdejmuje osobę z kolejki');
+select t.raises(format($$insert into public.insights (user_id, key, kind, tone, confidence, effect, n_days, title, summary, engine_version, details)
+                         values (%L, 'czynnik:x', 'czynnik', 'wsparcie', 1, -1, 20, 't', 's', 1, '{"sprobuj": "rada"}')$$, :'ala'), '23514', 'wniosek-wsparcie z radą: odrzucony przez bazę');
+reset role;
+set role authenticated;
+select t.ok((select count(*) = 3 from public.my_insights), 'osoba widzi swoje wnioski');
+select t.ok((select effect = 1.23 and details->>'sprobuj' = 'ruszyć się' and (details->'proba'->>'ile')::int = 3 from public.my_insights where key = 'czynnik:ruch'), 'wniosek ma wielkość różnicy, podpowiedź i próbę');
+select t.ok((select not (details ? 'sprobuj') and details->>'wsparcie' is not null from public.my_insights where key = 'czynnik:rodzina_ciezko'), 'wniosek-wsparcie nigdy nie ma rady, nawet gdy silnik by ją przysłał');
+select id as ins_ruch from public.my_insights where key = 'czynnik:ruch' \gset
+select id as ins_dzien from public.my_insights where key = 'dzien:0' \gset
+select public.set_insight_feedback(:'ins_ruch', 'pasuje');
+select public.set_insight_feedback(:'ins_dzien', 'nie');
+select t.ok((select count(*) = 2 from public.my_insights) and (select feedback = 'pasuje' from public.my_insights where key = 'czynnik:ruch'), '„nie pasuje” chowa wniosek, „pasuje” zostaje zapisane');
+select t.raises(format($$select public.set_insight_feedback(%L, 'super')$$, :'ins_ruch'), 'invalid_input', 'nieznana opinia: odrzucona');
+select t.raises($$update public.insights set confidence = 3$$, 'permission denied', 'osoba nie poprawi pewności wniosku');
+select t.raises($$delete from public.insights$$, 'permission denied', 'ani nie skasuje go poza wycofaniem zgody');
+reset role;
+set role service_role;
+select t.ok(public.replace_insights(:'ala', 1::smallint, 47::smallint, $j$[
+  {"key": "czynnik:ruch", "typ": "czynnik", "ton": "pomaga", "czynnik": "ruch", "pewnosc": 3, "efekt": 1.4, "n": 47, "n1": 18, "n0": 29, "tytul": "Ruch dodaje Ci energii", "zdanie": "…"}
+]$j$) = 1, 'kolejne liczenie: został jeden aktywny wniosek');
+reset role;
+set role authenticated;
+select t.ok((select confidence = 3 and feedback = 'pasuje' and first_seen_at < computed_at from public.my_insights where key = 'czynnik:ruch'), 'opinia i data pierwszego pojawienia przeżywają przeliczenie');
+select t.ok((select count(*) = 2 from public.insights where status = 'expired'), 'wnioski, które się nie potwierdziły, wygasają (nie znikają)');
+
+-- ---------------------------------------------------------------- tygodniowa próba
+select public.start_experiment('czynnik:ruch', 'ruch', 3::smallint) as proba \gset
+select t.ok((select status = 'active' and ends_on = started_on + 6 and times = 3 from public.insight_experiments), 'próba trwa 7 dni');
+select t.raises($$select public.start_experiment('czynnik:sen_dlugi', 'sen_dlugi', 4::smallint)$$, 'experiment_active', 'jedna próba naraz');
+select t.raises($$select public.start_experiment('x', 'y', 9::smallint)$$, 'experiment_active|23514', 'próba najwyżej 7 razy w tygodniu');
+select public.finish_experiment(:'proba', 'done', '{"typ": "pomoglo", "zrobione": 3, "roznica": 1.1}');
+select t.ok((select status = 'done' and finished_at is not null and result->>'typ' = 'pomoglo' from public.insight_experiments), 'zakończona próba ma wynik');
+select t.raises(format($$select public.finish_experiment(%L)$$, :'proba'), 'not_found', 'zakończonej próby nie kończy się drugi raz');
+select t.ok(public.start_experiment('ogolne:natura', 'natura', 3::smallint) is not null, 'po zakończeniu można zacząć następną');
+select t.raises($$update public.insight_experiments set result = '{"typ": "pomoglo"}'$$, 'permission denied', 'wyniku próby nie da się wpisać ręcznie');
 
 -- ---------------------------------------------------------------- test: błędne odpowiedzi
 select t.raises($$select public.submit_test('phq9', array[1]::smallint[])$$, 'unknown_test', 'nieznany test');
@@ -168,8 +239,14 @@ select t.login(:'ola');
 select t.ok((select count(*) = 0 from public.test_sessions) and (select count(*) = 0 from public.test_answers)
         and (select count(*) = 0 from public.test_scores) and (select count(*) = 0 from public.test_history)
         and (select count(*) = 0 from public.user_consents) and (select count(*) = 0 from public.daily_checkins)
-        and (select count(*) = 1 from public.profiles) and (select count(*) = 0 from public.privacy_events),
-            'inna osoba nie widzi cudzych wyników, zgód, podlewań ani profilu');
+        and (select count(*) = 1 from public.profiles) and (select count(*) = 0 from public.privacy_events)
+        and (select count(*) = 0 from public.checkin_tags) and (select count(*) = 0 from public.checkin_days)
+        and (select count(*) = 0 from public.insights) and (select count(*) = 0 from public.my_insights)
+        and (select count(*) = 0 from public.insight_experiments),
+            'inna osoba nie widzi cudzych wyników, zgód, podlewań, znaczników, wniosków, prób ani profilu');
+select t.raises(format($$select public.set_insight_feedback(%L, 'nie')$$, :'ins_ruch'), 'not_found', 'cudzego wniosku nie da się ocenić');
+select t.raises(format($$select public.finish_experiment(%L)$$, :'proba'), 'not_found', 'cudzej próby nie da się zakończyć');
+select t.raises('select * from public.insight_runs', 'permission denied', 'kolejka przeliczeń jest tylko dla serwera');
 select t.ok((select last_completed_on is null from public.test_overview where code = 'who5'), 'test_overview nie zdradza cudzej daty');
 select t.ok(public.delete_test_results() = 0, 'delete_test_results nie rusza cudzych wyników');
 select t.login(:'ala');
@@ -203,10 +280,13 @@ select t.ok((select count(*) = 6 from public.test_history), 'historia: 1 + 5 wie
 
 -- ---------------------------------------------------------------- wycofanie zgody usuwa dane o zdrowiu
 select t.ok(public.withdraw_consent('health_data') is not null, 'withdraw_consent zwraca czas');
-select t.ok((select count(*) = 0 from public.test_sessions) and (select count(*) = 0 from public.daily_checkins), 'wycofanie zgody: testy i podlewania usunięte');
+select t.ok((select count(*) = 0 from public.test_sessions) and (select count(*) = 0 from public.daily_checkins)
+        and (select count(*) = 0 from public.checkin_tags), 'wycofanie zgody: testy, podlewania i znaczniki usunięte');
+select t.ok((select count(*) = 0 from public.insights) and (select count(*) = 0 from public.insight_experiments), 'wycofanie zgody: wnioski i próby usunięte');
 select t.ok((select count(*) = 1 from public.user_consents where kind = 'health_data' and withdrawn_at is not null), 'zgoda zostaje w dzienniku jako wycofana');
-select t.ok((select count(*) = 1 from public.privacy_events where event = 'health_data_erased')
-        and (select count(*) = 1 from public.privacy_events where details->>'scope' = 'consent_withdrawn'), 'wycofanie zostawia ślad');
+select t.ok((select count(*) = 1 from public.privacy_events where event = 'health_data_erased' and details ? 'checkins')
+        and (select count(*) = 1 from public.privacy_events where event = 'health_data_erased' and (details->>'insights')::int = 3)
+        and (select count(*) = 1 from public.privacy_events where details->>'scope' = 'consent_withdrawn'), 'wycofanie zostawia ślad (liczby, bez treści)');
 select t.ok((public.health_consent_status()->>'reason') = 'no_consent', 'po wycofaniu: brak zgody');
 select t.raises($$select public.submit_test('ipip20', array[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]::smallint[])$$, 'consent_required', 'po wycofaniu test się nie zapisze');
 select t.ok(public.withdraw_consent('health_data') is null, 'drugie wycofanie nic nie robi');
@@ -221,7 +301,7 @@ select t.login(:'kuba');
 select public.give_consent(array['terms','privacy','health_data']::public.legal_doc_kind[]);
 select t.ok((public.health_consent_status()->>'reason') = 'guardian_pending', '14 lat: zgoda czeka na opiekuna');
 select t.raises($$select public.submit_test('who5', array[3,3,3,3,3]::smallint[])$$, 'consent_required', '14 lat bez opiekuna: test się nie zapisze');
-select t.raises($$insert into public.daily_checkins (user_id, day, mood) values (auth.uid(), current_date, 5)$$, 'row-level security', '14 lat bez opiekuna: podlewanie odrzucone');
+select t.raises($$select public.save_checkin(current_date, 5::smallint)$$, 'consent_required', '14 lat bez opiekuna: podlewanie odrzucone');
 select t.raises($$insert into public.guardian_requests (user_id, guardian_email, token_hash) values (auth.uid(), 'x@y.pl', repeat('a', 64))$$,
                 'permission denied', 'prośby do opiekuna nie tworzy telefon');
 reset role;
@@ -235,6 +315,7 @@ select t.ok(public.confirm_guardian_consent('tajny-token') = :'kuba'
 reset role;
 set role authenticated;
 select t.ok((public.health_consent_status()->>'active')::boolean, '14 lat po zgodzie opiekuna: aktywna');
+select t.ok(public.save_checkin(current_date, 5::smallint) is not null, '14 lat po zgodzie opiekuna: podlewanie działa');
 select t.ok(public.submit_test('who5', array[2,3,2,3,2]::smallint[]) #>> '{scores,0,band}' = 'lower', 'WHO-5 48% → „ostatnio trudniej”');
 select t.ok((select c.given_by = 'guardian' and c.ip = '203.0.113.7' from public.user_consents c where c.kind = 'guardian'),
             'zgoda opiekuna zapisana z adresem');

@@ -214,9 +214,9 @@
     get entry() { return entry; },
     save(patch, opts = {}) {
       if (consentBlocks()) return entry;
-      const blank = window.Checkin ? window.Checkin.DATA.blank() : { mood: null, areas: {}, note: '' };
+      const blank = window.Checkin ? window.Checkin.DATA.blank() : { mood: null, areas: {}, acts: {}, note: '' };
       const moodChanged = 'mood' in patch && patch.mood !== (entry && entry.mood);
-      entry = Object.assign(blank, entry, patch, { areas: Object.assign({}, entry && entry.areas, patch.areas) });
+      entry = Object.assign(blank, entry, patch, { areas: Object.assign({}, entry && entry.areas, patch.areas), acts: Object.assign({}, entry && entry.acts, patch.acts) });
       if (moodChanged && opts.rain !== false) pour(entry);
       else if (watered) showWatered(entry);
       changed();
