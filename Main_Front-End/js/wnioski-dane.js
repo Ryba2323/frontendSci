@@ -14,23 +14,31 @@
  *   lag       0 = ten sam wpis co nastrój; 1 = czynnik z poprzedniego dnia (np. spakowanie się wieczorem)
  *   dir       oczekiwany kierunek: +1 „wtedy bywa lepiej”, −1 „wtedy bywa trudniej”. Wynik w przeciwną stronę NIE jest pokazywany
  *             (nigdy nie radzimy „mniej ruchu” ani „mniej ludzi”).
- *   tone      'pomaga'    — coś, na co osoba ma wpływ: dostaje radę i może to wypróbować przez tydzień,
- *             'zauwazone' — obserwacja z łagodną podpowiedzią, bez próby,
- *             'wsparcie'  — trudne sprawy, na które nastolatek nie ma wpływu (dom, relacje): ŻADNYCH rad,
- *                           tylko „to nie Twoja wina” i wsparcie (Asystent, 116 111).
- *   known(e)  czy we wpisie w ogóle jest odpowiedź (brak odpowiedzi ≠ „nie”)
+ *   tone      'pomaga'    — coś, na co osoba ma wpływ: dostaje radę, trafia do „Co Ci pomaga” i może być eksperymentem,
+ *             'zauwazone' — opis z łagodną podpowiedzią; nie trafia do „Co Ci pomaga” ani na Dom (dom, nauka: nie wszystko
+ *                           zależy od nastolatka),
+ *             'wsparcie'  — trudne sprawy, na które nastolatek nie ma wpływu (dom, relacje). NIE SĄ WNIOSKIEM: nie liczymy
+ *                           dla nich różnicy nastroju, nie ma liczby, wykresu ani opinii. Gdy „ciężko” powtarza się kilka
+ *                           razy w dwa tygodnie (PROGI.trudneIle), na górze Trackera pojawia się karta wsparcia z tekstem
+ *                           `wsparcie` (uwaga psychologa z rady, 12.11.2026). ŻADNYCH rad.
+ *   known(e)  czy we wpisie w ogóle jest odpowiedź (brak odpowiedzi ≠ „nie”). Przy ocenach „ciężko / ok / dobrze” dni
+ *             z PRZECIWNĄ oceną nie wchodzą do porównania: „dobrze z przyjaciółmi” porównujemy z dniami „ok” i bez
+ *             zaznaczenia, a nie z dniami „ciężko” (inaczej trudne dni same robiły „wniosek” o dobrych i na odwrót).
  *   has(e)    czy czynnik wystąpił
- *   proba     ile razy w tygodniu proponujemy to wypróbować; null = nie proponujemy próby
- *   obs       końcówka zdania obserwacji: „W Twoje lepsze dni często …”
+ *   proba     ile razy w tygodniu proponujemy to sprawdzić; null = nie proponujemy. Tylko ZACHOWANIA, nie wyniki
+ *             (dlatego eksperymentem jest „do łóżka przed 23”, a nie „7 h snu”, na które przy kłopotach ze snem nie ma się wpływu).
+ *   gdzie     zdanie na karcie eksperymentu: z którego pytania podlewania to liczymy
  *   ogolnie   zdanie z wiedzy ogólnej (zalecenia dla nastolatków), pokazywane ZANIM są wnioski z danych tej osoby,
  *             zawsze z dopiskiem, że to wiedza ogólna do sprawdzenia u siebie — tylko przy dobrze udokumentowanych sprawach
  *
  * Czego celowo NIE analizujemy (bezpieczeństwo):
- *   • miłość (obie strony) i „z jedzeniem było ciężko” — zbyt wrażliwe na automatyczne wnioski,
- *   • ilość jedzenia, waga, wygląd — nigdy; o jedzeniu mówimy tylko „na spokojnie”,
+ *   • miłość i jedzenie — zbyt wrażliwe na automatyczne wnioski (przy restrykcjach „z jedzeniem dobrze” może znaczyć
+ *     „udało się nie jeść”, a wniosek by to potwierdził). Pola są jeszcze w podlewaniu; decyzja zespołu, czy zostają,
+ *   • ilość jedzenia, waga, wygląd — nigdy,
  *   • niczego, co prowadziłoby do rady „unikaj ludzi / szkoły / domu”.
  *
- * Język: podpowiedź, nie diagnoza. „Bywa”, „zwykle”, „spróbuj i zobacz”. Bez „musisz”, „powinieneś”, bez winy.
+ * Język: opis, nie przyczyna i nie diagnoza. Tytuły mówią „w dni z X bywa Ci lepiej”, nigdy „X poprawia / dodaje / pomaga”,
+ * bo z samych wpisów nie wiadomo, co jest przyczyną (w lepszy dzień łatwiej się ruszyć). Bez „musisz”, „powinieneś”, bez winy.
  * Zdania są w formie bez rodzaju gramatycznego, więc nie zależą od formy z rejestracji.
  */
 (function (root) {
@@ -56,7 +64,7 @@
     { code: 'rest', name: 'Odpoczynek', icon: '<path d="M4 18h16M6 18v-5a6 6 0 0 1 12 0v5M12 4v2"/>' },
     { code: 'talk', name: 'Szczera rozmowa', icon: '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/>' },
     { code: 'kindness', name: 'Coś dla kogoś', icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
-    { code: 'prepare', name: 'Spakowanie na jutro', icon: '<path d="M6 8h12v12H6zM9 8V6a3 3 0 0 1 6 0v2M9 13h6"/>' },
+    { code: 'prepare', name: 'Plecak na jutro', icon: '<path d="M6 8h12v12H6zM9 8V6a3 3 0 0 1 6 0v2M9 13h6"/>' },
   ];
   // „O której do łóżka?” — o zeszłej nocy, tak jak pytanie o godziny snu
   const BEDTIME = [
@@ -72,6 +80,13 @@
   const anyTag = e => Object.keys(e.areas || {}).length + Object.keys(e.acts || {}).length > 0;
   const area = (code, v) => e => (e.areas || {})[code] === v;
   const act = code => e => (e.acts || {})[code] === 1;
+  // odpowiedź jest, ale nie z przeciwną oceną (patrz `known` w nagłówku)
+  const bez = (code, v) => e => anyTag(e) && (e.areas || {})[code] !== v;
+  const GDZIE = {
+    sen: 'Liczę to z pytania o sen w podlewaniu.',
+    act: 'Liczę to z „Co dziś było?” w podlewaniu.',
+    area: n => `Liczę dni, w których przy „${n}” w podlewaniu jest „Dobrze”.`,
+  };
 
   const CZYNNIKI = [
     // ---------- sen ----------
@@ -79,35 +94,33 @@
       code: 'sen_dlugi', group: 'sen', cat: '--cat-sleep', lag: 0, dir: 1, tone: 'pomaga',
       known: e => e.sleepHours != null, has: e => e.sleepHours >= 7,
       nazwa: 'Sen 7 h i więcej', tag: 'Sen',
-      obs: 'była za Tobą noc z co najmniej 7 h snu',
-tytul: 'Sen poprawia Ci dzień',
-      zdanie: x => `Po nocy z co najmniej 7 h snu Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni po dłuższym śnie bywa Ci lepiej',
+      zdanie: x => `Po nocy z co najmniej 7 h snu Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: '7 h i więcej', nie: 'mniej niż 7 h',
-      ogolnie: 'Większości osób w Twoim wieku służy 8–10 godzin snu.',
-      dlaczego: 'Wyspany mózg łatwiej radzi sobie ze stresem i emocjami.',
+      ogolnie: 'Wielu osobom w Twoim wieku pomaga 8 h snu albo więcej.',
+      dlaczego: 'Po dobrej nocy łatwiej o spokój i mniej rzeczy wytrąca z równowagi.',
       sprobuj: 'położyć się dziś pół godziny wcześniej',
-      proba: { ile: 4, co: 'noce z co najmniej 7 h snu' },
+      proba: null,                                   // długość snu to wynik, nie zachowanie: eksperymentem jest pora pójścia spać
       wDniu: { tekst: 'częściej śpisz krócej niż 7 h', rada: 'położyć się dzień wcześniej trochę szybciej' },
     },
     {
       code: 'spac_wczesnie', group: 'sen', cat: '--cat-sleep', lag: 0, dir: 1, tone: 'pomaga',
       known: e => e.bedtime != null, has: e => e.bedtime <= 2,
       nazwa: 'Do łóżka przed 23', tag: 'Sen',
-      obs: 'była za Tobą noc zaczęta przed 23',
-      tytul: 'Wcześniejsza pora snu Ci służy',
-      zdanie: x => `Gdy kładziesz się przed 23, następny dzień bywa o <b>${x}</b> lepszy.`,
+      tytul: 'Po wcześniejszym pójściu spać dzień bywa lepszy',
+      zdanie: x => `Gdy kładziesz się przed 23, następny dzień bywa o około <b>${x}</b> lepszy.`,
       tak: 'przed 23', nie: 'po 23',
       dlaczego: 'Stała, wcześniejsza pora snu ułatwia zasypianie i poranne wstawanie.',
-      sprobuj: 'odłożyć telefon i położyć się dziś przed 23',
-      proba: { ile: 3, co: 'wieczory z pójściem do łóżka przed 23' },
+      sprobuj: 'położyć się dziś przed 23',
+      proba: { ile: 3, co: 'wieczory z pójściem do łóżka przed 23' }, gdzie: GDZIE.sen,
       wDniu: { tekst: 'częściej kładziesz się po 23', rada: 'położyć się dzień wcześniej przed 23' },
     },
     {
       code: 'sen_dobry', group: 'sen', cat: '--cat-sleep', lag: 0, dir: 1, tone: 'zauwazone',
       known: e => e.sleepQuality != null, has: e => e.sleepQuality >= 3,
       nazwa: 'Dobrze przespana noc', tag: 'Sen',
-      tytul: 'Jakość snu widać w Twoim dniu',
-      zdanie: x => `Po dobrze przespanej nocy Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'Po dobrze przespanej nocy dzień bywa lepszy',
+      zdanie: x => `Po dobrze przespanej nocy Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'dobra noc', nie: 'gorsza noc',
       dlaczego: 'Liczy się nie tylko to, ile śpisz, ale też jak.',
       sprobuj: 'wyciszyć się kwadrans przed snem: bez ekranu, przy muzyce albo książce',
@@ -119,66 +132,51 @@ tytul: 'Sen poprawia Ci dzień',
       code: 'ruch', group: 'cialo', cat: '--cat-nature', lag: 0, dir: 1, tone: 'pomaga',
       known: anyTag, has: act('move'),
       nazwa: 'Ruch', tag: 'Ruch',
-      obs: 'był ruch',
-      tytul: 'Ruch dodaje Ci energii',
-      zdanie: x => `W dni z ruchem Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni z ruchem bywa Ci lepiej',
+      zdanie: x => `W dni z ruchem Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'z ruchem', nie: 'bez ruchu',
       ogolnie: 'Regularny ruch poprawia nastrój u większości ludzi.',
       dlaczego: 'Nawet krótki ruch rozładowuje napięcie i poprawia sen.',
       sprobuj: 'ruszyć się dziś choćby na 15 minut: spacer, rower, taniec w pokoju',
-      proba: { ile: 3, co: 'dni z ruchem, choćby 15 minut' },
+      proba: { ile: 3, co: 'dni z ruchem, choćby 15 minut' }, gdzie: GDZIE.act,
       wDniu: { tekst: 'rzadziej jest ruch', rada: 'zaplanować krótki spacer' },
     },
     {
       code: 'natura', group: 'cialo', cat: '--cat-nature', lag: 0, dir: 1, tone: 'pomaga',
-      known: anyTag, has: area('nature', 1),
+      known: bez('nature', -1), has: area('nature', 1),
       nazwa: 'Wyjście na dwór', tag: 'Na dworze',
-      obs: 'było wyjście na dwór',
-      tytul: 'Świeże powietrze robi Ci dobrze',
-      zdanie: x => `W dni z dobrym czasem na dworze Twój nastrój bywa o <b>${x}</b> wyższy.`,
-      tak: 'na dworze', nie: 'bez wyjścia',
+      tytul: 'W dni z wyjściem na dwór bywa Ci lepiej',
+      zdanie: x => `W dni z dobrym czasem na dworze Twój nastrój bywa o około <b>${x}</b> wyższy.`,
+      tak: 'na dworze', nie: 'pozostałe dni',
       ogolnie: 'Wielu osobom pomaga choćby 20 minut na dworze w ciągu dnia.',
       dlaczego: 'Światło dzienne i zmiana otoczenia pomagają głowie odpocząć.',
       sprobuj: 'wyjść na 20 minut na świeże powietrze',
-      proba: { ile: 3, co: 'wyjścia na dwór' },
+      proba: { ile: 3, co: 'wyjścia na dwór' }, gdzie: GDZIE.area('Natura'),
       wDniu: { tekst: 'rzadziej wychodzisz na dwór', rada: 'wyjść na 20 minut na świeże powietrze' },
-    },
-    {
-      code: 'jedzenie', group: 'cialo', cat: '--cat-food', lag: 0, dir: 1, tone: 'zauwazone',
-      known: anyTag, has: area('food', 1),
-      nazwa: 'Spokojny posiłek', tag: 'Jedzenie',
-      tytul: 'Spokojny posiłek pomaga Ci w dniu',
-      zdanie: x => `W dni, kiedy z jedzeniem było dobrze, Twój nastrój bywa o <b>${x}</b> wyższy.`,
-      tak: 'było dobrze', nie: 'pozostałe dni',
-      dlaczego: 'Posiłek bez pośpiechu to chwila przerwy dla głowy.',
-      sprobuj: 'zjeść dziś jeden posiłek na spokojnie, bez pośpiechu i telefonu',
-      proba: null,
-      wDniu: null,
     },
     // ---------- ludzie ----------
     {
       code: 'przyjaciele', group: 'ludzie', cat: '--cat-friends', lag: 0, dir: 1, tone: 'pomaga',
-      known: anyTag, has: area('friends', 1),
+      known: bez('friends', -1), has: area('friends', 1),
       nazwa: 'Czas z przyjaciółmi', tag: 'Przyjaciele',
-      obs: 'był dobry czas z przyjaciółmi',
-      tytul: 'Ludzie dodają Ci sił',
-      zdanie: x => `W dni z dobrym czasem z przyjaciółmi Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni z przyjaciółmi bywa Ci lepiej',
+      zdanie: x => `W dni z dobrym czasem z przyjaciółmi Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'z przyjaciółmi', nie: 'pozostałe dni',
       ogolnie: 'Kontakt z ludźmi, przy których można być sobą, pomaga większości z nas.',
       dlaczego: 'Bliskość z ludźmi, przy których można być sobą, zmniejsza napięcie.',
       sprobuj: 'napisać do kogoś i umówić się choćby na krótki spacer',
-      proba: { ile: 2, co: 'spotkania albo rozmowy z kimś bliskim' },
+      proba: { ile: 2, co: 'spotkania albo rozmowy z kimś bliskim' }, gdzie: GDZIE.area('Przyjaciele'),
       wDniu: { tekst: 'rzadziej spotykasz się z przyjaciółmi', rada: 'umówić się z kimś choćby na krótki spacer' },
     },
     {
       code: 'rodzina', group: 'ludzie', cat: '--cat-family', lag: 0, dir: 1, tone: 'zauwazone',
-      known: anyTag, has: area('family', 1),
+      known: bez('family', -1), has: area('family', 1),
       nazwa: 'Dobry czas z rodziną', tag: 'Rodzina',
-      tytul: 'Bliscy w domu mają znaczenie',
-      zdanie: x => `W dni z dobrym czasem z rodziną Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni z dobrym czasem w domu bywa Ci lepiej',
+      zdanie: x => `W dni z dobrym czasem z rodziną Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'dobry czas', nie: 'pozostałe dni',
       dlaczego: 'Spokojna chwila z kimś z domu daje poczucie oparcia.',
-      sprobuj: 'zagadać dziś do kogoś z domu o czymś drobnym',
+      sprobuj: null,                                 // bez rady: klimat w domu nie jest zadaniem nastolatka
       proba: null,
       wDniu: null,
     },
@@ -186,26 +184,24 @@ tytul: 'Sen poprawia Ci dzień',
       code: 'rozmowa', group: 'ludzie', cat: '--cat-friends', lag: 0, dir: 1, tone: 'pomaga',
       known: anyTag, has: act('talk'),
       nazwa: 'Szczera rozmowa', tag: 'Rozmowa',
-      obs: 'była szczera rozmowa',
-      tytul: 'Rozmowa Ci pomaga',
-      zdanie: x => `W dni ze szczerą rozmową Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni ze szczerą rozmową bywa Ci lżej',
+      zdanie: x => `W dni ze szczerą rozmową Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'z rozmową', nie: 'bez rozmowy',
       dlaczego: 'Wypowiedziane na głos sprawy ważą mniej.',
       sprobuj: 'powiedzieć dziś komuś zaufanemu, co u Ciebie',
-      proba: { ile: 2, co: 'szczere rozmowy z kimś zaufanym' },
+      proba: { ile: 2, co: 'szczere rozmowy z kimś zaufanym' }, gdzie: GDZIE.act,
       wDniu: null,
     },
     {
       code: 'dla_kogos', group: 'ludzie', cat: '--cat-family', lag: 0, dir: 1, tone: 'pomaga',
       known: anyTag, has: act('kindness'),
       nazwa: 'Coś dla kogoś', tag: 'Dla innych',
-      obs: 'było coś zrobione dla kogoś',
-      tytul: 'Dobre gesty wracają',
-      zdanie: x => `W dni, kiedy robisz coś dla kogoś, Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'Gdy robisz coś dla kogoś, dzień bywa lepszy',
+      zdanie: x => `W dni, kiedy robisz coś dla kogoś, Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'coś dla kogoś', nie: 'pozostałe dni',
       dlaczego: 'Pomaganie daje poczucie, że ma się na coś wpływ.',
       sprobuj: 'zrobić dziś jedną drobną rzecz dla kogoś',
-      proba: { ile: 2, co: 'drobne rzeczy zrobione dla kogoś' },
+      proba: { ile: 2, co: 'drobne rzeczy zrobione dla kogoś' }, gdzie: GDZIE.act,
       wDniu: null,
     },
     // ---------- głowa ----------
@@ -213,87 +209,79 @@ tytul: 'Sen poprawia Ci dzień',
       code: 'hobby', group: 'glowa', cat: '--cat-study', lag: 0, dir: 1, tone: 'pomaga',
       known: anyTag, has: act('hobby'),
       nazwa: 'Hobby', tag: 'Hobby',
-      obs: 'był czas na hobby',
-      tytul: 'Coś dla siebie robi różnicę',
-      zdanie: x => `W dni z czasem na hobby Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni z czasem na hobby bywa Ci lepiej',
+      zdanie: x => `W dni z czasem na hobby Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'z hobby', nie: 'bez hobby',
       dlaczego: 'To, co lubisz, przypomina, że dzień to nie tylko obowiązki.',
       sprobuj: 'znaleźć dziś 20 minut na coś, co lubisz',
-      proba: { ile: 3, co: 'dni z czasem na hobby' },
+      proba: { ile: 3, co: 'dni z czasem na hobby' }, gdzie: GDZIE.act,
       wDniu: null,
     },
     {
       code: 'odpoczynek', group: 'glowa', cat: '--cat-family', lag: 0, dir: 1, tone: 'pomaga',
       known: anyTag, has: act('rest'),
       nazwa: 'Odpoczynek', tag: 'Odpoczynek',
-      obs: 'była chwila odpoczynku',
-      tytul: 'Odpoczynek to nie strata czasu',
-      zdanie: x => `W dni z chwilą odpoczynku Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'W dni z odpoczynkiem bywa Ci lżej',
+      zdanie: x => `W dni z chwilą odpoczynku Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'z odpoczynkiem', nie: 'bez',
       dlaczego: 'Głowa potrzebuje przerw tak samo jak ciało.',
-      sprobuj: 'zaplanować dziś kwadrans bez niczego',
-      proba: { ile: 3, co: 'dni z chwilą prawdziwego odpoczynku' },
+      sprobuj: 'dać sobie dziś 15 minut na nic',
+      proba: { ile: 3, co: 'dni z chwilą prawdziwego odpoczynku' }, gdzie: GDZIE.act,
       wDniu: null,
     },
     {
       code: 'przygotowanie', group: 'glowa', cat: '--cat-study', lag: 1, dir: 1, tone: 'pomaga',
       known: anyTag, has: act('prepare'),
-      nazwa: 'Spakowanie na jutro', tag: 'Wieczór wcześniej',
-      obs: 'wieczór wcześniej było spakowanie na jutro',
-      tytul: 'Spakowany wieczór, lżejszy dzień',
-      zdanie: x => `Dzień po wieczorze, w którym pakujesz się na jutro, bywa o <b>${x}</b> lepszy.`,
+      nazwa: 'Plecak spakowany wieczorem', tag: 'Wieczór wcześniej',
+      tytul: 'Po spakowaniu się wieczorem dzień bywa lżejszy',
+      zdanie: x => `Gdy pakujesz się wieczorem, następny dzień bywa o około <b>${x}</b> lepszy.`,
       tak: 'po spakowaniu', nie: 'bez',
       dlaczego: 'Mniej rzeczy do ogarnięcia rano to spokojniejszy start.',
       sprobuj: 'spakować się dziś wieczorem na jutro',
-      proba: { ile: 3, co: 'wieczory ze spakowaniem się na jutro' },
+      proba: { ile: 3, co: 'wieczory ze spakowaniem się na jutro' }, gdzie: GDZIE.act,
       wDniu: { tekst: 'wieczór wcześniej rzadziej pakujesz się na jutro', rada: 'spakować się wieczór wcześniej, żeby rano mieć spokój' },
     },
     {
       code: 'nauka_dobrze', group: 'nauka', cat: '--cat-study', lag: 0, dir: 1, tone: 'zauwazone',
-      known: anyTag, has: area('study', 1),
+      known: bez('study', -1), has: area('study', 1),
       nazwa: 'Gdy nauka idzie dobrze', tag: 'Nauka',
-      tytul: 'Ogarnięta nauka zdejmuje ciężar',
-      zdanie: x => `W dni, kiedy nauka szła dobrze, Twój nastrój bywa o <b>${x}</b> wyższy.`,
+      tytul: 'Gdy nauka idzie lżej, dzień też bywa lżejszy',
+      zdanie: x => `W dni, kiedy nauka szła dobrze, Twój nastrój bywa o około <b>${x}</b> wyższy.`,
       tak: 'szła dobrze', nie: 'pozostałe dni',
       dlaczego: 'Zamknięte zadanie przestaje krążyć po głowie.',
-      sprobuj: 'podzielić naukę na krótkie kawałki z przerwami',
+      sprobuj: 'uczyć się po 20 minut i robić przerwy',
       proba: null,
       wDniu: null,
     },
     {
       code: 'nauka_ciezko', group: 'nauka', cat: '--cat-study', lag: 0, dir: -1, tone: 'zauwazone',
-      known: anyTag, has: area('study', -1),
+      known: bez('study', 1), has: area('study', -1),
       nazwa: 'Trudna nauka', tag: 'Nauka',
-      tytul: 'Trudna nauka odbija się na dniu',
-      zdanie: x => `W dni, kiedy nauka była ciężka, Twój nastrój bywa o <b>${x}</b> niższy.`,
+      tytul: 'W dni z trudną nauką bywa Ci ciężej',
+      zdanie: x => `W dni, kiedy nauka była ciężka, Twój nastrój bywa o około <b>${x}</b> niższy.`,
       tak: 'ciężka nauka', nie: 'pozostałe dni',
       dlaczego: 'Zaległości i trudny materiał zabierają dużo siły.',
       sprobuj: 'zacząć od najmniejszego zadania, a przy najtrudniejszym poprosić kogoś o pomoc',
       proba: null,
       wDniu: { tekst: 'częściej zaznaczasz, że nauka była trudna', rada: 'przejrzeć plan wcześniej i zacząć od najmniejszego zadania' },
     },
-    // ---------- trudne sprawy: tylko wsparcie, bez rad ----------
+    // ---------- trudne sprawy: NIE wniosek, tylko karta wsparcia po kilku takich dniach; bez rad ----------
+    // Teksty od psychologa z rady (12.11.2026). Do zatwierdzenia przez psychologa zespołu przed prawdziwymi kontami.
     {
       code: 'rodzina_ciezko', group: 'ludzie_trudne', cat: '--cat-family', lag: 0, dir: -1, tone: 'wsparcie',
       known: anyTag, has: area('family', -1),
       nazwa: 'Trudniej w domu', tag: 'Rodzina',
-      tytul: 'Gdy w domu jest ciężko, to czuć',
-      zdanie: x => `W dni, kiedy z rodziną było trudno, Twój nastrój bywa o <b>${x}</b> niższy.`,
-      tak: 'było trudno', nie: 'pozostałe dni',
-      wsparcie: 'To nie Twoja wina i nie musisz dźwigać tego w pojedynkę. Dobrze mieć kogoś, komu można o tym powiedzieć.',
-      proba: null,
-      wDniu: null,
+      wsparcie: 'Trudne dni w domu bardzo ciążą i nie musisz dźwigać tego w pojedynkę. Jeśli ktoś w domu Cię krzywdzi, straszy albo boisz się wracać, to nigdy nie jest Twoja wina. Pod 116 111 możesz o tym powiedzieć anonimowo. Gdy coś Ci grozi teraz, dzwoń pod 112.',
+      alarm: true,                                   // na karcie jest też przycisk 112
+      proba: null, wDniu: null,
     },
     {
       code: 'przyjaciele_ciezko', group: 'ludzie_trudne', cat: '--cat-friends', lag: 0, dir: -1, tone: 'wsparcie',
       known: anyTag, has: area('friends', -1),
       nazwa: 'Trudniej ze znajomymi', tag: 'Przyjaciele',
-      tytul: 'Trudne chwile ze znajomymi bolą',
-      zdanie: x => `W dni, kiedy z przyjaciółmi było trudno, Twój nastrój bywa o <b>${x}</b> niższy.`,
-      tak: 'było trudno', nie: 'pozostałe dni',
-      wsparcie: 'Takie dni zdarzają się każdemu i mijają. Jeśli chcesz, opowiedz o tym komuś zaufanemu.',
-      proba: null,
-      wDniu: null,
+      wsparcie: 'Trudne chwile ze znajomymi potrafią mocno boleć. Jeśli ktoś Ci dokucza, wyklucza Cię albo robi Ci krzywdę, także w sieci, to nie Twoja wina. Powiedz o tym dorosłemu, któremu ufasz, albo zadzwoń pod 116 111.',
+      alarm: false,
+      proba: null, wDniu: null,
     },
   ];
 
@@ -303,29 +291,52 @@ tytul: 'Sen poprawia Ci dzień',
   const PROGI = {
     okno: 90,                 // z ilu ostatnich dni liczymy
     doPodsumowania: 7,        // tyle podlań z nastrojem: podsumowanie tygodnia
-    doWnioskow: 14,           // tyle podlań: pierwsze wnioski o czynnikach
+    doWnioskow: 14,           // tyle podlań: najwcześniej wtedy liczymy wnioski o czynnikach
     doDniTygodnia: 28,        // tyle podlań: wzór dni tygodnia i poprawka na dzień tygodnia
     minGrupa: 5,              // najmniej dni „z” i „bez”, żeby w ogóle porównywać
     minRoznica: 0.6,          // najmniejsza różnica nastroju (w punktach 1–10), o której warto mówić
     permutacje: 2000,
     // pewność 1 „wstępnie”, 2 „dość wyraźnie”, 3 „wyraźnie”
     q: [0.10, 0.05, 0.05],    // próg kontroli fałszywych odkryć (Benjamini–Hochberg) dla poziomu 1, 2, 3
-    blok: 14,                 // długość bloku w teście permutacyjnym czynników (dni)
+    blok: 7,                  // długość bloku w teście permutacyjnym (dni); bloki są przypięte do kalendarza
     minGrupaPoziom: [5, 7, 10],
     minDniPoziom: [14, 21, 40],
     minDolna: [0, 0.25, 0.4], // dolna granica różnicy po odjęciu niepewności
-    // obserwacje (opis, nie wniosek): co często było w lepsze dni
-    obsMinLepszych: 3,        // tyle „lepszych dni” z odpowiedzią i tyle wystąpień czynnika, żeby cokolwiek powiedzieć
-    obsUdzial: 0.6,           // czynnik był w co najmniej 60% lepszych dni…
-    obsRoznica: 0.25,         // …i o 25 punktów procentowych częściej niż w pozostałe
+    pWyraznie: 0.001,         // „wyraźnie” wymaga też tak małego p (0,005 dawało „wyraźnie” prawie każdemu wnioskowi z poziomu 2)
+    // wniosek pokazujemy dopiero, gdy wychodził też tyle dni wcześniej (lista: np. [7] albo [7, 14]).
+    // Liczone codziennie, pojedyncze trafy z szumu trwają zwykle 1–2 dni; bez tego fałszywy wniosek zobaczyłaby
+    // kiedyś ponad połowa osób. Z [7]: ok. jedna czwarta. Z [7, 14]: ok. jedna ósma, ale prawdziwe wnioski później.
+    potwierdzenie: [7],
+    // dwa wnioski naraz: każdy musi się bronić przy stałym drugim (np. długi sen i wczesna pora chodzą w parze)
+    blokWarunkowy: 14,
+    warunkowaRoznica: 0.4,
+    warunkoweP: 0.10,
+    warunkowePermutacje: 1000,
+    // zmiana z ostatnich dwóch tygodni: co najmniej 1 punkt i wyraźnie ponad niepewność
+    trendMin: 1.0,
+    trendSE: 2.0,
+    // opis ostatnich dwóch tygodni (zanim są wnioski): „Ruch · 4 z 9 dni”. Bez wiązania z nastrojem.
+    opisDni: 14,
+    opisMinDni: 5,            // tyle dni z odpowiedzią, żeby cokolwiek policzyć
+    opisMin: 2,               // tyle wystąpień, żeby pokazać
     maxObserwacji: 2,
     maxWnioskow: 3,           // tyle kart naraz w „Co zauważyliśmy”
     maxPomaga: 3,
     ukryjNaDni: 60,           // „To nie pasuje” chowa wniosek na tyle dni
-    // wsparcie: niski nastrój w ostatnich dniach
+    // wsparcie
     niskiNastroj: 3,
     wsparcieIle: 3,           // tyle dni z nastrojem ≤ 3 w ostatnich 7 → karta wsparcia
+    wsparcieDlugoDni: 3,      // przewlekle: w ostatnim tygodniu ORAZ w tygodniu przed nim co najmniej tyle wpisów…
+    wsparcieDlugoSrednia: 4.5, // …i średnia każdego z nich nie wyższa niż tyle
+    wsparcieDlugoNiskie: 6,   // albo tyle dni z nastrojem ≤ 3 w ostatnich 14, z czego co najmniej 2 w starszym tygodniu
+    wsparcieSpadekMinDni: 5,  // spadek liczymy z co najmniej tylu wpisów w ostatnim tygodniu
+    wsparcieSpadek: 1.5,      // ostatni tydzień o tyle niżej niż własna mediana sprzed dwóch tygodni…
+    wsparcieSpadekPonizej: 6, // …i sam poniżej tego poziomu (tydzień „7 zamiast 8,5” to nie powód do alarmu)
+    trudneIle: 4,             // tyle razy „ciężko” (dom / znajomi) w ostatnich `trudneDni` dniach → karta wsparcia
+    trudneDni: 14,
+    // eksperyment
     probaDni: 7,
+    probaMinRoznica: 1.0,     // od takiej różnicy mówimy „dni z tym były trochę lepsze” (to opis tygodnia, nie wyrok)
   };
 
   const SLOWA_PEWNOSCI = ['', 'Wstępnie', 'Dość wyraźnie', 'Wyraźnie'];
@@ -337,7 +348,7 @@ tytul: 'Sen poprawia Ci dzień',
     litera: ['N', 'P', 'W', 'Ś', 'C', 'P', 'S'],
   };
 
-  const api = { WERSJA: 1, AREAS, ACTS, BEDTIME, CZYNNIKI, PROGI, SLOWA_PEWNOSCI, DNI, PL };
+  const api = { WERSJA: 2, AREAS, ACTS, BEDTIME, CZYNNIKI, PROGI, SLOWA_PEWNOSCI, DNI, PL };
   root.WnioskiDane = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

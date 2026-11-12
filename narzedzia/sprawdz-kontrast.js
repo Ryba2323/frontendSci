@@ -100,8 +100,9 @@ function audit() {
     await p.evaluate(() => [...document.querySelectorAll('.tst-hrow')].find(r => r.textContent.includes('Osobowość')).click()); await p.waitForTimeout(500);
     await p.click('.tst-trait summary'); await p.waitForTimeout(200); note('test: pięć cech', await p.evaluate(audit));
     await p.click('[data-tst-close]'); await p.waitForTimeout(300);
-    // Wnioski w Trackerze (js/tracker.js): wsparcie przy niskich dniach, próba w trakcie i po tygodniu, pierwszy tydzień z obserwacjami
-    for (const sc of ['niski', 'proba', 'koniec', 'tydzien', 'szum']) {
+    // Wnioski w Trackerze (js/tracker.js): wsparcie przy niskich dniach i przy trudnych dniach w domu (z 112),
+    // eksperyment w trakcie i po tygodniu, pierwszy tydzień z opisem ostatnich dni
+    for (const sc of ['niski', 'dom', 'proba', 'koniec', 'tydzien', 'szum']) {
       await p.goto(`${URL}motyw=${theme}&widok=statyczny&wnioski=${sc}&r=${Math.random()}#/tracker`); await p.waitForTimeout(400);
       note(`tracker (${sc})`, await p.evaluate(audit));
     }

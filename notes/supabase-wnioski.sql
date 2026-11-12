@@ -182,6 +182,8 @@ create table public.insights (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users(id) on delete cascade,
   key             text not null check (key ~ '^[a-z_]+(:[a-z0-9_]+)?$'),     -- stała tożsamość: 'czynnik:ruch', 'dzien:0', 'trend:dol', 'powrot'
+  -- Od wersji 2 silnika (12.11.2026) serwer nie zapisuje wniosków o tonie 'wsparcie' ani rodzaju 'powrot': trudne sprawy
+  -- (dom, znajomi) to karta wsparcia liczona z dni na telefonie, bez wiersza w bazie. Ograniczenia zostają jako bezpiecznik.
   kind            text not null check (kind in ('czynnik', 'dzien_tygodnia', 'trend', 'powrot')),
   tone            text not null check (tone in ('pomaga', 'zauwazone', 'wsparcie')),
   factor          text references public.insight_factors(code),              -- kod czynnika z katalogu silnika (dla kind = 'czynnik')

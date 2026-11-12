@@ -231,13 +231,14 @@ select t.ok((select count(*) = 2 from public.insights where status = 'expired'),
 -- ---------------------------------------------------------------- tygodniowa próba
 select public.start_experiment('czynnik:ruch', 'ruch', 3::smallint) as proba \gset
 select t.ok((select status = 'active' and ends_on = started_on + 6 and times = 3 from public.insight_experiments), 'próba trwa 7 dni');
-select t.raises($$select public.start_experiment('czynnik:sen_dlugi', 'sen_dlugi', 4::smallint)$$, 'experiment_active', 'jedna próba naraz');
+select t.raises($$select public.start_experiment('czynnik:spac_wczesnie', 'spac_wczesnie', 3::smallint)$$, 'experiment_active', 'jedna próba naraz');
 select t.raises(format($$select public.finish_experiment(%L, 'done', '{"typ": "CUD", "roznica": 99}')$$, :'proba'), '23514', 'wynik próby spoza listy: odrzucony');
 select t.raises(format($$select public.finish_experiment(%L, 'done', jsonb_build_object('typ', 'lepsze_dni', 'smiec', repeat('x', 5000)))$$, :'proba'), '23514', 'za duży wynik próby: odrzucony');
 select public.finish_experiment(:'proba', 'done', '{"typ": "lepsze_dni", "zrobione": 3}');
 select t.ok((select status = 'done' and finished_at is not null and result->>'typ' = 'lepsze_dni' from public.insight_experiments), 'zakończona próba ma wynik');
 select t.raises($$select public.start_experiment('czynnik:ruch', 'ruch', 9::smallint)$$, '23514', 'próba najwyżej 7 razy w tygodniu');
 select t.raises($$select public.start_experiment('czynnik:rodzina_ciezko', 'rodzina_ciezko', 2::smallint)$$, 'invalid_input', 'z trudnej sprawy nie da się zrobić próby');
+select t.raises($$select public.start_experiment('czynnik:sen_dlugi', 'sen_dlugi', 4::smallint)$$, 'invalid_input', 'ani z długości snu: to wynik, nie zachowanie (próbą jest pora pójścia spać)');
 select t.raises($$select public.start_experiment('czynnik:cokolwiek', 'cokolwiek', 2::smallint)$$, 'invalid_input', 'ani z czynnika spoza katalogu');
 select t.raises($$select public.start_experiment(repeat('k', 5000) || ':x', 'ruch', 2::smallint)$$, '23514', 'ani z kluczem wielkości megabajta');
 select t.raises(format($$select public.finish_experiment(%L)$$, :'proba'), 'not_found', 'zakończonej próby nie kończy się drugi raz');

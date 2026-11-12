@@ -2,24 +2,29 @@
  * Tracker nastroju (zakładka „Tracker”) — wnioski zamiast wykresu.
  * Liczy je silnik js/wnioski.js (zasady i progi: notes/wnioski.md, teksty: js/wnioski-dane.js); ten plik tylko je pokazuje.
  *
- *  0. Wsparcie — gdy w ostatnim tygodniu było kilka dni z bardzo niskim nastrojem: Asystent, 116 111, bliskie osoby. Zawsze na górze.
+ *  0. Wsparcie — zawsze na górze, gdy: w ostatnim tygodniu było kilka dni z bardzo niskim nastrojem, nastrój jest
+ *     niski od dwóch tygodni, ostatni tydzień jest wyraźnie poniżej własnej normy albo kilka razy w dwa tygodnie było
+ *     „ciężko” w domu / ze znajomymi. Kolejność: 116 111, (112), bliskie osoby, na końcu Asystent (to program).
+ *     Trudne sprawy w domu i ze znajomymi są TYLKO tą kartą: bez liczby, wykresu, opinii i rad.
+ *     W cięższym czasie (`wsparcie.cisza`) ekran nie dokłada zadań: znikają „Spróbuj” i przyciski eksperymentu.
  *  1. Twój tydzień w skrócie (pole koloru): średnia, 7 słupków, najlepszy dzień i co wtedy było.
- *  2. Twoja próba — „spróbuj 3 razy w tygodniu i zobacz”: postęp, a po tygodniu wynik. Bez kar: mniej prób to „mniej okazji”.
+ *  2. Twój eksperyment — „spróbuj 3 razy w tygodniu i zobacz”: postęp, a po tygodniu opis tygodnia (bez wyroku: tydzień
+ *     niczego nie rozstrzyga). Bez kar: mniej razy niż plan to „mniej okazji”. W kodzie i w bazie nazywa się to „proba”.
  *  3. Co zauważyliśmy — najwyżej 3 wnioski naraz, każdy z wykresem, jednym zdaniem i słowem pewności
- *     („Wstępnie” / „Dość wyraźnie” / „Wyraźnie” + z ilu dni). Powody i podpowiedź są zwinięte pod „Skąd to może się brać?”.
- *     Pod każdym: „Pasuje do mnie” / „Nie pasuje” (chowa wniosek na 60 dni) i „Wypróbuj przez tydzień”.
- *     Zanim danych wystarczy: ile podlań brakuje (bez poganiania) i obserwacje („w Twoje lepsze dni często był ruch”).
- *  4. Co Ci pomaga — do 3 rzeczy z danych tej osoby; puste miejsca uzupełnia wiedza ogólna z dopiskiem „sprawdź u siebie”.
+ *     („Wstępnie” / „Dość wyraźnie” / „Wyraźnie” + z ilu wpisów). Powody i podpowiedź są zwinięte pod „Skąd to może się brać?”.
+ *     Pod każdym: „Pasuje do mnie” / „Nie pasuje” (chowa wniosek na 60 dni, z „Cofnij”) i „Wypróbuj przez tydzień”.
+ *     Zanim danych wystarczy: ile podlań brakuje (bez poganiania) i opis ostatnich dwóch tygodni („Ruch · 4 z 9 dni”).
+ *  4. Co Ci pomaga — do 3 rzeczy z danych tej osoby, tylko takie, na które ma się wpływ; puste miejsca uzupełnia
+ *     wiedza ogólna z dopiskiem „sprawdź u siebie”.
  *  5. Zielnik — kwiat za każdy tydzień z co najmniej 3 podlaniami (bez kar za przerwę).
  *
- * Trudne sprawy (dom, relacje) nigdy nie dostają rady — tylko „to nie Twoja wina” i wsparcie. Język: podpowiedź, nie diagnoza.
- * Kolory kategorii (--cat-*) tylko tutaj: kropka przy nazwie i wyróżniony słupek. Nastrój = kolor motywu.
+ * Język: opis, nie przyczyna i nie diagnoza. Kolory kategorii (--cat-*) tylko tutaj: kropka przy nazwie i wyróżniony słupek.
  *
  * PROTOTYP: DANE PRZYKŁADOWE (12 tygodni z podłożonymi zależnościami), a dzisiejszy dzień bierze prawdziwy wpis z podlewania
- * (zdarzenie `entrychange`), więc próbę i podsumowanie widać „na żywo”. Opinie i próba: localStorage `sci.wnioski`.
- * Podgląd etapów: ?wnioski=start | tydzien | szum | proba | koniec | niski.
+ * (zdarzenie `entrychange`), więc eksperyment i podsumowanie widać „na żywo”. Opinie i eksperyment: localStorage `sci.wnioski`.
+ * Podgląd etapów: ?wnioski=start | tydzien | szum | proba | koniec | niski | dom.
  * TODO backend: dni z widoku `checkin_days`, wnioski z `my_insights` (liczy je Edge Function `generate-insights` tym samym silnikiem),
- * opinie przez rpc('set_insight_feedback'), próba przez rpc('start_experiment').
+ * opinie przez rpc('set_insight_feedback'), eksperyment przez rpc('start_experiment'). Karta wsparcia liczy się z dni na telefonie.
  *
  * window.WnioskiStan = { najlepsze } — to, co tej osobie najbardziej pomaga (strona główna podpowiada to w dzień „pół na pół”).
  */
@@ -77,6 +82,10 @@
     return { date, sleepHours, bedtime, sleepQuality, areas, acts, hour, mood: skip ? null : Math.round(Math.min(10, Math.max(1, mood))) };
   });
   if (scenario === 'niski') demo.slice(-5).forEach((d, i) => { d.mood = [3, 2, 3, 2, 3][i]; });
+  // „ciężko” w domu / ze znajomymi kilka razy w dwa tygodnie włącza kartę wsparcia: w zwykłym podglądzie jej nie chcemy
+  // (dane są losowe), a ?wnioski=dom pokazuje ją celowo
+  ['family', 'friends'].forEach(k => { let left = 2; demo.slice(-14).forEach(d => { if (d.areas[k] === -1 && left-- <= 0) delete d.areas[k]; }); });
+  if (scenario === 'dom') demo.slice(-10).forEach((d, i) => { if (i % 2 === 0) d.areas.family = -1; });
   const demoToday = demo[demo.length - 1];
 
   // ================================================================
@@ -117,19 +126,22 @@
   const podlan = n => `${n} ${WD.PL(n, 'podlanie', 'podlania', 'podlań')}`;
 
   // ---------- 0. wsparcie ----------
-  const supportCard = () => `
+  // Treść karty przychodzi z silnika (res.wsparcie: { tytul, akapity, alarm, cisza }). Kolejność przycisków (uwaga rady):
+  // najpierw ludzie — telefon zaufania, bliskie osoby — a Asystent, który jest programem, na końcu.
+  const supportCard = s => `
     <section class="support is-low wn-support" aria-label="Wsparcie">
       <div class="support-low">
-        <p class="support-title">Ostatnie dni są ciężkie</p>
-        <p class="support-text">Dobrze, że mimo to tu zaglądasz. Nie musisz być z tym w pojedynkę.</p>
+        <p class="support-title">${s.tytul}</p>
+        ${s.akapity.map(a => `<p class="support-text">${a}</p>`).join('')}
       </div>
+      <a class="support-call" href="tel:116111">${svg(PHONE)}Zadzwoń: 116 111 <small>bezpłatnie, całą dobę</small></a>
+      ${s.alarm ? `<a class="support-call" href="tel:112">${svg('<path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/>')}Gdy coś Ci grozi teraz: 112</a>` : ''}
+      <button type="button" class="support-call wn-call-btn" data-sos>${svg('<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>')}Twoje bliskie osoby i oddech</button>
       <button type="button" class="assist-btn" data-asystent="podlewanie">
         <span class="assist-ico" aria-hidden="true">${svg(CHAT)}</span>
         <span class="assist-text"><b>Porozmawiaj z Asystentem Wsparcia</b><small>Gdy chcesz pogadać</small></span>
         ${svg('<path d="M9 6l6 6-6 6"/>', 'assist-chev')}
       </button>
-      <a class="support-call" href="tel:116111">${svg(PHONE)}Zadzwoń: 116 111 <small>bezpłatnie, całą dobę</small></a>
-      <button type="button" class="support-call wn-call-btn" data-sos>${svg('<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>')}Twoje bliskie osoby i oddech</button>
     </section>`;
 
   // ---------- 1. tydzień ----------
@@ -157,21 +169,21 @@
     if (pr.status === 'trwa') {
       return `
       <section class="insight wn-proba" aria-labelledby="wn-proba-title">
-        <p class="insight-tag">Twoja próba · jeszcze ${dni(pr.zostaloDni)}</p>
+        <p class="insight-tag">Twój eksperyment · jeszcze ${dni(pr.zostaloDni)}</p>
         <h3 id="wn-proba-title">${pr.cel} ${pr.co}</h3>
         <p class="wn-dots" role="img" aria-label="${pr.zrobione} z ${pr.cel}">${dots}<span>${pr.zrobione} z ${pr.cel}</span></p>
-        <p>Zaznaczaj to w podlewaniu („Co dziś było?”). Po tygodniu zobaczysz, czy coś się zmienia. Bez presji: ile wyjdzie, tyle wyjdzie.</p>
-        <button type="button" class="wn-text-btn" data-wn-proba-stop>Zakończ próbę</button>
+        <p>${pr.gdzie || 'Liczę to z Twojego podlewania.'} Bez presji: ile wyjdzie, tyle wyjdzie.</p>
+        <button type="button" class="wn-text-btn" data-wn-proba-stop>Kończę wcześniej</button>
       </section>`;
     }
     return `
       <section class="insight wn-proba is-done" aria-labelledby="wn-proba-title">
-        <p class="insight-tag">Twoja próba · tydzień za Tobą</p>
+        <p class="insight-tag">Twój eksperyment · tydzień za Tobą</p>
         <h3 id="wn-proba-title">${pr.nazwa}: ${pr.zrobione} ${WD.PL(pr.zrobione, 'raz', 'razy', 'razy')}</h3>
         <p>${pr.wynik.tekst}</p>
         <div class="wn-actions">
-          ${pr.wynik.typ === 'pomoglo' ? '<button type="button" class="btn-soft wn-btn" data-wn-proba-keep>Zostaje w moich sposobach</button>' : ''}
-          <button type="button" class="wn-text-btn" data-wn-proba-stop>Zamknij</button>
+          ${pr.zrobione > 0 ? '<button type="button" class="btn-soft wn-btn" data-wn-proba-keep>Dodaj do moich sposobów</button>' : ''}
+          <button type="button" class="wn-text-btn" data-wn-proba-stop>${pr.zrobione > 0 ? 'Nie teraz' : 'Zamknij'}</button>
         </div>
       </section>`;
   }
@@ -187,17 +199,11 @@
   }
 
   function insightCard(w, i, hasProba) {
-    const body = w.ton === 'wsparcie'
-      ? `<p class="wn-care">${w.wsparcie}</p>
-         <div class="wn-actions">
-           <button type="button" class="btn-soft wn-btn" data-asystent="podlewanie">${svg(CHAT)}Porozmawiaj z Asystentem</button>
-           <a class="wn-text-btn" href="tel:116111">Zadzwoń: 116 111</a>
-         </div>`
-      : `<details class="insight-more">
+    const body = `<details class="insight-more">
            <summary>Skąd to może się brać?</summary>
            <div class="insight-body">
              ${w.powody.length ? `<ul class="why-list">${w.powody.map(p => `<li>${p}</li>`).join('')}</ul>` : ''}
-             ${w.sprobuj ? `<p class="try"><b>Spróbuj:</b> ${w.sprobuj}.</p>` : ''}
+             ${w.sprobuj && !cisza ? `<p class="try"><b>Spróbuj:</b> ${w.sprobuj}.</p>` : ''}
            </div>
          </details>`;
     const fb = w.opinia === 'pasuje'
@@ -206,7 +212,7 @@
          <button type="button" class="wn-text-btn" data-wn-fb="nie" data-key="${w.key}">Nie pasuje</button>`;
     return `
     <li class="insight" style="--i:${i + 1};--cat:var(${w.kat})">
-      <p class="insight-tag"><i class="cat-dot" aria-hidden="true"></i>${w.tag}<span class="wn-sure" title="Im więcej podlań, tym pewniejszy wniosek">${w.slowo} · z ${dni(w.n)}</span></p>
+      <p class="insight-tag"><i class="cat-dot" aria-hidden="true"></i>${w.tag}<span class="wn-sure">${w.slowo} · ${w.n} ${WD.PL(w.n, 'wpis', 'wpisy', 'wpisów')}</span></p>
       <h3>${w.tytul}</h3>
       ${chart(w)}
       <p>${w.zdanie}</p>
@@ -226,28 +232,30 @@
     </section>`;
 
   const obsList = (list, hasProba) => (list.length ? `
-    <ul class="wn-obs" aria-label="Obserwacje">${list.map(o => `
+    <ul class="wn-obs" aria-label="Twoje ostatnie dwa tygodnie">${list.map(o => `
       <li style="--cat:var(${o.kat})"><i class="cat-dot" aria-hidden="true"></i><span>${o.tekst}</span>
         ${o.proba && !hasProba ? `<button type="button" class="wn-text-btn" data-wn-try="${o.key}" data-czynnik="${o.proba.czynnik}" data-ile="${o.proba.ile}">Wypróbuj</button>` : ''}
       </li>`).join('')}
     </ul>
-    <p class="helps-note wn-obs-note">To na razie obserwacje, jeszcze nie wnioski.</p>` : '');
+    <p class="helps-note wn-obs-note">Tyle razy było to w Twoich ostatnich dwóch tygodniach. Co z tego idzie w parze z nastrojem, pokażę, gdy podlań będzie więcej.</p>` : '');
 
   function noticedBlock(res, hasProba) {
     if (res.etap === 'start') {
-      return waitCard('Zbieram pierwsze obserwacje', res.dni
-        ? `Jeszcze ${podlan(res.doPodsumowania)} do pierwszego podsumowania. Nie ma pośpiechu — roślinka poczeka.`
-        : 'Po kilku podlaniach pokażę tu, co zauważam w Twoich dniach. Nie ma pośpiechu.');
+      return waitCard('Zbieram pierwsze dni', res.dni
+        ? `Jeszcze ${podlan(res.doPodsumowania)} i pokażę, co było w Twoich dniach. Bez pośpiechu, roślinka poczeka.`
+        : 'Po kilku podlaniach pokażę tu, co było w Twoich dniach. Bez pośpiechu.');
     }
     if (res.etap === 'tydzien') {
-      return obsList(res.obserwacje, hasProba) + waitCard('Wnioski rosną razem z roślinką', `Jeszcze ${podlan(res.doWnioskow)} do pierwszych wniosków o tym, co Ci pomaga. Im więcej dni, tym są pewniejsze.`);
+      return obsList(res.obserwacje, hasProba) + waitCard('Wnioski rosną razem z roślinką', 'Potrzebują około trzech tygodni podlewania: pokazuję je dopiero wtedy, gdy coś powtarza się dłużej niż kilka dni.');
     }
+    const note = res.powrot ? `<p class="helps-note wn-note">${res.powrot.tekst}</p>` : '';
     if (!res.wnioski.length) {
-      return obsList(res.obserwacje, hasProba) + waitCard('Na razie nic pewnego', 'Sprawdzam, czy coś w Twoich dniach się powtarza. Jeszcze nie widać niczego na tyle wyraźnie, żeby o tym mówić — to też informacja.');
+      return obsList(res.obserwacje, hasProba) + waitCard('Na razie nic pewnego', 'Na razie nic się wyraźnie nie powtarza. Sprawdzam dalej — to też informacja.') + note;
     }
     return `<ol class="tr-list">${res.wnioski.map((w, i) => insightCard(w, i, hasProba)).join('')}</ol>
-      ${res.wnioski.length < 2 ? obsList(res.obserwacje, hasProba) : ''}`;
+      ${res.wnioski.length < 2 ? obsList(res.obserwacje, hasProba) : ''}${note}`;
   }
+  const undoRow = () => (schowany ? `<p class="wn-undo" role="status">Schowane: „${schowany.tytul}”. <button type="button" class="wn-text-btn" data-wn-undo>Cofnij</button></p>` : '');
 
   // ---------- 4. co pomaga ----------
   function helpsBlock(res, hasProba) {
@@ -264,12 +272,12 @@
       <li class="help wn-general" style="--i:${res.pomaga.length + i + 1};--cat:var(${g.kat})">
         <i class="cat-dot" aria-hidden="true"></i>
         <span class="help-name">${g.nazwa}</span>
-        <span class="wn-general-text">${g.tekst} <em>Wiedza ogólna — sprawdź u siebie.</em>
+        <span class="wn-general-text">${g.tekst} <em>Sprawdź, jak jest u Ciebie.</em>
           ${g.proba && !hasProba ? `<button type="button" class="wn-text-btn" data-wn-try="${g.key}" data-czynnik="${g.proba.czynnik}" data-ile="${g.proba.ile}">Wypróbuj przez tydzień</button>` : ''}</span>
       </li>`).join('');
     return `
       <h2 class="sub-title">Co Ci pomaga</h2>
-      ${res.pomaga.length ? '<p class="helps-note">O tyle lepszy bywa Twój nastrój w takie dni.</p>' : '<p class="helps-note">Z Twoich dni jeszcze tego nie widać, więc zaczynamy od tego, co pomaga wielu osobom.</p>'}
+      ${res.pomaga.length ? '<p class="helps-note">Mniej więcej o tyle lepszy bywa Twój nastrój w takie dni.</p>' : '<p class="helps-note">Jeszcze za mało Twoich dni. Na start: co pomaga wielu osobom.</p>'}
       <ul class="helps">${own}${gen}</ul>`;
   }
 
@@ -312,7 +320,7 @@
   // ================================================================
   //  Widok
   // ================================================================
-  let res = null;
+  let res = null, cisza = false, schowany = null;       // cisza: cięższy czas, nie dokładamy zadań · schowany: wniosek schowany przed chwilą („Nie pasuje”) — do cofnięcia
   function render() {
     // bez zgody na dane o samopoczuciu (po jej wycofaniu) nie ma z czego liczyć wniosków
     if (Zgody && !Zgody.has('health_data') && Zgody.state('health_data').withdrawn) {
@@ -329,21 +337,24 @@
     const data = days();
     res = Wn.analyze(data, { today, feedback: state.opinie });
     const pr = state.proba ? Wn.proba(data, state.proba, { today }) : null;
-    const hasProba = !!pr;
+    // w cięższym czasie nie dokładamy zadań: przyciski eksperymentu znikają (trwający eksperyment zostaje, bez poganiania)
+    cisza = !!(res.wsparcie && res.wsparcie.cisza);
+    const hasProba = !!pr || cisza;
     window.WnioskiStan = { najlepsze: res.pomaga[0] || null, etap: res.etap };
 
     const open = new Set([...root.querySelectorAll('.insight-more[open]')].map(d => d.closest('.insight').querySelector('h3').textContent));
     root.innerHTML = `
-      ${res.wsparcie ? supportCard() : ''}
+      ${res.wsparcie ? supportCard(res.wsparcie) : ''}
       ${weekCard(res)}
       ${probaCard(pr)}
       <h2 class="sub-title">Co zauważyliśmy</h2>
       ${noticedBlock(res, hasProba)}
+      ${undoRow()}
       ${helpsBlock(res, hasProba)}
       ${herbarium(data)}
       <details class="wn-how">
         <summary>Jak powstają wnioski?</summary>
-        <p>Porównuję Twoje dni „z” i „bez” danej rzeczy z ostatnich 3 miesięcy i pokazuję tylko różnice, które się powtarzają i nie wyglądają na przypadek. „Wstępnie” znaczy, że warto to sprawdzić; im więcej podlań, tym wniosek pewniejszy. To podpowiedzi o Tobie, nie diagnoza, i nie mówią, co jest przyczyną.</p>
+        <p>Porównuję Twoje dni „z” i „bez” danej rzeczy z ostatnich 3 miesięcy. Pokazuję tylko różnice, które utrzymują się co najmniej tydzień i nie wyglądają na przypadek. „Wstępnie” znaczy, że warto to sprawdzić; im więcej podlań, tym wniosek pewniejszy. Mimo to wniosek może być mylny: to opis Twoich dni, nie diagnoza, i nie mówi, co jest przyczyną (w lepszy dzień po prostu łatwiej się ruszyć albo z kimś spotkać).</p>
       </details>
       <p class="demo-note">Dane przykładowe${window.Podlewanie && window.Podlewanie.entry ? ' + Twój dzisiejszy wpis' : ''}. Wnioski to podpowiedzi, nie diagnoza.</p>`;
     // rozwinięte „Skąd to może się brać?” zostaje rozwinięte po odświeżeniu
@@ -353,19 +364,29 @@
   root.addEventListener('click', e => {
     const fb = e.target.closest('[data-wn-fb]');
     if (fb) {
+      const card = fb.closest('.insight');
       state.opinie[fb.dataset.key] = { v: fb.dataset.wnFb, at: new Date().toISOString() };
+      schowany = fb.dataset.wnFb === 'nie' ? { key: fb.dataset.key, tytul: card ? card.querySelector('h3').textContent : '' } : null;
       save(); haptic(8);
-      toast(fb.dataset.wnFb === 'pasuje' ? 'Zapamiętane. Ten wniosek zostaje na Twojej liście.' : 'Jasne, chowam ten wniosek. Dzięki, że mówisz.');
+      toast(fb.dataset.wnFb === 'pasuje' ? 'Zapamiętane. Zostaje w „Co Ci pomaga”.' : 'Jasne, chowam ten wniosek. Dzięki, że mówisz.');
       render();
+      return;
+    }
+    if (e.target.closest('[data-wn-undo]') && schowany) {
+      delete state.opinie[schowany.key];
+      schowany = null;
+      save(); render();
       return;
     }
     const tr = e.target.closest('[data-wn-try]');
     if (tr) {
       state.proba = { key: tr.dataset.wnTry, czynnik: tr.dataset.czynnik, ile: Number(tr.dataset.ile), start: Wn.key(today) };
       save(); haptic(10);
-      toast('Próba zaczęta. Zaznaczaj to w podlewaniu przez 7 dni.');
+      toast('Zaczynamy. Wrócę z podsumowaniem za tydzień.');
       render();
-      window.scrollTo({ top: 0, behavior: view ? 'auto' : 'smooth' });
+      // karta eksperymentu leży pod polem tygodnia — przewijamy do niej, żeby było widać, co się zaczęło
+      const card = $('.wn-proba');
+      if (card) { card.scrollIntoView({ block: 'center', behavior: view ? 'auto' : 'smooth' }); const h = card.querySelector('h3'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
       return;
     }
     if (e.target.closest('[data-wn-proba-keep]')) {
@@ -377,6 +398,13 @@
   });
 
   window.addEventListener('entrychange', render);
-  window.addEventListener('consentchange', render);
+  // wycofanie zgody usuwa też opinie o wnioskach i eksperyment (w bazie robi to wyzwalacz)
+  window.addEventListener('consentchange', e => {
+    if (e.detail.kind === 'health_data' && !e.detail.active && Zgody && Zgody.state('health_data').withdrawn) {
+      state.opinie = {}; state.proba = null; schowany = null;
+      if (!view) { try { localStorage.removeItem(KEY); } catch (_) { /* nic */ } }
+    }
+    render();
+  });
   render();
 })();

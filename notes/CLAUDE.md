@@ -39,7 +39,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 
 ## Check-in (`daily_checkins`)
 - Wymagany **nastrój 1–10**. Opcjonalnie: godziny snu, jakość snu, jedzenie, rodzina, przyjaciele, miłość, natura, nauka, notatka.
-- Od 12.11.2026 także (propozycja, dla spersonalizowanych wniosków): **pora pójścia spać** i **„Co dziś było?”** (ruch, hobby, odpoczynek, szczera rozmowa, coś dla kogoś, spakowanie na jutro). Zasada: zbieramy tylko to, z czego powstaje jakiś wniosek. Szczegóły i pytania do zespołu: `notes/wnioski.md`.
+- Od 12.11.2026 także (propozycja, dla spersonalizowanych wniosków): **pora pójścia spać** i **„Co dziś było?”** (ruch, hobby, odpoczynek, szczera rozmowa, coś dla kogoś, plecak na jutro). Zasada: zbieramy tylko to, z czego powstaje jakiś wniosek; **„Miłość” i „Jedzenie” jej dziś nie spełniają** (nic z nich nie korzysta, rada 12.11.2026 radzi je usunąć). Szczegóły i pytania do zespołu: `notes/wnioski.md`.
 - Skale pól poza nastrojem i częstotliwość nie są ustalone (zakładamy codziennie).
 - **Streak** jest liczony z danych, nie przechowywany.
 - Nierozstrzygnięte: `moods` (plan) czy `daily_checkins` (rozmowa o bazie).
@@ -62,7 +62,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
   3. wynik interpretacyjny — komunikat, który użytkownik zobaczył danego dnia,
   4. znacznik czasu wykonania testu (do wykresów historii),
   5. metadane zgody RODO: ID zgody, wersja regulaminu/polityki, czas udzielenia, IP (rozliczalność, art. 5 ust. 2 RODO).
-- **Schemat bazy** (przepisany 12.11.2026, zastępuje prototyp Waldka): `notes/supabase-schema.sql` (konto, zgody, dane aplikacji) → `notes/supabase-testy.sql` (testy) → `notes/supabase-testy-dane.sql` (pytania; generowany z `Main_Front-End/js/testy-dane.js`). Sprawdzony na lokalnym Postgresie: `bash narzedzia/sprawdz-baze.sh` (około 220 sprawdzeń). **Jeszcze nie uruchomiony na prawdziwym projekcie Supabase.** Najważniejsze zasady:
+- **Schemat bazy** (przepisany 12.11.2026, zastępuje prototyp Waldka): `notes/supabase-schema.sql` (konto, zgody, dane aplikacji) → `notes/supabase-testy.sql` (testy) → `notes/supabase-testy-dane.sql` (pytania; generowany z `Main_Front-End/js/testy-dane.js`). Sprawdzony na lokalnym Postgresie: `bash narzedzia/sprawdz-baze.sh` (około 320 sprawdzeń). **Jeszcze nie uruchomiony na prawdziwym projekcie Supabase.** Najważniejsze zasady:
   - wynik testu liczy serwer (`submit_test`), telefon wysyła tylko odpowiedzi i może czytać wyłącznie swoje wiersze;
   - zgody są dziennikiem, który zapisuje serwer (`give_consent`, `withdraw_consent`): nie da się ich skasować ani wpisać sobie zgody opiekuna; adres IP ustawia serwer;
   - bez aktywnej zgody na dane o samopoczuciu (poniżej 16 lat także zgody opiekuna) nie zapisze się ani test, ani podlewanie;
@@ -89,7 +89,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 3. **Model biznesowy** (przygotował Piotrek; Marcel go przyśle).
 4. **Testy WHO-5 i Big Five** (zakładka Testy), równolegle **podłączenie backendu (Supabase)**.
 5. **Przejście na React Native + Expo** (od razu jako aplikacja), **model Asystenta**.
-6. Z backendem: **zbieranie i interpretacja danych**, żeby aplikacja mówiła, co robisz w dni, kiedy czujesz się gorzej, i dawała spersonalizowane insighty. **Projekt i silnik są gotowe (12.11.2026): `notes/wnioski.md`.** Zostaje podłączenie do bazy i sprawdzenie progów na prawdziwych danych.
+6. Z backendem: **zbieranie i interpretacja danych**, żeby aplikacja mówiła, co robisz w dni, kiedy czujesz się gorzej, i dawała spersonalizowane insighty. **Projekt i silnik są gotowe (12.11.2026, wersja 2 po recenzji rady): `notes/wnioski.md`.** Zostają decyzje zespołu z rozdziału 12 tego pliku, zatwierdzenie tekstów wsparcia przez psychologa, podłączenie do bazy i sprawdzenie progów na prawdziwych danych.
 - Test z nastolatkami: 20.11.2026 (`notes/test-z-nastolatkami.md`).
 
 ## Zespół
