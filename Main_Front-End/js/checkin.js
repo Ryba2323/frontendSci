@@ -5,6 +5,10 @@
  * z tabeli `daily_checkins`: sen (godziny, pora pójścia spać, jakość), co dziś było (ruch, hobby, odpoczynek, rozmowa,
  * coś dla kogoś, spakowanie na jutro) i jak poszło (jedzenie, rodzina, przyjaciele, miłość, natura, nauka), na końcu notatka.
  * Każde pytanie można pominąć („Pomiń” → po odpowiedzi „Dalej”).
+ * PODLEWANIE KOŃCZY SIĘ JUŻ NA NASTROJU (12.11.2026, po uwadze rady: do deszczu było 6 stuknięć i 4 ekrany, a test
+ * z nastolatkami zakłada 10 sekund). Na pierwszym ekranie główny przycisk to „Podlej roślinkę”: zapisuje nastrój i pada
+ * deszcz. Sen, „Co dziś było?” i notatka są pod „Dodaj więcej” (i pod plusami na Domu); kto tam wejdzie, kończy jak
+ * dawniej na ostatnim pytaniu. Bez wybranego nastroju pierwszy ekran nie podlewa, tylko prosi o przesunięcie łodygi.
  * Pora snu i „Co dziś było?” doszły 12.11.2026 dla spersonalizowanych wniosków (js/wnioski.js, notes/wnioski.md):
  * zbieramy tylko to, z czego powstaje jakiś wniosek; listy są w js/wnioski-dane.js (BEDTIME, ACTS).
  * Skale pól poza nastrojem nie są ustalone (notes/CLAUDE.md) — tu propozycja: sen w przedziałach, jakość 1–4,
@@ -98,7 +102,7 @@
   // Krok 1 — ten sam układ co nastroj.html
   const stepMood = () => `
     <h2 class="ci-q" id="ci-title">Jak się dziś czujesz?</h2>
-    <p class="ci-hint">Im lepiej, tym dalej przeciągnij łodygę.</p>
+    <p class="ci-hint">Przesuń łodygę. Im dalej, tym lepszy dzień.</p>
     <div class="ci-mood" id="ci-mood"></div>
     <p class="ci-note" id="ci-mood-note" aria-live="polite"></p>
     <section class="support" id="ci-support" aria-label="Wsparcie">
@@ -187,6 +191,7 @@
       <footer class="ci-actions">
         <button type="button" class="ci-back" id="ci-back">${svg('<path d="M19 12H5M11 6l-6 6 6 6"/>')}<span>Wstecz</span></button>
         <button type="button" class="btn-primary" id="ci-next"><span id="ci-next-label">Pomiń</span>${ARROW}</button>
+        <button type="button" class="ci-more" id="ci-more" aria-label="Dodaj więcej: sen, co dziś było, notatka">Dodaj więcej: sen, dzień, notatka</button>
       </footer>
     </div>`;
 
@@ -197,7 +202,8 @@
   let ans = blank(), draft = null, idx = 0, onDone = null, mood = null, fromEl = null, isOpen = false, lastFocus = null;
   const steps = $$('.ci-step');
   const bars = $$('.ci-progress i');
-  const nextBtn = $('#ci-next'), nextLabel = $('#ci-next-label'), backBtn = $('#ci-back');
+  const nextBtn = $('#ci-next'), nextLabel = $('#ci-next-label'), backBtn = $('#ci-back'), moreBtn = $('#ci-more'), actions = $('.ci-actions');
+  const ASK_MOOD = 'Przesuń łodygę, żeby podlać roślinkę.';
 
   function answered(i) {
     const id = STEPS[i].id;
@@ -208,13 +214,15 @@
   }
 
   function syncFooter() {
-    const last = idx === STEPS.length - 1;
-    nextBtn.classList.toggle('is-final', last);
-    nextLabel.textContent = last ? 'Podlej roślinkę' : answered(idx) ? 'Dalej' : 'Pomiń';
+    const first = idx === 0, last = idx === STEPS.length - 1, ends = first || last;   // nastrój i ostatnie pytanie kończą podlewanie
+    actions.classList.toggle('is-first', first);
+    nextBtn.classList.toggle('is-final', ends);
+    nextLabel.textContent = ends ? 'Podlej roślinkę' : answered(idx) ? 'Dalej' : 'Pomiń';
     const ico = nextBtn.querySelector('svg');
-    ico.outerHTML = last ? DROP : ARROW;
-    backBtn.classList.toggle('is-hidden', idx === 0);
-    $('#ci-count').textContent = `${idx + 1} z ${STEPS.length}`;
+    ico.outerHTML = ends ? DROP : ARROW;
+    backBtn.classList.toggle('is-hidden', first);
+    // na pierwszym ekranie nie straszymy „1 z 4”: reszta pytań jest dodatkiem
+    $('#ci-count').textContent = first ? '' : `${idx + 1} z ${STEPS.length}`;
     bars.forEach((b, i) => { b.classList.toggle('is-done', i < idx || (i === idx && answered(i))); b.classList.toggle('is-now', i === idx); });
   }
 
@@ -224,6 +232,7 @@
   let noteTimer;
   function showMoodNote(v) {
     const text = v == null ? '' : NOTES[v - 1];
+    if (v == null && moodNote.textContent === ASK_MOOD) return;      // prośba o nastrój zostaje, dopóki nic nie wybrano
     if (moodNote.textContent === text) return;
     clearTimeout(noteTimer);
     moodNote.classList.add('is-fading');
@@ -304,9 +313,14 @@
   }
   nextBtn.addEventListener('click', () => {
     haptic(10);
-    if (idx < STEPS.length - 1) go(idx + 1, 1);
+    if (idx === 0) {
+      // nastrój: od razu podlewamy; bez wybranej wartości prosimy o przesunięcie łodygi (nie ma czego zapisać)
+      if (ans.mood == null) { clearTimeout(noteTimer); moodNote.classList.remove('is-fading'); moodNote.textContent = ASK_MOOD; if (mood) mood.focus(); return; }
+      finish();
+    } else if (idx < STEPS.length - 1) go(idx + 1, 1);
     else finish();
   });
+  moreBtn.addEventListener('click', () => { haptic(6); go(1, 1); });
   backBtn.addEventListener('click', () => go(idx - 1, -1));
 
   // ================================================================

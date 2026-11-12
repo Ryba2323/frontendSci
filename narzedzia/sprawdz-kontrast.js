@@ -74,8 +74,8 @@ function audit() {
     await p.evaluate(() => { const s = document.querySelector('.ms-slider'); if (s) { s.focus(); } });
     for (let i = 0; i < 2; i++) await p.keyboard.press('ArrowRight');
     await p.waitForTimeout(400); note('podlewanie, niski nastrój', await p.evaluate(audit));
-    // kolejne pytania podlewania (sen z zaznaczoną odpowiedzią, co było ważne, notatka)
-    await p.click('#ci-next'); await p.waitForTimeout(500);
+    // kolejne pytania podlewania (sen z zaznaczoną odpowiedzią, co było ważne, notatka): z nastroju prowadzi do nich „Dodaj więcej”
+    await p.click('#ci-more'); await p.waitForTimeout(500);
     await p.click('#checkin .ci-chip'); await p.waitForTimeout(200); note('podlewanie: sen', await p.evaluate(audit));
     await p.click('#ci-next'); await p.waitForTimeout(500);
     await p.click('#checkin .ci-seg button[data-v="1"]'); await p.waitForTimeout(200); note('podlewanie: co było ważne', await p.evaluate(audit));

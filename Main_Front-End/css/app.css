@@ -309,6 +309,15 @@ body, .sheet { transition: background-color var(--dur-base) ease, color var(--du
 .ci-back:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .ci-back.is-hidden { display: none; }
 .ci-actions .btn-primary { flex: 1; }
+/* Pierwszy ekran (nastrój): „Podlej roślinkę” na całą szerokość, pod nim spokojne „Dodaj więcej” */
+.ci-more {
+  display: none; min-height: 44px; align-items: center; justify-content: center; padding: 0 var(--sp-2); border: 0; background: none;
+  font: inherit; font-size: .95rem; font-weight: 600; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.ci-more:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: 8px; }
+.ci-actions.is-first { flex-direction: column; gap: var(--sp-1); }
+.ci-actions.is-first .btn-primary { flex: none; }
+.ci-actions.is-first .ci-more { display: inline-flex; }
 .ci-drop { width: 20px; height: 20px; fill: #fff; }
 .btn-primary.is-final .ci-drop { animation: bob 2.6s ease-in-out infinite; }
 
