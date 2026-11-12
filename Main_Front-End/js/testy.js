@@ -7,7 +7,7 @@
  *   2. Pole koloru (jedno na ekran): ostatni wynik samopoczucia z małą historią słupków albo zaproszenie do pierwszego testu.
  *   3. Karta „Osobowość”: pięć cech jako suwaki między dwoma końcami (żaden nie jest lepszy) albo zaproszenie.
  *   4. Historia: każde podejście; stuknięcie pokazuje wynik dokładnie tak, jak wyglądał tamtego dnia.
- *   5. „Twoje dane i zgody” (js/konto.js) i usuwanie historii.
+ *   5. „Konto i prywatność” (js/konto.js) i usuwanie historii.
  *
  * Przebieg testu (ekran jak podlewanie: wyrasta kołem z przycisku, css/app.css .ci-overlay):
  *   wstęp → jedno zdanie na ekran, stuknięcie w odpowiedź przechodzi dalej (ostatnie czeka na „Zobacz wynik”) → wynik.
@@ -47,7 +47,8 @@
 
   const acc = account.load() || {};
   const form = ['f', 'm', 'n'].includes(acc.form) ? acc.form : 'n';
-  const under16 = /^1[3-5]$/.test(String(acc.age || ''));
+  // dopisek „test powstał dla osób od 16 lat” pokazujemy także wtedy, gdy wieku nie znamy (brak konta)
+  const under16 = !acc.age || /^1[3-5]$/.test(String(acc.age));
 
   // ================================================================
   //  Pamięć
@@ -149,7 +150,7 @@
     return `
       <section class="insight tst-consent" style="--i:0" aria-labelledby="tst-consent-title">
         <h3 id="tst-consent-title">${st.withdrawn ? 'Testy czekają na Twoją zgodę' : 'Zanim zaczniesz'}</h3>
-        <p>Wyniki testów mówią o Twoim samopoczuciu. Widzisz je tylko Ty i usuniesz je, kiedy zechcesz.</p>
+        <p>Wyniki testów mówią o Twoim samopoczuciu. Inni użytkownicy ich nie widzą, a Ty usuniesz je, kiedy zechcesz.</p>
         <label class="ci-check tst-agree">
           <input type="checkbox" id="tst-agree">
           <span class="ci-check-box" aria-hidden="true">${CHECK}</span>
@@ -211,8 +212,10 @@
   }
 
   // ---------- Karta: osobowość ----------
+  // czytnik ekranu słyszy stronę skali, nie liczbę („Wyobraźnia: 25 na 100” brzmiałoby jak ocena)
+  const side = (scale, v) => (v < 34 ? `bliżej „${scale.lowLabel}”` : v >= 67 ? `bliżej „${scale.highLabel}”` : `pośrodku między „${scale.lowLabel}” a „${scale.highLabel}”`);
   const poleBar = (scale, sc) => `
-    <span class="tst-pole" role="img" aria-label="${scale.name}: ${pct(sc.scaled)} na 100, między „${scale.lowLabel}” a „${scale.highLabel}”"><i style="--v:${(sc.scaled / 100).toFixed(3)}"></i></span>
+    <span class="tst-pole" role="img" aria-label="${scale.name}: ${side(scale, sc.scaled)}"><i style="--v:${(sc.scaled / 100).toFixed(3)}"></i></span>
     <span class="tst-ends" aria-hidden="true"><small>${scale.lowLabel}</small><small>${scale.highLabel}</small></span>`;
 
   function cardIpip(test, locked) {
@@ -276,7 +279,7 @@
         ${ok ? historyBlock() : ''}
       </div>
       <div class="tst-foot">
-        <button type="button" class="tst-btn-text" data-konto>Twoje dane i zgody</button>
+        <button type="button" class="tst-btn-text" data-konto>Konto i prywatność</button>
         ${n ? '<button type="button" class="tst-btn-text" data-tst-delete-all>Usuń historię testów</button>' : ''}
       </div>
       <p class="demo-note">Testy to podpowiedź, nie diagnoza. ${who.officialName}: © WHO 2024, ${who.licence}. ${ipip.officialName}: ${ipip.licence}.</p>`;
@@ -350,7 +353,7 @@
       <ul class="tst-facts">
         <li>${svg('<path d="M4 6h16M4 12h16M4 18h10"/>')}<span><b>${n} zdań</b>, jedno na ekran. Stuknij odpowiedź.</span></li>
         <li>${svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>')}<span>${t.code === 'who5' ? 'Około minuty.' : 'Około 3 minut.'} Możesz przerwać w każdej chwili.</span></li>
-        <li>${svg('<path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/>')}<span>To podpowiedź, nie diagnoza. Wynik widzisz tylko Ty.</span></li>
+        <li>${svg('<path d="M12 21v-9"/><path d="M12 12c0-4.2 3-6.5 7.5-6.5 0 4.2-3 6.5-7.5 6.5z"/><path d="M12 14.5c0-3.2-2.4-5.2-6-5.2 0 3.2 2.4 5.2 6 5.2z"/>')}<span>To podpowiedź, nie diagnoza. Inni użytkownicy nie zobaczą wyniku.</span></li>
       </ul>
       ${t.validatedFromAge && under16 ? `<p class="tst-small">Ten test powstał z myślą o osobach od ${t.validatedFromAge} lat. Potraktuj wynik jako ciekawostkę o sobie.</p>` : ''}`;
   }
@@ -373,19 +376,21 @@
   }
 
   // Wsparcie przy wyniku. `strong`: wynik 28% i mniej — pełna karta w ciepłym świetle, zawsze.
+  // Kolejność (uwaga rady): najpierw ludzie — telefon zaufania i bliskie osoby — dopiero potem Asystent, który jest programem.
+  const BLISCY = `<button type="button" class="support-call tst-call-btn" data-sos>${svg('<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>')}Twoje bliskie osoby i oddech</button>`;
   const supportHTML = (strong, cls = '') => `
     <section class="support is-low tst-support${cls ? ` ${cls}` : ''}" aria-label="Wsparcie">
       ${strong ? `<div class="support-low">
         <p class="support-title">Nie musisz być z tym w pojedynkę</p>
-        <p class="support-text">Rozmowa naprawdę może pomóc. Wybierz, co jest Ci teraz najbliższe.</p>
+        <p class="support-text">Rozmowa z człowiekiem naprawdę może pomóc. Wybierz, co Ci teraz pasuje.</p>
       </div>` : ''}
+      <a class="support-call" href="tel:116111">${svg(PHONE)}Zadzwoń: 116 111 <small>bezpłatnie, całą dobę</small></a>
+      ${strong ? BLISCY : ''}
       <button type="button" class="assist-btn" data-tst-assist>
         <span class="assist-ico" aria-hidden="true">${svg('<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/>')}</span>
         <span class="assist-text"><b>Porozmawiaj z Asystentem Wsparcia</b><small>Gdy chcesz pogadać</small></span>
         ${svg('<path d="M9 6l6 6-6 6"/>', 'assist-chev')}
       </button>
-      <a class="support-call" href="tel:116111">${svg(PHONE)}Zadzwoń: 116 111 <small>bezpłatnie, całą dobę</small></a>
-      ${strong ? `<button type="button" class="support-call tst-call-btn" data-sos>${svg('<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>')}Twoje bliskie osoby i oddech</button>` : ''}
     </section>`;
 
   function resultHTML(s, fresh) {
@@ -411,14 +416,14 @@
         <div class="tst-meter" role="img" aria-label="${pct(sc.scaled)} na 100"><i style="--v:${(sc.scaled / 100).toFixed(3)}"></i></div>
         <h2 class="ci-q tst-res-title" id="tst-q" tabindex="-1">${band.title}</h2>
         <p class="ci-hint">${band.body}</p>
-        ${compare}
+        ${band.wsparcie ? '' : compare}
         ${band.wsparcie ? supportHTML(true) : band.code === 'lower' ? supportHTML(false) : ''}
         ${note}`;
     }
 
     return `${head}
       <h2 class="ci-q" id="tst-q" tabindex="-1">Twoje pięć cech</h2>
-      <p class="ci-hint">Żaden koniec skali nie jest lepszy. To opis tego, jak zwykle działasz — stuknij cechę, żeby przeczytać więcej.</p>
+      <p class="ci-hint">Żaden koniec skali nie jest lepszy. To obraz z dziś, nie etykieta, i z czasem się zmienia. Stuknij cechę, żeby przeczytać więcej.</p>
       <ul class="tst-traits">${s.scores.map(sc => {
         const scale = Dane.scaleOf(t, sc.scale), band = Dane.bandOf(t, sc.scale, sc.band);
         return `<li class="tst-trait"><details>

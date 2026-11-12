@@ -96,9 +96,9 @@
 
       <p class="sheet-label" id="kp-l-dane">Twoje dane</p>
       <ul class="sos-list kp-list" aria-labelledby="kp-l-dane">
-        <li>${row(ICO.down, 'Pobierz moje dane', 'Kopia wszystkiego, co o Tobie zapisaliśmy', 'data-kp-do="eksport"')}</li>
+        <li>${row(ICO.down, 'Pobierz moje dane', 'Plik z Twoimi wpisami i wynikami. Nie zostawiaj go na wspólnym komputerze', 'data-kp-do="eksport"')}</li>
         <li>${row(ICO.list, 'Usuń historię testów', n ? `${n} ${plural(n)} · zgoda zostaje` : 'Historia jest pusta', `data-kp="usun-historie"${n ? '' : ' disabled'}`)}</li>
-        <li>${row(ICO.user, 'Usuń konto', 'Wszystkie Twoje dane znikną na zawsze', 'data-kp="usun-konto"')}</li>
+        <li>${row(ICO.user, 'Usuń konto', 'Twoje dane znikną na zawsze', 'data-kp="usun-konto"')}</li>
       </ul>
       <button type="button" class="sos-close" data-close>Gotowe</button>`;
   }
@@ -126,7 +126,7 @@
       return `
         <span class="grabber" aria-hidden="true"></span>
         <h2 class="sos-title" id="kp-title" tabindex="-1">Zgoda na dane o samopoczuciu</h2>
-        <p class="sos-sub">Dzięki niej możemy zapisywać podlewania i wyniki testów. Widzisz je tylko Ty.</p>
+        <p class="sos-sub">Dzięki niej możemy zapisywać podlewania i wyniki testów. Inni użytkownicy ich nie widzą.</p>
         <label class="ci-check kp-check"><input type="checkbox" id="kp-sure"><span class="ci-check-box" aria-hidden="true">${svg(ICO.check)}</span><span>${doc.text}</span></label>
         <p class="kp-small">${doc.note} <a href="${doc.url}" target="_blank" rel="noopener">Polityka prywatności</a></p>
         <div class="kp-actions">
@@ -139,8 +139,8 @@
       return confirm({
         title: 'Wycofać zgodę?',
         lead: 'Masz do tego prawo w każdej chwili. Bez zgody nie zapisujemy danych o Twoim samopoczuciu.',
-        gone: [`historię testów${n ? ` (${n} ${plural(n)})` : ''}`, 'wpisy z podlewania: nastrój, sen, to, co było ważne, notatki', 'wnioski w Trackerze'],
-        stay: ['Twoja roślinka i konto', 'Skrytka, słoik dobrych chwil, bliskie osoby', 'możliwość ponownej zgody — kiedy zechcesz'],
+        gone: [`historię testów${n ? ` (${n} ${plural(n)})` : ''}`, 'wpisy z podlewania: nastrój, sen, to, co było ważne, notatki', 'wnioski i eksperymenty w Trackerze', 'rozmowy z Asystentem'],
+        stay: ['Twoja roślinka i konto', 'Skrytka, słoik dobrych chwil, bliskie osoby', 'zgodę możesz włączyć z powrotem, kiedy chcesz'],
         check: 'Rozumiem, że tych danych nie da się przywrócić.',
         action: 'wycofaj', label: 'Wycofaj zgodę i usuń dane',
       });
@@ -161,7 +161,7 @@
         title: 'Usunąć konto?',
         lead: 'Możesz wcześniej pobrać kopię swoich danych. Usunięcia nie da się cofnąć.',
         gone: ['profil i roślinkę', 'podlewania, testy i wnioski', 'Skrytkę, słoik dobrych chwil i bliskie osoby', 'Twoje wpisy i komentarze na blogu'],
-        stay: null,
+        stay: ['tylko zapis, że i kiedy były zgody, bez powiązania z kontem (szczegóły w polityce prywatności)'],
         check: 'Rozumiem, że konta nie da się przywrócić.',
         action: 'usun-konto', label: 'Usuń konto na zawsze',
       });

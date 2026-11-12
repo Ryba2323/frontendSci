@@ -17,7 +17,9 @@
 --      to, co osoba zobaczyła tamtego dnia.
 --   6. Jedna skala (WHO-5) i wiele skal (Big Five) w tym samym modelu: test_scores
 --      ma wiersz na skalę. Pytania odwrócone odwraca serwer.
---   7. Odstęp między podejściami (min_interval_days) pilnuje serwer.
+--   7. Odstęp między podejściami (min_interval_days) pilnuje serwer. Uwaga: liczy się od ostatniego ZAPISANEGO wyniku,
+--      więc usunięcie wyniku pozwala zrobić test od nowa. To świadomy wybór (prawo do usunięcia ważniejsze niż odstęp);
+--      jeśli zespół chce inaczej, trzeba trzymać osobno samą datę ostatniego podejścia.
 --   8. Klucze obce złożone pilnują, żeby odpowiedź i wynik należały do tego samego
 --      kwestionariusza co sesja. Wszystkie kolumny mają NOT NULL i CHECK tam, gdzie trzeba.
 --
@@ -135,6 +137,12 @@ begin
   if new.is_active and (tg_op = 'INSERT' or not old.is_active) then
     perform private.validate_questionnaire(new.id);
   end if;
+  -- wersji z wynikami wolno tylko włączyć albo wyłączyć; tytuł, skala odpowiedzi i odstęp zostają jak były
+  if tg_op = 'UPDATE' and (to_jsonb(new) - 'is_active') is distinct from (to_jsonb(old) - 'is_active')
+     and exists (select 1 from public.test_sessions s where s.questionnaire_id = old.id) then
+    raise exception 'questionnaire_in_use'
+      using detail = format('%s ma już wyniki. Zamiast poprawiać, dodaj nową wersję kwestionariusza.', old.id);
+  end if;
   return new;
 end $$;
 create trigger questionnaires_guard before insert or update on public.questionnaires
@@ -193,23 +201,25 @@ create table public.test_scores (
   foreign key (questionnaire_id, scale_code, band_code) references public.score_bands (questionnaire_id, scale_code, code)
 );
 
-create trigger scales_locked    before update or delete on public.questionnaire_scales
+create trigger scales_locked    before insert or update or delete on public.questionnaire_scales
   for each row execute function private.forbid_change_when_used();
-create trigger questions_locked before update or delete on public.questionnaire_questions
+create trigger questions_locked before insert or update or delete on public.questionnaire_questions
   for each row execute function private.forbid_change_when_used();
-create trigger bands_locked     before update or delete on public.score_bands
+create trigger bands_locked     before insert or update or delete on public.score_bands
   for each row execute function private.forbid_change_when_used();
 
 -- ---------------------------------------------------------------------
 --  3. Zapis wyniku — jedyna droga
 -- ---------------------------------------------------------------------
--- RPC: supabase.rpc('submit_test', { p_code: 'who5', p_answers: [3, 4, 2, 3, 4] })
+-- RPC: supabase.rpc('submit_test', { p_code: 'who5', p_answers: [3, 4, 2, 3, 4], p_questionnaire_id: 'who5-v1' })
 --   p_answers: odpowiedzi w kolejności pytań (position 1..n), w skali kwestionariusza, bez odwracania.
+--   p_questionnaire_id: wersja, której pytania telefon pokazał. Gdy w międzyczasie włączono nową wersję, zapis jest
+--   odrzucany (version_changed), żeby odpowiedzi nie zostały policzone kluczem innych pytań.
 -- Zwraca to, co ekran wyniku ma pokazać:
 --   { session_id, questionnaire_id, completed_at, support_shown, next_available_on,
 --     scores: [{ scale, name, raw, scaled, band, title, body, shows_support }] }
--- Błędy (pole message): not_authenticated · unknown_test · consent_required · too_soon · invalid_answers.
-create or replace function public.submit_test(p_code text, p_answers smallint[]) returns jsonb
+-- Błędy (pole message): not_authenticated · unknown_test · version_changed · consent_required · too_soon · invalid_answers.
+create or replace function public.submit_test(p_code text, p_answers smallint[], p_questionnaire_id text default null) returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   uid       uuid := auth.uid();
@@ -230,6 +240,15 @@ begin
     raise exception 'unknown_test' using detail = format('Nie ma aktywnego testu „%s”.', p_code);
   end if;
 
+  if p_questionnaire_id is not null and p_questionnaire_id <> q.id then
+    raise exception 'version_changed' using detail = 'Test został zaktualizowany. Odśwież pytania i wypełnij go jeszcze raz.';
+  end if;
+
+  -- blokada na wierszach zgody: wycofanie zgody czeka, aż zapis się skończy (i wtedy go usuwa), a zapis zaczęty
+  -- po wycofaniu już zgody nie zobaczy
+  perform 1 from public.user_consents c
+    where c.user_id = uid and c.kind in ('health_data', 'guardian') and c.withdrawn_at is null and c.superseded_at is null
+    for share;
   if not private.has_consent(uid, 'health_data') then
     raise exception 'consent_required'
       using detail = 'Do zapisania wyniku potrzebna jest zgoda na przetwarzanie danych o samopoczuciu (poniżej 16 lat także zgoda opiekuna).';
@@ -335,9 +354,9 @@ begin
       and (p_session is null or s.id = p_session)
       and (p_code is null or s.questionnaire_id in (select x.id from public.questionnaires x where x.code = p_code));
   get diagnostics n = row_count;
-  if n > 0 then
+  if n > 0 then                                           -- ślad bez liczb i bez nazwy testu: sam fakt i zakres
     perform private.log_privacy_event(uid, 'test_history_deleted',
-      jsonb_build_object('sessions', n, 'scope', case when p_session is not null then 'one' when p_code is not null then p_code else 'all' end));
+      jsonb_build_object('scope', case when p_session is not null then 'one' when p_code is not null then 'test' else 'all' end));
   end if;
   return n;
 end $$;
@@ -350,12 +369,12 @@ begin
   delete from public.test_sessions s where s.user_id = new.user_id;
   get diagnostics n = row_count;
   if n > 0 then
-    perform private.log_privacy_event(new.user_id, 'test_history_deleted', jsonb_build_object('sessions', n, 'scope', 'consent_withdrawn'));
+    perform private.log_privacy_event(new.user_id, 'test_history_deleted', jsonb_build_object('scope', 'consent_withdrawn'));
   end if;
   return null;
 end $$;
 create trigger user_consents_erase_tests after update of withdrawn_at on public.user_consents
-  for each row when (new.kind = 'health_data' and old.withdrawn_at is null and new.withdrawn_at is not null
+  for each row when (new.kind in ('health_data', 'guardian') and old.withdrawn_at is null and new.withdrawn_at is not null
                      and new.user_id is not null)
   execute function private.erase_test_data();
 
@@ -396,7 +415,7 @@ join public.score_bands b on b.questionnaire_id = sc.questionnaire_id and b.scal
 revoke all on public.questionnaires, public.questionnaire_scales, public.questionnaire_questions, public.score_bands,
               public.test_sessions, public.test_answers, public.test_scores,
               public.test_overview, public.test_history from public, anon, authenticated;
-revoke all on function public.submit_test(text, smallint[]), public.delete_test_results(uuid, text) from public, anon;
+revoke all on function public.submit_test(text, smallint[], text), public.delete_test_results(uuid, text) from public, anon;
 
 alter table public.questionnaires          enable row level security;
 alter table public.questionnaire_scales    enable row level security;
@@ -431,7 +450,7 @@ create policy own_select on public.test_scores   for select to authenticated
   using (exists (select 1 from public.test_sessions s where s.id = session_id and s.user_id = (select auth.uid())));
 
 grant select on public.test_overview, public.test_history to authenticated;
-grant execute on function public.submit_test(text, smallint[])        to authenticated;
+grant execute on function public.submit_test(text, smallint[], text)  to authenticated;
 grant execute on function public.delete_test_results(uuid, text)      to authenticated;
 
 grant all on public.questionnaires, public.questionnaire_scales, public.questionnaire_questions, public.score_bands,

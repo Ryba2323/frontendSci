@@ -149,7 +149,7 @@
 
   const stepNote = () => `
     <h2 class="ci-q">Chcesz coś dopisać?</h2>
-    <p class="ci-hint">Kilka słów o dniu — co pomogło, co było trudne. Widzisz to tylko Ty.</p>
+    <p class="ci-hint">Kilka słów o dniu — co pomogło, co było trudne. Inni tego nie zobaczą.</p>
     <div class="ci-textwrap">
       <textarea class="ci-text" id="ci-note" rows="5" maxlength="${NOTE_MAX}" placeholder="Dziś…" aria-label="Notatka do dzisiejszego wpisu"></textarea>
       <span class="ci-chars" id="ci-chars" aria-hidden="true">0/${NOTE_MAX}</span>

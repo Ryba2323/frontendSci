@@ -22,3 +22,24 @@ insert into public.checkin_fields (code, kind, name, position, min_value, max_va
 on conflict (code) do update
   set kind = excluded.kind, name = excluded.name, position = excluded.position,
       min_value = excluded.min_value, max_value = excluded.max_value, is_active = true;
+
+-- czynniki silnika: ton i to, czy wolno zacząć z nich tygodniową próbę
+insert into public.insight_factors (code, tone, can_try) values
+  ('sen_dlugi', 'pomaga', true),
+  ('spac_wczesnie', 'pomaga', true),
+  ('sen_dobry', 'zauwazone', false),
+  ('ruch', 'pomaga', true),
+  ('natura', 'pomaga', true),
+  ('jedzenie', 'zauwazone', false),
+  ('przyjaciele', 'pomaga', true),
+  ('rodzina', 'zauwazone', false),
+  ('rozmowa', 'pomaga', true),
+  ('dla_kogos', 'pomaga', true),
+  ('hobby', 'pomaga', true),
+  ('odpoczynek', 'pomaga', true),
+  ('przygotowanie', 'pomaga', true),
+  ('nauka_dobrze', 'zauwazone', false),
+  ('nauka_ciezko', 'zauwazone', false),
+  ('rodzina_ciezko', 'wsparcie', false),
+  ('przyjaciele_ciezko', 'wsparcie', false)
+on conflict (code) do update set tone = excluded.tone, can_try = excluded.can_try;

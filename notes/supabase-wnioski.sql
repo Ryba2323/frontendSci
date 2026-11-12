@@ -44,6 +44,15 @@ create table public.checkin_tags (
 );
 create index on public.checkin_tags (field_code);
 
+-- Czynniki, które zna silnik (generowane z js/wnioski-dane.js): ton i to, czy wolno zacząć z nich tygodniową próbę.
+-- Dzięki temu baza odrzuci wniosek o czymś, czego nie analizujemy (np. miłość), i próbę z czegoś, co nie jest radą.
+create table public.insight_factors (
+  code       text primary key check (code ~ '^[a-z_]+$'),
+  tone       text not null check (tone in ('pomaga', 'zauwazone', 'wsparcie')),
+  can_try    boolean not null default false,
+  check (not can_try or tone = 'pomaga')
+);
+
 -- wartość musi mieścić się w zakresie pola (pilnuje też zapisów serwera, nie tylko save_checkin)
 create or replace function private.checkin_tags_guard() returns trigger
 language plpgsql set search_path = '' as $$
@@ -90,6 +99,10 @@ begin
   if uid is null then
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
+  -- blokada na wierszach zgody: wycofanie zgody czeka na koniec zapisu (i wtedy go usuwa)
+  perform 1 from public.user_consents c
+    where c.user_id = uid and c.kind in ('health_data', 'guardian') and c.withdrawn_at is null and c.superseded_at is null
+    for share;
   if not private.has_consent(uid, 'health_data') then
     raise exception 'consent_required'
       using detail = 'Do zapisania podlewania potrzebna jest zgoda na dane o samopoczuciu (poniżej 16 lat także zgoda opiekuna).';
@@ -97,8 +110,9 @@ begin
 
   select coalesce((select p.timezone from public.profiles p where p.id = uid), 'Europe/Warsaw') into tz;
   now_l := now() at time zone tz;
-  -- dziś albo do 6 dni wstecz (uzupełnienie wpisu); nigdy w przyszłość
-  if p_day is null or p_day > now_l::date or p_day < now_l::date - 6 then
+  -- dziś albo do 6 dni wstecz (uzupełnienie wpisu); nigdy w przyszłość. Strefę ustawia sama osoba, więc dodatkowo
+  -- dzień nie może wyprzedzać daty UTC o więcej niż jeden (żadna strefa nie daje więcej).
+  if p_day is null or p_day > now_l::date or p_day < now_l::date - 6 or p_day > (now() at time zone 'UTC')::date + 1 then
     raise exception 'invalid_day' using detail = 'Podlewanie można zapisać za dziś albo najwyżej 6 dni wstecz.';
   end if;
 
@@ -109,7 +123,7 @@ begin
   select t.key into bad
     from jsonb_each(p_tags) t
     left join public.checkin_fields f on f.code = t.key and f.is_active
-    where f.code is null or jsonb_typeof(t.value) <> 'number' or (t.value #>> '{}') !~ '^-?[0-9]+$'
+    where f.code is null or jsonb_typeof(t.value) <> 'number' or (t.value #>> '{}') !~ '^-?[0-9]{1,3}$'
        or (t.value #>> '{}')::int < f.min_value or (t.value #>> '{}')::int > f.max_value
     limit 1;
   if bad is not null then
@@ -117,7 +131,8 @@ begin
   end if;
 
   insert into public.daily_checkins as c (user_id, day, mood, sleep_hours, sleep_quality, bedtime, note, entry_hour)
-    values (uid, p_day, p_mood, p_sleep_hours, p_sleep_quality, p_bedtime, nullif(trim(p_note), ''), extract(hour from now_l)::smallint)
+    values (uid, p_day, p_mood, p_sleep_hours, p_sleep_quality, p_bedtime, nullif(trim(p_note), ''),
+            case when p_day = now_l::date then extract(hour from now_l)::smallint end)   -- wpis uzupełniany po fakcie nie ma godziny
   on conflict (user_id, day) do update
     set mood = excluded.mood, sleep_hours = excluded.sleep_hours, sleep_quality = excluded.sleep_quality,
         bedtime = excluded.bedtime, note = excluded.note                 -- entry_hour zostaje z pierwszego zapisu
@@ -130,6 +145,23 @@ begin
   insert into public.insight_runs (user_id) values (uid)
   on conflict (user_id) do update set needs_run = true;
   return cid;
+end $$;
+
+-- RPC: supabase.rpc('delete_checkin', { p_day: '2026-11-12' }) — usuwa podlewanie z danego dnia (ze znacznikami)
+-- i zgłasza wnioski do przeliczenia. Zwraca true, gdy było co usunąć.
+create or replace function public.delete_checkin(p_day date) returns boolean
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid(); n int;
+begin
+  if uid is null then
+    raise exception 'not_authenticated' using errcode = '28000';
+  end if;
+  delete from public.daily_checkins c where c.user_id = uid and c.day = p_day;
+  get diagnostics n = row_count;
+  if n > 0 then
+    insert into public.insight_runs (user_id) values (uid) on conflict (user_id) do update set needs_run = true;
+  end if;
+  return n > 0;
 end $$;
 
 -- Dni w kształcie, którego oczekuje silnik (js/wnioski.js): { day, mood, sleep_hours, sleep_quality, bedtime, entry_hour, areas, acts }
@@ -152,7 +184,7 @@ create table public.insights (
   key             text not null check (key ~ '^[a-z_]+(:[a-z0-9_]+)?$'),     -- stała tożsamość: 'czynnik:ruch', 'dzien:0', 'trend:dol', 'powrot'
   kind            text not null check (kind in ('czynnik', 'dzien_tygodnia', 'trend', 'powrot')),
   tone            text not null check (tone in ('pomaga', 'zauwazone', 'wsparcie')),
-  factor          text,                                                      -- kod czynnika z katalogu silnika (dla kind = 'czynnik')
+  factor          text references public.insight_factors(code),              -- kod czynnika z katalogu silnika (dla kind = 'czynnik')
   confidence      smallint not null check (confidence between 1 and 3),      -- 1 wstępnie · 2 dość wyraźnie · 3 wyraźnie
   effect          numeric(4,2) not null,                                     -- różnica nastroju w punktach (ze znakiem)
   n_days          smallint not null check (n_days > 0),                      -- z ilu dni policzono
@@ -169,7 +201,9 @@ create table public.insights (
   feedback_at     timestamptz,
   unique (user_id, key),
   check ((feedback is null) = (feedback_at is null)),
-  check ((tone = 'wsparcie') <= ((details ? 'sprobuj') is false or details->>'sprobuj' is null))   -- trudne sprawy nigdy nie mają rady
+  check ((kind = 'czynnik') = (factor is not null)),
+  check (tone <> 'wsparcie' or not (details ? 'sprobuj' or details ? 'proba')),   -- trudne sprawy nigdy nie mają rady ani próby
+  check (pg_column_size(details) < 8000)
 );
 comment on table public.insights is 'Wnioski policzone silnikiem js/wnioski.js. Zapisuje wyłącznie replace_insights() (service_role). To dane o zdrowiu.';
 create index on public.insights (user_id, status);
@@ -183,12 +217,21 @@ returns int
 language plpgsql security definer set search_path = '' as $$
 declare n int;
 begin
+  perform 1 from public.user_consents c
+    where c.user_id = p_user and c.kind in ('health_data', 'guardian') and c.withdrawn_at is null and c.superseded_at is null
+    for share;
   if not private.has_consent(p_user, 'health_data') then
     delete from public.insights i where i.user_id = p_user;
     return 0;
   end if;
   if p_insights is null or jsonb_typeof(p_insights) <> 'array' then
     raise exception 'invalid_input' using detail = 'p_insights musi być tablicą.';
+  end if;
+  -- czynnik musi być w katalogu i mieć ton z katalogu: silnik w innej wersji nie przemyci rady przy trudnej sprawie
+  if exists (select 1 from jsonb_array_elements(p_insights) e
+             left join public.insight_factors f on f.code = e->>'czynnik'
+             where e->>'typ' = 'czynnik' and (f.code is null or f.tone <> e->>'ton')) then
+    raise exception 'invalid_input' using detail = 'Nieznany czynnik albo ton niezgodny z katalogiem (insight_factors).';
   end if;
 
   update public.insights i set status = 'expired'
@@ -201,7 +244,8 @@ begin
            (e->>'n')::smallint, (e->>'n1')::smallint, (e->>'n0')::smallint, e->>'tytul', e->>'zdanie',
            jsonb_strip_nulls(jsonb_build_object('tag', e->'tag', 'kat', e->'kat', 'wykres', e->'wykres', 'powody', e->'powody',
                                                 'sprobuj', case when e->>'ton' = 'wsparcie' then null else e->'sprobuj' end,
-                                                'wsparcie', e->'wsparcie', 'proba', e->'proba')),
+                                                'wsparcie', e->'wsparcie',
+                                                'proba', case when e->>'ton' = 'pomaga' then e->'proba' end)),
            p_engine_version
     from jsonb_array_elements(p_insights) e
   on conflict (user_id, key) do update
@@ -252,13 +296,13 @@ where i.user_id = (select auth.uid()) and i.status = 'active'
 create table public.insight_experiments (
   id           uuid primary key default gen_random_uuid(),
   user_id      uuid not null references auth.users(id) on delete cascade,
-  insight_key  text not null,                                    -- z czego wyszła próba: 'czynnik:ruch', 'obserwacja:ruch', 'ogolne:ruch'
-  factor       text not null,                                    -- kod czynnika z silnika
+  insight_key  text not null check (insight_key ~ '^[a-z_]+:[a-z0-9_]+$' and char_length(insight_key) <= 60),   -- 'czynnik:ruch', 'obserwacja:ruch', 'ogolne:ruch'
+  factor       text not null references public.insight_factors(code),   -- kod czynnika z silnika
   times        smallint not null check (times between 1 and 7),  -- ile razy w tygodniu (propozycja, nie zobowiązanie)
   started_on   date not null,
   ends_on      date generated always as (started_on + 6) stored,
   status       text not null default 'active' check (status in ('active', 'done', 'stopped')),
-  result       jsonb,                                            -- { typ: 'pomoglo' | 'bez_roznicy' | 'za_malo' | 'bez_porownania', zrobione, roznica }
+  result       jsonb check (result is null or (pg_column_size(result) < 2000 and result->>'typ' in ('lepsze_dni', 'bez_roznicy', 'za_malo', 'bez_porownania'))),   -- { typ, zrobione }
   created_at   timestamptz not null default now(),
   finished_at  timestamptz,
   check ((status = 'active') = (finished_at is null))
@@ -277,16 +321,26 @@ begin
   if uid is null then
     raise exception 'not_authenticated' using errcode = '28000';
   end if;
+  perform 1 from public.user_consents c
+    where c.user_id = uid and c.kind in ('health_data', 'guardian') and c.withdrawn_at is null and c.superseded_at is null
+    for share;
   if not private.has_consent(uid, 'health_data') then
     raise exception 'consent_required' using detail = 'Próba korzysta z danych o samopoczuciu.';
+  end if;
+  if not exists (select 1 from public.insight_factors f where f.code = p_factor and f.can_try) then
+    raise exception 'invalid_input' using detail = 'Z tego czynnika nie da się zacząć próby.';
   end if;
   if exists (select 1 from public.insight_experiments x where x.user_id = uid and x.status = 'active') then
     raise exception 'experiment_active' using detail = 'Jedna próba naraz. Zakończ bieżącą, żeby zacząć nową.';
   end if;
-  insert into public.insight_experiments (user_id, insight_key, factor, times, started_on)
-    values (uid, p_insight_key, p_factor, p_times,
-            (now() at time zone coalesce((select p.timezone from public.profiles p where p.id = uid), 'Europe/Warsaw'))::date)
-    returning id into eid;
+  begin
+    insert into public.insight_experiments (user_id, insight_key, factor, times, started_on)
+      values (uid, p_insight_key, p_factor, p_times,
+              (now() at time zone coalesce((select p.timezone from public.profiles p where p.id = uid), 'Europe/Warsaw'))::date)
+      returning id into eid;
+  exception when unique_violation then                    -- dwa żądania naraz
+    raise exception 'experiment_active' using detail = 'Jedna próba naraz. Zakończ bieżącą, żeby zacząć nową.';
+  end;
   return eid;
 end $$;
 
@@ -320,36 +374,36 @@ begin
   delete from public.insight_experiments x where x.user_id = new.user_id;
   get diagnostics n_e = row_count;
   delete from public.insight_runs r where r.user_id = new.user_id;
-  if n_i + n_e > 0 then
-    perform private.log_privacy_event(new.user_id, 'health_data_erased', jsonb_build_object('insights', n_i, 'experiments', n_e));
-  end if;
-  return null;
+  return null;                                            -- ślad zostawia wyzwalacz z supabase-schema.sql (jeden na wycofanie)
 end $$;
 create trigger user_consents_erase_insights after update of withdrawn_at on public.user_consents
-  for each row when (new.kind = 'health_data' and old.withdrawn_at is null and new.withdrawn_at is not null
+  for each row when (new.kind in ('health_data', 'guardian') and old.withdrawn_at is null and new.withdrawn_at is not null
                      and new.user_id is not null)
   execute function private.erase_insight_data();
 
 -- =====================================================================
 --  UPRAWNIENIA I RLS
 -- =====================================================================
-revoke all on public.checkin_fields, public.checkin_tags, public.insight_runs, public.insights, public.insight_experiments,
-              public.checkin_days, public.my_insights from public, anon, authenticated;
+revoke all on public.checkin_fields, public.checkin_tags, public.insight_factors, public.insight_runs, public.insights,
+              public.insight_experiments, public.checkin_days, public.my_insights from public, anon, authenticated;
 revoke all on function public.save_checkin(date, smallint, numeric, smallint, smallint, jsonb, text),
                        public.replace_insights(uuid, smallint, smallint, jsonb),
                        public.set_insight_feedback(uuid, text),
                        public.start_experiment(text, text, smallint),
-                       public.finish_experiment(uuid, text, jsonb) from public, anon, authenticated;
+                       public.finish_experiment(uuid, text, jsonb),
+                       public.delete_checkin(date) from public, anon, authenticated;
 
 alter table public.checkin_fields      enable row level security;
 alter table public.checkin_tags        enable row level security;
+alter table public.insight_factors     enable row level security;
 alter table public.insight_runs        enable row level security;
 alter table public.insights            enable row level security;
 alter table public.insight_experiments enable row level security;
 
 -- katalog pól: każdy zalogowany czyta; znaczniki, wnioski i próby: tylko własne, tylko do odczytu
-grant select on public.checkin_fields, public.checkin_tags, public.insights, public.insight_experiments to authenticated;
-create policy read_all   on public.checkin_fields for select to authenticated using (true);
+grant select on public.checkin_fields, public.checkin_tags, public.insight_factors, public.insights, public.insight_experiments to authenticated;
+create policy read_all   on public.checkin_fields  for select to authenticated using (true);
+create policy read_all   on public.insight_factors for select to authenticated using (true);
 create policy own_select on public.checkin_tags   for select to authenticated
   using (exists (select 1 from public.daily_checkins c where c.id = checkin_id and c.user_id = (select auth.uid())));
 create policy own_select on public.insights            for select to authenticated using (user_id = (select auth.uid()));
@@ -358,11 +412,12 @@ create policy own_select on public.insight_experiments for select to authenticat
 
 grant select on public.checkin_days, public.my_insights to authenticated;
 grant execute on function public.save_checkin(date, smallint, numeric, smallint, smallint, jsonb, text) to authenticated;
+grant execute on function public.delete_checkin(date)                    to authenticated;
 grant execute on function public.set_insight_feedback(uuid, text)        to authenticated;
 grant execute on function public.start_experiment(text, text, smallint)  to authenticated;
 grant execute on function public.finish_experiment(uuid, text, jsonb)    to authenticated;
 grant execute on function public.replace_insights(uuid, smallint, smallint, jsonb) to service_role;
 
-grant all on public.checkin_fields, public.checkin_tags, public.insight_runs, public.insights, public.insight_experiments to service_role;
+grant all on public.checkin_fields, public.checkin_tags, public.insight_factors, public.insight_runs, public.insights, public.insight_experiments to service_role;
 grant select on public.checkin_days to service_role;
 grant execute on all functions in schema private to service_role;

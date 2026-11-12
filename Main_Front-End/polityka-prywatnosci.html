@@ -52,7 +52,8 @@
     <ul>
       <li>Zbieramy tylko to, czego aplikacja potrzebuje do działania. <b>Nie sprzedajemy danych i nie pokazujemy reklam.</b></li>
       <li>Wpisy o nastroju i wyniki testów to dane o zdrowiu. Zapisujemy je <b>tylko za Twoją osobną zgodą</b>, którą cofniesz jednym przyciskiem.</li>
-      <li>Skrytka jest szyfrowana na Twoim telefonie. <b>My nie możemy jej przeczytać.</b></li>
+      <li>Skrytka ma być szyfrowana na Twoim telefonie, tak żebyśmy nie mogli jej przeczytać. <mark class="todo">[w wersji pokazowej jeszcze nie jest; przed startem trzeba opisać, co się dzieje z kluczem przy zmianie telefonu]</mark></li>
+      <li>Z Twoich wpisów program sam wylicza <b>wnioski</b> („w dni z ruchem bywa Ci lepiej”). Widzisz je tylko Ty w aplikacji i nikt na ich podstawie o niczym nie decyduje.</li>
       <li>Na blogu występujesz pod roślinnym pseudonimem. Inni nie widzą, kim jesteś.</li>
       <li>Możesz pobrać kopię swoich danych, usunąć historię testów albo całe konto: <b>Konto i prywatność</b> w aplikacji.</li>
     </ul>
@@ -67,6 +68,7 @@
         <li><a href="#zgoda">Zgoda na dane o samopoczuciu</a></li>
         <li><a href="#opiekun">Jeśli masz mniej niż 16 lat</a></li>
         <li><a href="#testy">Testy</a></li>
+        <li><a href="#wnioski">Wnioski, czyli automatyczna analiza wpisów</a></li>
         <li><a href="#odbiorcy">Komu przekazujemy dane</a></li>
         <li><a href="#czas">Jak długo przechowujemy dane</a></li>
         <li><a href="#prawa">Twoje prawa</a></li>
@@ -104,8 +106,8 @@
             <td data-th="Podstawa">Obowiązek prawny (art. 8 i art. 6 ust. 1 lit. c RODO).</td>
           </tr>
           <tr>
-            <th scope="row">Dane o samopoczuciu: podlewania (nastrój, sen, co było ważne, notatka), wyniki testów, wnioski w Trackerze</th>
-            <td data-th="Po co">Twoja historia, wykresy i podpowiedzi. Do niczego więcej.</td>
+            <th scope="row">Dane o samopoczuciu: podlewania (nastrój, godziny i jakość snu, pora pójścia spać, „co dziś było”, jak poszło w domu, ze znajomymi, z nauką itd., notatka, godzina wpisu), wyniki testów, wnioski i eksperymenty w Trackerze, Twoje opinie o wnioskach, rozmowy z Asystentem</th>
+            <td data-th="Po co">Twoja historia, wykresy, wnioski i podpowiedzi. Do niczego więcej.</td>
             <td data-th="Podstawa">Twoja wyraźna zgoda (art. 9 ust. 2 lit. a i art. 6 ust. 1 lit. a RODO).</td>
           </tr>
           <tr>
@@ -130,11 +132,11 @@
           </tr>
           <tr>
             <th scope="row">Rozmowy z Asystentem Wsparcia</th>
-            <td data-th="Po co">Udzielenie odpowiedzi. Asystent to program, nie człowiek.</td>
-            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b RODO). <mark class="todo">[do sprawdzenia: zgoda, jeśli rozmowy będą traktowane jako dane o zdrowiu]</mark></td>
+            <td data-th="Po co">Udzielenie odpowiedzi. Asystent to program, nie człowiek. Rozmowy mówią o samopoczuciu, więc znikają razem z wycofaniem zgody.</td>
+            <td data-th="Podstawa">Twoja wyraźna zgoda, ta sama co wyżej. <mark class="todo">[do potwierdzenia przez prawnika; do ustalenia, jak długo rozmowy są przechowywane]</mark></td>
           </tr>
           <tr>
-            <th scope="row">Dowód zgód: rodzaj zgody, wersja dokumentu, data, adres IP</th>
+            <th scope="row">Dowód zgód: rodzaj zgody, wersja dokumentu, data, adres IP, rodzaj przeglądarki</th>
             <td data-th="Po co">Żebyśmy umieli wykazać, że zgoda została udzielona i kiedy ją wycofano.</td>
             <td data-th="Podstawa">Obowiązek prawny: rozliczalność (art. 5 ust. 2 i art. 7 ust. 1 RODO).</td>
           </tr>
@@ -152,15 +154,15 @@
       <h2>3. Zgoda na dane o samopoczuciu</h2>
       <p>Wpisy o nastroju i wyniki testów mówią o Twoim zdrowiu. Prawo chroni takie dane szczególnie, dlatego pytamy o nie osobno, przy rejestracji albo przed pierwszym testem. Treść zgody:</p>
       <div class="doc-note">
-        <p>„Zgadzam się, żeby ReLeaf zapisywał moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i podpowiedzi.”</p>
+        <p>„Zgadzam się, żeby ReLeaf zapisywał i automatycznie analizował moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i wnioski o tym, co zwykle idzie w parze z moim nastrojem.”</p>
       </div>
       <h3>Czy muszę się zgodzić?</h3>
       <p>Nie. Zgoda jest dobrowolna. Bez niej nie zapisujemy podlewań ani wyników testów, a reszta aplikacji działa: oddech z roślinką, SOS, Skrytka, słoik, myśl na dziś i blog.</p>
       <h3>Jak wycofać zgodę?</h3>
-      <p>W aplikacji: <b>Konto i prywatność → Dane o samopoczuciu → Wycofaj zgodę</b>. To jedno potwierdzenie, bez tłumaczenia się. Możesz też napisać na adres z punktu 12.</p>
+      <p>W aplikacji: <b>Konto i prywatność → Dane o samopoczuciu → Wycofaj zgodę</b>. To jedno potwierdzenie, bez tłumaczenia się. Możesz też napisać na adres z punktu 13.</p>
       <h3>Co się wtedy stanie?</h3>
       <ul>
-        <li>Od razu usuniemy Twoje podlewania, wyniki testów i wnioski w Trackerze.</li>
+        <li>Od razu usuniemy z bazy Twoje podlewania, wyniki testów, wnioski, eksperymenty i rozmowy z Asystentem. Z kopii zapasowych znikną same po <mark class="todo">[liczba dni]</mark> dniach.</li>
         <li>Roślinka, konto, Skrytka, słoik i bliskie osoby zostają.</li>
         <li>Zgodę możesz dać ponownie, kiedy zechcesz. Usuniętych danych nie da się przywrócić.</li>
       </ul>
@@ -170,7 +172,8 @@
     <section id="opiekun">
       <h2>4. Jeśli masz mniej niż 16 lat</h2>
       <p>ReLeaf jest dla osób, które skończyły 13 lat. Jeśli masz mniej niż 16 lat, na konto i na dane o samopoczuciu musi zgodzić się Twój rodzic lub opiekun. Prosimy Cię o jego adres e-mail i wysyłamy mu krótką wiadomość z linkiem. Dopóki nie potwierdzi, nie zapisujemy danych o Twoim samopoczuciu.</p>
-      <p>Opiekun <b>nie dostaje dostępu</b> do Twoich wpisów, wyników ani Skrytki. Potwierdza tylko, że możesz korzystać z aplikacji. Może też w każdej chwili cofnąć swoją zgodę, pisząc na adres z punktu 12.</p>
+      <p>W aplikacji <b>nie ma konta rodzica ani podglądu</b> Twoich wpisów, wyników czy Skrytki. Opiekun potwierdza tylko, że możemy zapisywać dane o Twoim samopoczuciu. Może też w każdej chwili cofnąć swoją zgodę linkiem z wiadomości, którą od nas dostał. Wtedy usuwamy te same dane, co przy wycofaniu zgody przez Ciebie.</p>
+      <p>Zapisujemy, kiedy opiekun potwierdził zgodę i z jakiego adresu. <mark class="todo">[do uzupełnienia: informacja dla opiekuna o przetwarzaniu jego adresu e-mail]</mark></p>
       <p><mark class="todo">[do sprawdzenia przez prawnika: sposób potwierdzania zgody opiekuna i zakres informacji dla niego]</mark></p>
     </section>
 
@@ -184,11 +187,24 @@
         <li>datę i godzinę,</li>
         <li>informację, na podstawie której zgody zapisaliśmy wynik.</li>
       </ol>
-      <p>Wynik widzisz tylko Ty. Nie podejmujemy na jego podstawie żadnych decyzji o Tobie i nikomu go nie przekazujemy. Pojedynczy wynik albo całą historię usuniesz na zakładce Testy lub w „Konto i prywatność”.</p>
+      <p>Inni użytkownicy nie widzą wyniku. Dostęp techniczny do bazy ma tylko <mark class="todo">[do uzupełnienia: kto, ile osób]</mark>, wyłącznie gdy to konieczne. Nie podejmujemy na podstawie wyniku żadnych decyzji o Tobie i nikomu go nie przekazujemy. Pojedynczy wynik albo całą historię usuniesz na zakładce Testy lub w „Konto i prywatność”.</p>
+    </section>
+
+    <section id="wnioski">
+      <h2>6. Wnioski, czyli automatyczna analiza wpisów</h2>
+      <p>Jeśli zgodzisz się na dane o samopoczuciu, program porównuje Twoje dni z ostatnich 3 miesięcy: te, w których coś było (np. ruch, dłuższy sen, spotkanie ze znajomymi), z tymi, w których tego nie było. Gdy różnica w nastroju się powtarza, pokazuje Ci wniosek w Trackerze.</p>
+      <ul>
+        <li>To <b>automatyczna analiza</b> (w przepisach nazywa się to profilowaniem). Robi ją program, nie człowiek.</li>
+        <li>Wnioski widzisz <b>tylko Ty</b>, w aplikacji. Nikt nie podejmuje na ich podstawie żadnych decyzji o Tobie.</li>
+        <li>Wnioski <b>bywają mylne</b>, zwłaszcza te podpisane „Wstępnie”. Nie mówią, co jest przyczyną, i nie są diagnozą.</li>
+        <li>Każdy wniosek możesz schować („Nie pasuje”). Możesz też przez tydzień sprawdzać jedną rzecz („eksperyment”); zapisujemy wtedy, co sprawdzasz i od kiedy.</li>
+        <li>Żeby wyłączyć analizę, wycofaj zgodę na dane o samopoczuciu. <mark class="todo">[do decyzji: osobny przełącznik „bez wniosków”, przy którym podlewania nadal się zapisują]</mark></li>
+      </ul>
+      <p>Zanim zaczniemy sprawdzać na danych prawdziwych osób, czy wnioski są trafne, zapytamy o osobną zgodę albo użyjemy danych, których nie da się z nikim powiązać. <mark class="todo">[do decyzji]</mark></p>
     </section>
 
     <section id="odbiorcy">
-      <h2>6. Komu przekazujemy dane</h2>
+      <h2>7. Komu przekazujemy dane</h2>
       <p>Nie sprzedajemy danych i nie udostępniamy ich reklamodawcom. Korzystamy z firm, które pomagają nam prowadzić aplikację i przetwarzają dane wyłącznie na nasze polecenie:</p>
       <ul>
         <li><b>Supabase</b>: baza danych i logowanie. Serwery we Frankfurcie, w Unii Europejskiej.</li>
@@ -201,18 +217,18 @@
     </section>
 
     <section id="czas">
-      <h2>7. Jak długo przechowujemy dane</h2>
+      <h2>8. Jak długo przechowujemy dane</h2>
       <ul>
         <li><b>Konto i jego zawartość</b>: do usunięcia konta.</li>
         <li><b>Dane o samopoczuciu</b>: do wycofania zgody albo usunięcia konta, zależnie od tego, co nastąpi wcześniej.</li>
         <li><b>Kopie zapasowe</b>: znikają same najpóźniej po <mark class="todo">[do uzupełnienia: liczba dni]</mark> dniach.</li>
-        <li><b>Dowód zgód</b>: po usunięciu konta zostaje bez powiązania z kontem (zamiast e-maila jest jego nieodwracalny skrót) przez <mark class="todo">[do potwierdzenia: 3 lata]</mark>, na wypadek sporu. Potem go usuwamy.</li>
+        <li><b>Dowód zgód</b>: po usunięciu konta zostaje zapis, że i kiedy były zgody, razem z adresem IP. Zamiast e-maila jest jego skrót: nie da się z niego odczytać adresu, ale znając adres, możemy potwierdzić, że zgoda dotyczyła Ciebie. Trzymamy to <mark class="todo">[do potwierdzenia: 3 lata]</mark>, na wypadek sporu, potem usuwamy.</li>
         <li><b>Konta nieużywane</b>: <mark class="todo">[do ustalenia: po jakim czasie pytamy, czy usunąć konto]</mark>.</li>
       </ul>
     </section>
 
     <section id="prawa">
-      <h2>8. Twoje prawa</h2>
+      <h2>9. Twoje prawa</h2>
       <p>Masz prawo do:</p>
       <ul>
         <li><b>dostępu do danych i ich kopii</b>: „Pobierz moje dane” w „Konto i prywatność”,</li>
@@ -227,7 +243,7 @@
     </section>
 
     <section id="bezpieczenstwo">
-      <h2>9. Jak chronimy dane</h2>
+      <h2>10. Jak chronimy dane</h2>
       <ul>
         <li>Połączenie z aplikacją jest szyfrowane, a baza jest zaszyfrowana na dyskach.</li>
         <li>Baza pozwala każdej osobie odczytać wyłącznie własne wiersze.</li>
@@ -239,20 +255,21 @@
     </section>
 
     <section id="kryzys">
-      <h2>10. Gdy jest naprawdę ciężko</h2>
+      <h2>11. Gdy jest naprawdę ciężko</h2>
       <div class="doc-note is-warm">
-        <p>ReLeaf nie jest pomocą w nagłych wypadkach. Nikt nie czyta Twoich wpisów na bieżąco i <b>nie zawiadamiamy nikogo automatycznie</b>. Jeśli Ty albo ktoś obok jest w niebezpieczeństwie, zadzwoń pod <a href="tel:112">112</a>. Gdy chcesz porozmawiać, <a href="tel:116111">116 111</a> działa bezpłatnie, całą dobę.</p>
+        <p>ReLeaf nie jest pomocą w nagłych wypadkach. Nikt nie czyta Twoich wpisów na bieżąco i <b>program sam nikogo nie zawiadamia</b>. Jeśli Ty albo ktoś obok jest w niebezpieczeństwie, zadzwoń pod <a href="tel:112">112</a>. Gdy chcesz porozmawiać, <a href="tel:116111">116 111</a> działa bezpłatnie, całą dobę.</p>
       </div>
-      <p>Gdy w tekście na blog pojawią się słowa wskazujące na kryzys, nie publikujemy wpisu i od razu pokazujemy numery pomocowe. Robi to program.</p>
+      <p>Gdy w tekście na blog pojawią się słowa wskazujące na kryzys, nie publikujemy wpisu i od razu pokazujemy numery pomocowe. Robi to program. <mark class="todo">[do decyzji: takiego tekstu nie zapisujemy na serwerze]</mark></p>
+      <p>Wyjątek: gdy człowiek z zespołu, sprawdzając zgłoszenie na blogu, zobaczy, że komuś grozi poważne niebezpieczeństwo albo doszło do przestępstwa, prawo może nas zobowiązać do zawiadomienia służb. <mark class="todo">[do potwierdzenia przez prawnika]</mark></p>
     </section>
 
     <section id="zmiany">
-      <h2>11. Zmiany tej polityki</h2>
+      <h2>12. Zmiany tej polityki</h2>
       <p>Każda wersja ma numer i datę. O ważnych zmianach powiemy w aplikacji, a jeśli zmieni się treść zgody, poprosimy Cię o nią ponownie. Twoje dotychczasowe dane wtedy nie znikają.</p>
     </section>
 
     <section id="kontakt">
-      <h2>12. Kontakt</h2>
+      <h2>13. Kontakt</h2>
       <p>Pytania o dane i prywatność: <mark class="todo">[do uzupełnienia: e-mail kontaktowy]</mark>.</p>
     </section>
   </article>

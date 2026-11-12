@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const { AREAS, ACTS } = require('../../Main_Front-End/js/wnioski-dane.js');
+const { AREAS, ACTS, CZYNNIKI } = require('../../Main_Front-End/js/wnioski-dane.js');
 const OUT = path.join(__dirname, '../../notes/supabase-wnioski-dane.sql');
 const s = v => `'${String(v).replace(/'/g, "''")}'`;
 
@@ -31,6 +31,11 @@ const sql = [
   '  set kind = excluded.kind, name = excluded.name, position = excluded.position,',
   '      min_value = excluded.min_value, max_value = excluded.max_value, is_active = true;',
   '',
+  '-- czynniki silnika: ton i to, czy wolno zacząć z nich tygodniową próbę',
+  'insert into public.insight_factors (code, tone, can_try) values',
+  CZYNNIKI.map(f => `  (${s(f.code)}, ${s(f.tone)}, ${f.proba ? 'true' : 'false'})`).join(',\n'),
+  'on conflict (code) do update set tone = excluded.tone, can_try = excluded.can_try;',
+  '',
 ].join('\n');
 
 if (process.argv.includes('--sprawdz')) {
@@ -42,5 +47,5 @@ if (process.argv.includes('--sprawdz')) {
   console.log('supabase-wnioski-dane.sql zgodny z wnioski-dane.js');
 } else {
   fs.writeFileSync(OUT, sql);
-  console.log(`Zapisano ${path.relative(process.cwd(), OUT)} (${rows.length} pól)`);
+  console.log(`Zapisano ${path.relative(process.cwd(), OUT)} (${rows.length} pól, ${CZYNNIKI.length} czynników)`);
 }

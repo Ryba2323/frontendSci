@@ -39,8 +39,10 @@
     privacy: { version: '0.1', title: 'Polityka prywatności', url: 'polityka-prywatnosci.html' },
     health_data: {
       version: '0.1', title: 'Zgoda na dane o samopoczuciu', url: 'polityka-prywatnosci.html#zgoda',
-      // TREŚĆ ROBOCZA — przed prawdziwymi kontami sprawdza ją prawnik (notes/CLAUDE.md)
-      text: 'Zgadzam się, żeby ReLeaf zapisywał moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i podpowiedzi.',
+      // TREŚĆ ROBOCZA — przed prawdziwymi kontami sprawdza ją prawnik (notes/CLAUDE.md).
+      // Ta sama treść MUSI być w rejestracja.html (pole #health) i w polityka-prywatnosci.html (#zgoda):
+      // dowód zgody wskazuje wersję dokumentu, więc osoba musi widzieć wszędzie to samo zdanie.
+      text: 'Zgadzam się, żeby ReLeaf zapisywał i automatycznie analizował moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i wnioski o tym, co zwykle idzie w parze z moim nastrojem.',
       note: 'To dane o zdrowiu, dlatego pytamy osobno. Zgodę cofniesz w każdej chwili w „Konto i prywatność” — wtedy od razu usuniemy te dane.',
     },
     guardian: { version: '0.1', title: 'Zgoda opiekuna', url: 'polityka-prywatnosci.html#opiekun' },

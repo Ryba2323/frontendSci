@@ -28,9 +28,9 @@ insert into public.questionnaire_questions (questionnaire_id, position, scale_co
 
 insert into public.score_bands (questionnaire_id, scale_code, code, scaled_range, title, body, shows_support) values
   ('who5-v1', 'total', 'support', numrange(0, 29, '[)'), 'To były ciężkie dwa tygodnie',
-   'Dobrze, że to sprawdzasz. Taki wynik to sygnał, żeby nie zostawać z tym w pojedynkę. Porozmawiaj z kimś zaufanym albo zadzwoń pod 116 111 — bezpłatnie, o każdej porze.', true),
+   'Dobrze, że to sprawdzasz. Taki wynik to sygnał, żeby nie zostawać z tym w pojedynkę. Powiedz o tym dorosłemu, któremu ufasz (rodzic, pedagog albo psycholog w szkole, lekarz), albo zadzwoń pod 116 111 — bezpłatnie, o każdej porze.', true),
   ('who5-v1', 'total', 'lower', numrange(29, 50, '[)'), 'Ostatnio jest Ci trudniej',
-   'Ostatnie dwa tygodnie były dla Ciebie cięższe. To się zdarza. Zadbaj o podstawy: sen, ruch, chwila z kimś bliskim. Jeśli tak zostanie na dłużej, porozmawiaj z kimś zaufanym.', false),
+   'Ostatnie dwa tygodnie były dla Ciebie cięższe. To się zdarza. Wielu osobom pomagają wtedy sen, ruch i chwila z kimś bliskim. Jeśli tak zostanie na dłużej, porozmawiaj z kimś zaufanym.', false),
   ('who5-v1', 'total', 'ok', numrange(50, 100, '[]'), 'Ostatnio jest Ci całkiem dobrze',
    'W ostatnich dwóch tygodniach było u Ciebie sporo dobrego samopoczucia. Warto zauważyć, co Ci w tym pomaga.', false);
 
@@ -51,8 +51,8 @@ insert into public.questionnaire_scales (questionnaire_id, code, position, name,
   ('ipip20-v1', 'extraversion', 1, 'Ekstrawersja', 'cisza i małe grono', 'ludzie i rozmowy'),
   ('ipip20-v1', 'agreeableness', 2, 'Ugodowość', 'własne zdanie', 'troska o innych'),
   ('ipip20-v1', 'conscientiousness', 3, 'Sumienność', 'spontanicznie', 'według planu'),
-  ('ipip20-v1', 'stability', 4, 'Stabilność emocjonalna', 'mocne emocje', 'spokój'),
-  ('ipip20-v1', 'intellect', 5, 'Intelekt', 'konkret', 'wyobraźnia');
+  ('ipip20-v1', 'stability', 4, 'Emocje', 'mocne emocje', 'spokój'),
+  ('ipip20-v1', 'intellect', 5, 'Wyobraźnia', 'konkret', 'wyobraźnia');
 
 insert into public.questionnaire_questions (questionnaire_id, position, scale_code, is_reversed, source_item, text_m, text_f, text_n) values
   ('ipip20-v1', 1, 'extraversion', false, '1', 'Jestem duszą towarzystwa', 'Jestem duszą towarzystwa', 'Jestem duszą towarzystwa'),
@@ -96,7 +96,7 @@ insert into public.score_bands (questionnaire_id, scale_code, code, scaled_range
   ('ipip20-v1', 'conscientiousness', 'high', numrange(67, 100, '[]'), 'Lubisz mieć poukładane',
    'Plan, porządek i sprawy załatwione na czas dają Ci spokój.', false),
   ('ipip20-v1', 'stability', 'low', numrange(0, 34, '[)'), 'Mocno przeżywasz',
-   'Emocje bywają u Ciebie silne i zmienne, a zmartwienia potrafią wracać. To wrażliwość, nie wada. Warto mieć swoje sposoby na uspokojenie.', false),
+   'Emocje bywają u Ciebie silne i potrafią się zmieniać. Jeśli ostatnio jest Ci z tym ciężko, zajrzyj do testu samopoczucia albo pogadaj z kimś zaufanym.', false),
   ('ipip20-v1', 'stability', 'mid', numrange(34, 67, '[)'), 'Raz spokojnie, raz burzliwie',
    'Zwykle trzymasz równowagę, choć trudniejsze chwile potrafią Cię poruszyć.', false),
   ('ipip20-v1', 'stability', 'high', numrange(67, 100, '[]'), 'Trudno wytrącić Cię z równowagi',

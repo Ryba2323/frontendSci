@@ -52,10 +52,10 @@
       bands: [
         { code: 'support', od: 0, wsparcie: true,
           title: 'To były ciężkie dwa tygodnie',
-          body: 'Dobrze, że to sprawdzasz. Taki wynik to sygnał, żeby nie zostawać z tym w pojedynkę. Porozmawiaj z kimś zaufanym albo zadzwoń pod 116 111 — bezpłatnie, o każdej porze.' },
+          body: 'Dobrze, że to sprawdzasz. Taki wynik to sygnał, żeby nie zostawać z tym w pojedynkę. Powiedz o tym dorosłemu, któremu ufasz (rodzic, pedagog albo psycholog w szkole, lekarz), albo zadzwoń pod 116 111 — bezpłatnie, o każdej porze.' },
         { code: 'lower', od: 29,
           title: 'Ostatnio jest Ci trudniej',
-          body: 'Ostatnie dwa tygodnie były dla Ciebie cięższe. To się zdarza. Zadbaj o podstawy: sen, ruch, chwila z kimś bliskim. Jeśli tak zostanie na dłużej, porozmawiaj z kimś zaufanym.' },
+          body: 'Ostatnie dwa tygodnie były dla Ciebie cięższe. To się zdarza. Wielu osobom pomagają wtedy sen, ruch i chwila z kimś bliskim. Jeśli tak zostanie na dłużej, porozmawiaj z kimś zaufanym.' },
         { code: 'ok', od: 50,
           title: 'Ostatnio jest Ci całkiem dobrze',
           body: 'W ostatnich dwóch tygodniach było u Ciebie sporo dobrego samopoczucia. Warto zauważyć, co Ci w tym pomaga.' },
@@ -113,12 +113,14 @@
         ['Plan, ale bez przesady', 'Umiesz się zorganizować, gdy trzeba, i odpuścić, gdy można.'],
         ['Lubisz mieć poukładane', 'Plan, porządek i sprawy załatwione na czas dają Ci spokój.'],
       ]),
-      trait('stability', 'Stabilność emocjonalna', 'mocne emocje', 'spokój', [
-        ['Mocno przeżywasz', 'Emocje bywają u Ciebie silne i zmienne, a zmartwienia potrafią wracać. To wrażliwość, nie wada. Warto mieć swoje sposoby na uspokojenie.'],
+      // Nazwy na ekranie są opisowe („Emocje”, „Wyobraźnia”), bo „Stabilność emocjonalna” i „Intelekt” z kropką po lewej
+      // czyta się jak „jestem niestabilna” / „mam niski intelekt” (uwaga rady, 12.11.2026). Nazwa skali z narzędzia jest w komentarzu.
+      trait('stability', 'Emocje', 'mocne emocje', 'spokój', [          // skala: Stabilność emocjonalna
+        ['Mocno przeżywasz', 'Emocje bywają u Ciebie silne i potrafią się zmieniać. Jeśli ostatnio jest Ci z tym ciężko, zajrzyj do testu samopoczucia albo pogadaj z kimś zaufanym.'],
         ['Raz spokojnie, raz burzliwie', 'Zwykle trzymasz równowagę, choć trudniejsze chwile potrafią Cię poruszyć.'],
         ['Trudno wytrącić Cię z równowagi', 'Zwykle zachowujesz spokój, a zmartwienia nie zostają z Tobą na długo.'],
       ]),
-      trait('intellect', 'Intelekt', 'konkret', 'wyobraźnia', [
+      trait('intellect', 'Wyobraźnia', 'konkret', 'wyobraźnia', [       // skala: Intelekt
         ['Stawiasz na konkret', 'Wolisz to, co praktyczne i sprawdzone, od abstrakcyjnych rozważań.'],
         ['Trochę praktyki, trochę wyobraźni', 'Lubisz nowe pomysły, ale cenisz też to, co znane i konkretne.'],
         ['Masz głowę pełną pomysłów', 'Ciekawią Cię nowe idee. Lubisz myśleć, wyobrażać sobie i szukać słów.'],

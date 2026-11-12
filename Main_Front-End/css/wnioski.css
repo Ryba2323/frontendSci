@@ -9,7 +9,7 @@
  */
 
 /* ---------- wsparcie na górze Trackera ---------- */
-.wn-support { margin: 0 0 var(--sp-5); }
+.wn-support { margin: 0 0 var(--sp-5); border-radius: var(--leaf, var(--radius-lg, 20px)); }
 .wn-support .support-call {
   min-height: 56px; border: 0; border-radius: var(--radius-md, 16px); background: var(--surface); box-shadow: var(--e1, inset 0 0 0 1.5px var(--line));
   font-weight: 600; color: var(--text);

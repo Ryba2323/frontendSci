@@ -157,7 +157,7 @@
 .tst-compare b { font-weight: 700; color: var(--text); }
 .tst-support { margin-top: 0; }
 /* to samo wsparcie na liście testów (poza ekranem testu), gdy świeży wynik był w najniższym przedziale */
-.tst-tab-support { margin: var(--sp-4) 0 0; }
+.tst-tab-support { margin: var(--sp-4) 0 0; border-radius: var(--leaf, var(--radius-lg, 20px)); }
 .tst-tab-support .support-call {
   min-height: 56px; border: 0; border-radius: var(--radius-md, 16px); background: var(--surface); box-shadow: var(--e1, inset 0 0 0 1.5px var(--line));
   font-weight: 600; color: var(--text);
