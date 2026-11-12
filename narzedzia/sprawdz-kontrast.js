@@ -1,6 +1,7 @@
 /*
  * Test kontrastu tekstu (Playwright): 6 motywów × jasny/nocny × zakładki Dom/Skrytka/Tracker/Testy/Blog
- * + arkusz SOS, rozmowa z Asystentem i pierwsze pytanie podlewania (też przy niskim nastroju).
+ * + arkusz SOS, rozmowa z Asystentem, pytania podlewania (też przy niskim nastroju),
+ * test (wstęp, pytanie, wynik ze wsparciem, pięć cech) i arkusz „Konto i prywatność”.
  * Dla każdego widocznego tekstu liczy kontrast z tłem (półprzezroczyste tła są składane warstwa po warstwie,
  * aż do tła strony --bg). Próg WCAG AA: 4,5:1, duży tekst (od 24 px albo od 18,7 px pogrubiony) 3:1.
  * Gradienty tła pomija (liczy kolor pod nimi). Uruchom: node narzedzia/sprawdz-kontrast.js
@@ -85,6 +86,25 @@ function audit() {
       await p.evaluate(() => window.Podlewanie.save({ mood: 8 }, { rain: false })); await p.waitForTimeout(300); note('panel: podlane', await p.evaluate(audit));
       await p.evaluate(() => window.Podlewanie.save({ mood: 2 }, { rain: false })); await p.waitForTimeout(300); note('panel: niski nastrój', await p.evaluate(audit));
     }
+    // Testy (js/testy.js): lista z przykładową historią, pytanie z zaznaczoną odpowiedzią, wynik ze wsparciem, pięć cech
+    await p.goto(`${URL}motyw=${theme}&widok=statyczny&r=${Math.random()}#/testy`); await p.waitForTimeout(500);
+    note('testy: historia', await p.evaluate(audit));
+    await p.click('[data-tst-unlock="who5"]'); await p.click('[data-test="who5"]'); await p.waitForTimeout(500);
+    note('test: wstęp', await p.evaluate(audit));
+    await p.click('#tst-next'); await p.waitForTimeout(300);
+    for (let i = 0; i < 5; i++) { await p.click('.tst-answer[data-v="1"]'); await p.waitForTimeout(350); }
+    note('test: pytanie', await p.evaluate(audit));
+    await p.click('#tst-next'); await p.waitForTimeout(500); note('test: wynik ze wsparciem', await p.evaluate(audit));
+    await p.evaluate(() => document.querySelector('#test-flow').scrollTo(0, 9999)); await p.waitForTimeout(200); note('test: wynik ze wsparciem (dół)', await p.evaluate(audit));
+    await p.click('#tst-next'); await p.waitForTimeout(400); note('testy: wsparcie na liście', await p.evaluate(audit));
+    await p.evaluate(() => [...document.querySelectorAll('.tst-hrow')].find(r => r.textContent.includes('Osobowość')).click()); await p.waitForTimeout(500);
+    await p.click('.tst-trait summary'); await p.waitForTimeout(200); note('test: pięć cech', await p.evaluate(audit));
+    await p.click('[data-tst-close]'); await p.waitForTimeout(300);
+    // Konto i prywatność (js/konto.js): zgody, potwierdzenie wycofania i usunięcia konta z aktywnym przyciskiem
+    await p.evaluate(() => window.Konto.open()); await p.waitForTimeout(500); note('konto', await p.evaluate(audit));
+    await p.evaluate(() => window.Konto.open('wycofaj')); await p.waitForTimeout(400); await p.click('.kp-check'); await p.waitForTimeout(150);
+    note('konto: wycofanie zgody', await p.evaluate(audit));
+    await p.evaluate(() => window.Konto.open('zgoda')); await p.waitForTimeout(400); note('konto: zgoda', await p.evaluate(audit));
     await p.close();
   }
   await b.close();

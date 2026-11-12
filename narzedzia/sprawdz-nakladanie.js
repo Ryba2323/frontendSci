@@ -1,5 +1,5 @@
 /*
- * Test nakładania elementów (Playwright): 6 szerokości × jasny/ciemny × 4 zakładki × Asystent zamknięty/otwarty.
+ * Test nakładania elementów (Playwright): 6 szerokości × jasny/ciemny × 5 zakładek × Asystent zamknięty/otwarty.
  * Sprawdza: poziomy scroll, roślinkę szerszą niż scena, elementy pod panelem Asystenta, nachodzące przyciski, ucięte zakładki.
  * Uruchom: node narzedzia/sprawdz-nakladanie.js [folder-na-zrzuty]   (zrzuty komputerowe tylko gdy podasz folder)
  * Wersja strony głównej: UKLAD=a|b|c node narzedzia/sprawdz-nakladanie.js
@@ -11,7 +11,7 @@ const URL = 'file://' + require('path').resolve(__dirname, '../Main_Front-End/ap
   for (const w of [375, 720, 820, 1024, 1280, 1440]) for (const scheme of ['light', 'dark']) {
     const p = await b.newPage({ viewport: { width: w, height: w < 700 ? 812 : 860 }, colorScheme: scheme });
     const errs = []; p.on('pageerror', e => errs.push(e.message));
-    for (const tab of ['dom', 'skrytka', 'tracker', 'blog']) for (const open of [false, true]) {
+    for (const tab of ['dom', 'skrytka', 'tracker', 'testy', 'blog']) for (const open of [false, true]) {
       await p.goto(`${URL}?motyw=lawenda${process.env.UKLAD ? '&uklad=' + process.env.UKLAD : ''}&r=${Math.random()}#/${tab}`); await p.waitForTimeout(1300);
       if (open) { await p.click('#as-fab'); await p.waitForTimeout(1600); }
       const r = await p.evaluate(({ open }) => {

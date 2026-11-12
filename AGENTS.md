@@ -6,7 +6,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 
 **This repo is the design prototype**, built in plain HTML/CSS/JS. The target product is **React Native + Expo Router + React Native Web** (iOS, Android and web from one codebase), styled with NativeWind and backed by Supabase. Build every screen here so it ports easily: split screens into components (JS functions that return markup), keep data separate from markup, and take all colours from tokens.
 
-**Read `notes/AGENTS.md` before designing anything.** It holds the product context from the team's plan: features, tabs, the check-in data model, the target stack, safety rules (crisis lines, PHQ-9 question 9, GDPR Art. 9), the team's decisions and the open questions.
+**Read `notes/AGENTS.md` before designing anything.** It holds the product context from the team's plan: features, tabs, the check-in data model, the target stack, safety rules (crisis lines, support at a low WHO-5 result, GDPR Art. 9), the team's decisions and the open questions.
 
 ## Working agreements
 
@@ -41,6 +41,35 @@ Built on "Mała planeta" below; it fixes the phone: the plant used to disappear 
   - `--cat-*` stays Tracker-only, in charts. Don't add a third card colour; if something new needs emphasis, it is either the screen's one field or a tinted card.
   - **Card backgrounds**: every card (and the field) has a pale background motif behind the text, one `::after` with several masks: a = leaves + flower, b = leaves + water drops, c = vine with a bud, d = leaf + petals. Lists alternate them; low cards (SOS, "Dla Ciebie teraz") use b/d so nothing sits under the text. `--k` scales the motif to the card. The ground under the content has a sparse pattern of a few pale leaves (`.content::before`).
 - **Desktop "Jeden świat" (`css/pulpit.css`, `<div class="stage" data-swiat>`)**: no split screen. The sky and planet span the whole width (the plant stands at `PLANT_X` in `js/home2-scene.js`), and the content, the tab bar and the check-in lie on a frosted, semi-transparent pane (`--tafla`, leaf-shaped corner) whose left edge catches the plant's light. Phones and tablets are unchanged.
+
+## Tests, consents and legal pages (12.11.2026, Marcel's task; a proposal to confirm with the team)
+
+**Testy tab** (`js/testy.js`, data in `js/testy-dane.js`, look in `css/testy.css`). Only two tests are allowed (team decision, 9.11.2026): **WHO-5** (wellbeing, 5 statements about the last two weeks, official Polish wording) and **Big Five as IPIP-BFM-20** (20 statements, Polish adaptation by Topolewska et al., 2014). PHQ-9, GAD-7 and PSS-10 are gone.
+
+- **The tab, top to bottom:** consent card (only without an active health-data consent; the tests below are dimmed) → the screen's one colour field: the latest wellbeing result with a small bar history, or an invitation to the first test (`.tr-sec.week-sum`, the same classes as the Tracker summary) → a warm support card when a result from the last 14 days was in the lowest band → the "Osobowość" card (five traits as a dot between two poles) → "Historia" (every attempt; a tap shows the result exactly as it looked that day) → "Twoje dane i zgody" and "Usuń historię testów".
+- **Taking a test** is a screen like the check-in (`#test-flow.ci-overlay`, grows as a circle out of the button): intro → one statement per screen, a tap on an answer moves on (the last one waits for "Zobacz wynik") → result. Questions can't be skipped (the score needs all of them), but closing the test saves nothing. Progress is a stem with a leaf that moves with every answer. Answers are a `role="radiogroup"` with arrow keys. Statements use the grammatical form from registration (`m` / `f` / `n`).
+- **Results are a hint, never a diagnosis.** WHO-5: raw 0–25 × 4 = 0–100. Below 50 → "Ostatnio jest Ci trudniej" + the Assistant and 116 111; **28 and below → support always** (Assistant, 116 111, trusted contacts and breathing), in the warm light. A change counts as real only from 10 points. Big Five: position 0–100 on each of five scales and a short description; **no stens** (IPIP-BFM-20 was validated on ages 16–83 and we have no youth norms), no "good / bad" end, theme colour only. Under 16 the result carries a note that the test was made for 16+.
+- **Intervals** (WHO-5 every 7 days, Big Five every 30) are explained as "the questions cover a longer time", never as a penalty. "Wersja testowa: zrób teraz" unlocks a test in the prototype.
+- **Deleting:** one result from its preview (toast with "Cofnij" for 6 s), the whole history from "Konto i prywatność" (confirmation, because it can't be undone).
+- **One source of content:** `js/testy-dane.js` holds the questions, scales, result bands and `score()`. `node narzedzia/baza/generuj-dane-testow.js` writes `notes/supabase-testy-dane.sql` from it. Changing the wording means a new version id (`who5-v2`), never an edit, so history always shows what the person saw.
+- **Licences to check before any business model:** WHO-5 is © WHO 2024, CC BY-NC-SA 3.0 IGO (non-commercial, with attribution); IPIP is public domain. The tab's footnote names both.
+- **Prototype storage:** `localStorage` `sci.testy`, shaped like `test_sessions` + `test_answers` + `test_scores`. `?widok=statyczny` shows a demo history and saves nothing.
+
+**Consents** (`js/zgody.js`, `window.Zgody`). A consent log in `localStorage` `sci.zgody`, shaped like the `user_consents` table: kinds `terms`, `privacy`, `health_data` (GDPR Art. 9, can be withdrawn) and `guardian` (under 16). Rows are never deleted; withdrawal sets `withdrawnAt`, a new document version sets `supersededAt` on the old row and keeps the data. Consents given in registration (`sci.account.consents`) move into the log on first run. `Zgody.DOCS` holds the document versions and the wording of the health-data consent; the same version numbers are in the legal pages and in `legal_documents`. Every change fires `consentchange` on `window`.
+
+- **Withdrawing the health-data consent deletes at once** the test history (`js/testy.js`) and today's check-in entry (`js/home2.js`); in the database a trigger also deletes check-ins and insights. The plant, Skrytka, the jar and trusted contacts stay. After a withdrawal "Podlej roślinkę" shows the consent request instead of the questions. Someone who never withdrew it waters as before, so the 20.11 test with teenagers is unaffected.
+- **Under 16** the consent is pending until the guardian confirms ("Wersja testowa: opiekun potwierdził" simulates it).
+
+**Konto i prywatność** (`js/konto.js`, `window.Konto.open(view)`, any element with `[data-konto]`; entries: the end of Dom and the Testy tab). A bottom sheet with: the consents (version, date, "Wycofaj zgodę" / "Wyraź zgodę"), "Pobierz moje dane" (a JSON file with every `sci.*` key), "Usuń historię testów", "Usuń konto". Each confirmation says what disappears and what stays, has one checkbox and one clearly named action; deleting is a dark button, never red. After deleting the account the sheet says goodbye, shows 116 111 and leads to login. While the sheet is open, toasts move to the top so they don't cover its buttons.
+
+**Legal pages:** `regulamin.html` and `polityka-prywatnosci.html` (`css/prawo.css`, `js/prawo.js`), linked from registration (new tab) and from "Konto i prywatność". Plain language, a "W skrócie" card, a table of data / purpose / legal basis, SOS in the corner. **Both are working drafts (version 0.1):** a lawyer has to check them, and the `<mark class="todo">` places (who the controller is, contact, providers, retention periods) have to be filled in before real accounts.
+
+**Database** (`notes/supabase-schema.sql` → `notes/supabase-testy.sql` → `notes/supabase-testy-dane.sql`, run in this order). The earlier prototype schema was rewritten:
+
+- Consents are a server-written log (`legal_documents`, `user_consents`, RPC `give_consent`, `withdraw_consent`); the phone can't write, change or delete a consent, and a guardian's consent is recorded only by the server. After an account is deleted the proof stays without a link to the account (a hash of the e-mail) for 3 years (to confirm with a lawyer).
+- The server scores tests (`submit_test(p_code, p_answers)`), checks the consent and the interval, and stores answers, scores and the band the person saw. Clients can only read their own rows. `delete_test_results`, `delete_my_account` and withdrawing the consent delete for real and leave a content-free trace in `privacy_events`.
+- Check-ins can be written only with an active health-data consent. The `anon` role has no access to anything; privileges are granted explicitly on top of RLS.
+- `bash narzedzia/sprawdz-baze.sh` loads everything into a temporary local Postgres with a small Supabase stub and runs about 220 checks (RLS, consents, scoring equal to `TestyDane.score()` for random answers, deletion). **Not run on a real Supabase project yet**: check there the request-IP header, the `extensions` schema and the right to delete from `auth.users`.
 
 ## Proposal E: "Pokoje" (8.11.2026, preview `?uklad=e`, `css/pokoje.css`, `js/pokoje.js`)
 
@@ -78,6 +107,7 @@ The rules below still apply on top of this direction:
 - After layout changes run `node narzedzia/sprawdz-nakladanie.js` (Playwright): it checks 6 widths × light/dark × Dom/Skrytka/Tracker/Blog × assistant closed/open (also mid-opening) for overlapping elements, elements under the assistant panel, a plant canvas wider than its stage, horizontal scroll and clipped tab labels.
 - After changes to the sky or the stage run `node narzedzia/sprawdz-niebo.js`: it reads the canvas pixels under the greeting for 4 times of day × 6 themes × light/dark × phone/desktop (the normal contrast test can't see the canvas).
 - After colour or text changes run `node narzedzia/sprawdz-kontrast.js` (Playwright, ~2 min): it checks the contrast of every visible text in all 6 themes × light/dark (tabs, expanded blog post, jar, SOS, colour sheet, Assistant, check-in incl. low mood). Target: 4.5:1, large text 3:1.
+- After changes to the database files in `notes/` or to `js/testy-dane.js` run `bash narzedzia/sprawdz-baze.sh` (needs a local PostgreSQL 15+ and Node; it starts a temporary server and removes it afterwards).
 - **Test in a phone viewport first**, e.g. 375×812, then tablet (~820) and desktop (≥1024).
 - URL helpers:
   - `?motyw=<id>` previews a theme without saving it (`morski`, `zielony`, `niebieski`, `lawenda`, `rozowy`, `morelowy`).
@@ -101,6 +131,10 @@ The rules below still apply on top of this direction:
 | **Home page in the app: layout D "Żywa planeta" (default)** | `js/dom-uklad.js` (`buildD`), `css/zywa.css` (look of the whole app on phones) |
 | Earlier layouts A, B, C (previews) | `js/dom-uklad.js`, `css/dom-uklad.css`; comparison: `porownanie.html` |
 | Check-in, first question only (the design `aplikacja.html` reuses) | `nastroj.html`, `css/checkin.css`, `js/nastroj.js`, `css/mood-slider.css`, `js/mood-slider.js` |
+| Tests WHO-5 and Big Five (tab, test screen, result, history) | `js/testy.js`, `js/testy-dane.js` (content and scoring), `css/testy.css` |
+| Consents and "Konto i prywatność" | `js/zgody.js` (`window.Zgody`), `js/konto.js` (`window.Konto`), `css/testy.css` |
+| Legal pages (working drafts) | `regulamin.html`, `polityka-prywatnosci.html`, `css/prawo.css`, `js/prawo.js` |
+| Database schema and its tests | `notes/supabase-schema.sql`, `notes/supabase-testy.sql`, `notes/supabase-testy-dane.sql` (generated), `narzedzia/sprawdz-baze.sh`, `narzedzia/baza/` |
 | Bottom sheets (shared) | `js/sheets.js` (`window.Sheets`) |
 | Themes and tokens | `css/tokens.css`, `js/theme.js` |
 
@@ -118,7 +152,7 @@ The rules below still apply on top of this direction:
   - "Twój tydzień w skrócie": 7 small bars and 3 sentences (average vs last week, best day and what helped, one thing to try);
   - "Co zauważyliśmy": personalised insights, each showing only a title, a small chart and one short sentence; the possible causes computed from the data and the suggestion are folded under "Skąd to może się brać?" (keep the screen calm) ("Może to wynikać z tego, że…": shorter sleep the night before, study stress, fewer outings…) and one suggestion. Example: "Niedzielne wieczory bywają trudniejsze". Wording is a hint, never a diagnosis;
   - "Co Ci pomaga": the 3 check-in answers with the highest mood above average;
-  - "Zielnik": one pressed flower per week with at least 3 waterings; weeks without one simply don't appear. **Testy** (`js/testy.js`): empty "coming soon" screen with the mascot for now.
+  - "Zielnik": one pressed flower per week with at least 3 waterings; weeks without one simply don't appear. **Testy** (`js/testy.js`): WHO-5 and Big Five, see "Tests, consents and legal pages" above.
 - **Oddychaj z roślinką** (`js/oddech.js`, `window.Oddech`): one minute of breathing (4 s in, 2 s hold, 6 s out) with a flower that opens and closes, plus optional nature sounds generated with Web Audio (rain, waves that follow the breath, forest). Reachable from SOS, from a shortcut on Dom and from the blog's crisis screen.
 - **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
@@ -211,5 +245,5 @@ These are the current rules. They are also shown on the page under "Jak działa 
 - There's no backend. Login and password reset are simulated (see `TODO backend` in `js/logowanie.js`).
 - Registration keeps the profile in `localStorage` (`sci.account`) so the other screens can greet the user. It **never stores the password**.
 - The "Twój tydzień" data on the home page is **random demo data**, generated in `js/home2.js` and shaped like the planned `daily_checkins` table: mood 1–10 per day, `null` means no entry.
-- In `aplikacja.html` the check-in answers, blog posts and votes live only in page memory; Skrytka uses `localStorage`. On `strona-glowna-2.html` the "Podlej roślinkę" button only plays the animation.
+- In `aplikacja.html` the check-in answers, blog posts and votes live only in page memory; Skrytka, test results (`sci.testy`) and the consent log (`sci.zgody`) use `localStorage`. On `strona-glowna-2.html` the "Podlej roślinkę" button only plays the animation.
 - Blog moderation is a word list (`js/moderacja.js`) until the AI moderation exists (planned as a server-side function).

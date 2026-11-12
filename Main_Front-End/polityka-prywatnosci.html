@@ -1,0 +1,294 @@
+<!doctype html>
+<!-- data-sciezka: jak w aplikacji, wieczorem i nocą strona jest ciemna (js/theme.js) -->
+<html lang="pl" data-sciezka>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Polityka prywatności · ReLeaf</title>
+
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="apple-touch-icon" href="img/ikona-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/prawo.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/prawo.js" defer></script>
+</head>
+<!--
+  POLITYKA PRYWATNOŚCI — WERSJA ROBOCZA 0.1.
+  Napisana prostym językiem dla nastolatków, z pełną treścią wymaganą przez RODO (art. 13).
+  Zanim powstaną prawdziwe konta: sprawdza ją prawnik, a miejsca <mark class="todo"> trzeba uzupełnić
+  (administrator, dostawcy, okresy przechowywania). Numer wersji musi być ten sam co w js/zgody.js (DOCS)
+  i w tabeli legal_documents (notes/supabase-schema.sql). Zmiana treści = nowy numer wersji.
+-->
+<body data-wersja="0.1" data-od="">
+
+<header class="doc-top">
+  <a class="brand" href="aplikacja.html" aria-label="ReLeaf — przejdź do aplikacji">
+    <span class="brand-word" aria-hidden="true"><span class="bw-re">Re</span><span class="bw-leaf">Leaf<svg class="bw-swoosh" viewBox="0 0 60 8" preserveAspectRatio="none"><path d="M2 5.5C18 2.2 38 1.6 58 3.4"/></svg></span></span>
+  </a>
+  <button type="button" class="sos" data-sos aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+    <span>SOS</span>
+  </button>
+</header>
+
+<main class="doc-main">
+  <p class="doc-kicker">Wersja 0.1 (robocza)</p>
+  <h1>Polityka prywatności</h1>
+  <p class="doc-lead">Co o Tobie wiemy, po co nam to i jak możesz to w każdej chwili zmienić albo usunąć.</p>
+
+  <p class="doc-draft" role="note"><b>To wersja robocza.</b> Przed uruchomieniem prawdziwych kont sprawdzi ją prawnik, a zaznaczone miejsca zostaną uzupełnione. W wersji pokazowej Twoje dane zostają tylko w tej przeglądarce.</p>
+
+  <section class="doc-short" aria-labelledby="skrot">
+    <h2 id="skrot">W skrócie</h2>
+    <ul>
+      <li>Zbieramy tylko to, czego aplikacja potrzebuje do działania. <b>Nie sprzedajemy danych i nie pokazujemy reklam.</b></li>
+      <li>Wpisy o nastroju i wyniki testów to dane o zdrowiu. Zapisujemy je <b>tylko za Twoją osobną zgodą</b>, którą cofniesz jednym przyciskiem.</li>
+      <li>Skrytka jest szyfrowana na Twoim telefonie. <b>My nie możemy jej przeczytać.</b></li>
+      <li>Na blogu występujesz pod roślinnym pseudonimem. Inni nie widzą, kim jesteś.</li>
+      <li>Możesz pobrać kopię swoich danych, usunąć historię testów albo całe konto: <b>Konto i prywatność</b> w aplikacji.</li>
+    </ul>
+  </section>
+
+  <nav class="doc-toc" aria-label="Spis treści">
+    <details>
+      <summary>Spis treści</summary>
+      <ol>
+        <li><a href="#administrator">Kto odpowiada za Twoje dane</a></li>
+        <li><a href="#dane">Jakie dane zbieramy i po co</a></li>
+        <li><a href="#zgoda">Zgoda na dane o samopoczuciu</a></li>
+        <li><a href="#opiekun">Jeśli masz mniej niż 16 lat</a></li>
+        <li><a href="#testy">Testy</a></li>
+        <li><a href="#odbiorcy">Komu przekazujemy dane</a></li>
+        <li><a href="#czas">Jak długo przechowujemy dane</a></li>
+        <li><a href="#prawa">Twoje prawa</a></li>
+        <li><a href="#bezpieczenstwo">Jak chronimy dane</a></li>
+        <li><a href="#kryzys">Gdy jest naprawdę ciężko</a></li>
+        <li><a href="#zmiany">Zmiany tej polityki</a></li>
+        <li><a href="#kontakt">Kontakt</a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <article class="doc-body">
+
+    <section id="administrator">
+      <h2>1. Kto odpowiada za Twoje dane</h2>
+      <p>Administratorem Twoich danych osobowych jest <mark class="todo">[do uzupełnienia: nazwa podmiotu prowadzącego ReLeaf, adres]</mark>. Administrator to ten, kto decyduje, po co i jak dane są przetwarzane, i kto za nie odpowiada.</p>
+      <p>W sprawach danych napisz na adres <mark class="todo">[do uzupełnienia: e-mail kontaktowy]</mark>. <mark class="todo">[do ustalenia: czy wyznaczamy inspektora ochrony danych]</mark></p>
+    </section>
+
+    <section id="dane">
+      <h2>2. Jakie dane zbieramy i po co</h2>
+      <p>Przy każdej grupie danych podajemy podstawę prawną z RODO, czyli powód, dla którego wolno nam je przetwarzać.</p>
+      <table class="doc-table">
+        <caption>Dane, cel i podstawa prawna</caption>
+        <thead><tr><th scope="col">Dane</th><th scope="col">Po co</th><th scope="col">Podstawa prawna</th></tr></thead>
+        <tbody>
+          <tr>
+            <th scope="row">Konto: e-mail, imię lub pseudonim, wiek, forma gramatyczna, nazwa i kolor roślinki</th>
+            <td data-th="Po co">Założenie konta, logowanie kodem z e-maila, zwracanie się do Ciebie po imieniu.</td>
+            <td data-th="Podstawa">Umowa, czyli regulamin (art. 6 ust. 1 lit. b RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">E-mail opiekuna (tylko poniżej 16 lat)</th>
+            <td data-th="Po co">Poproszenie opiekuna o zgodę na Twoje konto.</td>
+            <td data-th="Podstawa">Obowiązek prawny (art. 8 i art. 6 ust. 1 lit. c RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Dane o samopoczuciu: podlewania (nastrój, sen, co było ważne, notatka), wyniki testów, wnioski w Trackerze</th>
+            <td data-th="Po co">Twoja historia, wykresy i podpowiedzi. Do niczego więcej.</td>
+            <td data-th="Podstawa">Twoja wyraźna zgoda (art. 9 ust. 2 lit. a i art. 6 ust. 1 lit. a RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Skrytka myśli</th>
+            <td data-th="Po co">Przechowanie Twoich notatek. Są szyfrowane na Twoim urządzeniu, więc u nas leży tylko nieczytelny szyfr.</td>
+            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Słoik dobrych chwil, zapisane myśli na dziś</th>
+            <td data-th="Po co">Pokazanie ich Tobie, kiedy zechcesz.</td>
+            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Bliskie osoby: imię i numer telefonu (najwyżej 3)</th>
+            <td data-th="Po co">Żebyś w trudnej chwili mógł lub mogła zadzwonić jednym dotknięciem. Podaj numer tylko za zgodą tej osoby.</td>
+            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Blog: wpisy, komentarze, głosy, zgłoszenia</th>
+            <td data-th="Po co">Publikacja pod pseudonimem i moderacja, żeby blog był bezpieczny.</td>
+            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b) i nasz uzasadniony interes: bezpieczeństwo społeczności (art. 6 ust. 1 lit. f RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Rozmowy z Asystentem Wsparcia</th>
+            <td data-th="Po co">Udzielenie odpowiedzi. Asystent to program, nie człowiek.</td>
+            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b RODO). <mark class="todo">[do sprawdzenia: zgoda, jeśli rozmowy będą traktowane jako dane o zdrowiu]</mark></td>
+          </tr>
+          <tr>
+            <th scope="row">Dowód zgód: rodzaj zgody, wersja dokumentu, data, adres IP</th>
+            <td data-th="Po co">Żebyśmy umieli wykazać, że zgoda została udzielona i kiedy ją wycofano.</td>
+            <td data-th="Podstawa">Obowiązek prawny: rozliczalność (art. 5 ust. 2 i art. 7 ust. 1 RODO).</td>
+          </tr>
+          <tr>
+            <th scope="row">Powiadomienia: identyfikator urządzenia, godzina przypomnienia</th>
+            <td data-th="Po co">Wysłanie przypomnienia, jeśli je włączysz.</td>
+            <td data-th="Podstawa">Twoja zgoda w ustawieniach telefonu (art. 6 ust. 1 lit. a RODO).</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Nie zbieramy lokalizacji, kontaktów z telefonu ani danych do reklam. Nie tworzymy profili reklamowych.</p>
+    </section>
+
+    <section id="zgoda">
+      <h2>3. Zgoda na dane o samopoczuciu</h2>
+      <p>Wpisy o nastroju i wyniki testów mówią o Twoim zdrowiu. Prawo chroni takie dane szczególnie, dlatego pytamy o nie osobno, przy rejestracji albo przed pierwszym testem. Treść zgody:</p>
+      <div class="doc-note">
+        <p>„Zgadzam się, żeby ReLeaf zapisywał moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i podpowiedzi.”</p>
+      </div>
+      <h3>Czy muszę się zgodzić?</h3>
+      <p>Nie. Zgoda jest dobrowolna. Bez niej nie zapisujemy podlewań ani wyników testów, a reszta aplikacji działa: oddech z roślinką, SOS, Skrytka, słoik, myśl na dziś i blog.</p>
+      <h3>Jak wycofać zgodę?</h3>
+      <p>W aplikacji: <b>Konto i prywatność → Dane o samopoczuciu → Wycofaj zgodę</b>. To jedno potwierdzenie, bez tłumaczenia się. Możesz też napisać na adres z punktu 12.</p>
+      <h3>Co się wtedy stanie?</h3>
+      <ul>
+        <li>Od razu usuniemy Twoje podlewania, wyniki testów i wnioski w Trackerze.</li>
+        <li>Roślinka, konto, Skrytka, słoik i bliskie osoby zostają.</li>
+        <li>Zgodę możesz dać ponownie, kiedy zechcesz. Usuniętych danych nie da się przywrócić.</li>
+      </ul>
+      <p>Wycofanie zgody nie sprawia, że wcześniejsze przetwarzanie było niezgodne z prawem.</p>
+    </section>
+
+    <section id="opiekun">
+      <h2>4. Jeśli masz mniej niż 16 lat</h2>
+      <p>ReLeaf jest dla osób, które skończyły 13 lat. Jeśli masz mniej niż 16 lat, na konto i na dane o samopoczuciu musi zgodzić się Twój rodzic lub opiekun. Prosimy Cię o jego adres e-mail i wysyłamy mu krótką wiadomość z linkiem. Dopóki nie potwierdzi, nie zapisujemy danych o Twoim samopoczuciu.</p>
+      <p>Opiekun <b>nie dostaje dostępu</b> do Twoich wpisów, wyników ani Skrytki. Potwierdza tylko, że możesz korzystać z aplikacji. Może też w każdej chwili cofnąć swoją zgodę, pisząc na adres z punktu 12.</p>
+      <p><mark class="todo">[do sprawdzenia przez prawnika: sposób potwierdzania zgody opiekuna i zakres informacji dla niego]</mark></p>
+    </section>
+
+    <section id="testy">
+      <h2>5. Testy</h2>
+      <p>W aplikacji są dwa testy: samopoczucia (WHO-5) i osobowości (IPIP-BFM-20). Ich wynik to <b>podpowiedź, a nie diagnoza</b>. Po każdym teście zapisujemy tylko:</p>
+      <ol>
+        <li>Twoje odpowiedzi,</li>
+        <li>policzony wynik,</li>
+        <li>opis wyniku, który zobaczyłeś lub zobaczyłaś tego dnia,</li>
+        <li>datę i godzinę,</li>
+        <li>informację, na podstawie której zgody zapisaliśmy wynik.</li>
+      </ol>
+      <p>Wynik widzisz tylko Ty. Nie podejmujemy na jego podstawie żadnych decyzji o Tobie i nikomu go nie przekazujemy. Pojedynczy wynik albo całą historię usuniesz na zakładce Testy lub w „Konto i prywatność”.</p>
+    </section>
+
+    <section id="odbiorcy">
+      <h2>6. Komu przekazujemy dane</h2>
+      <p>Nie sprzedajemy danych i nie udostępniamy ich reklamodawcom. Korzystamy z firm, które pomagają nam prowadzić aplikację i przetwarzają dane wyłącznie na nasze polecenie:</p>
+      <ul>
+        <li><b>Supabase</b>: baza danych i logowanie. Serwery we Frankfurcie, w Unii Europejskiej.</li>
+        <li><b>Dostawca modelu AI</b> do moderacji bloga i Asystenta Wsparcia: <mark class="todo">[do uzupełnienia: nazwa, kraj]</mark>. Trafia do niego tylko tekst, który sam lub sama wysyłasz na blog albo do Asystenta.</li>
+        <li><b>Dostawcy powiadomień</b> (Apple, Google, Expo), jeśli włączysz przypomnienia.</li>
+        <li><b>Dostawca poczty</b>, który wysyła kody logowania: <mark class="todo">[do uzupełnienia]</mark>.</li>
+      </ul>
+      <p><mark class="todo">[do uzupełnienia: czy któryś dostawca przetwarza dane poza Europejskim Obszarem Gospodarczym i na jakiej podstawie]</mark></p>
+      <p>Dane możemy też przekazać organom państwa, gdy wymaga tego prawo.</p>
+    </section>
+
+    <section id="czas">
+      <h2>7. Jak długo przechowujemy dane</h2>
+      <ul>
+        <li><b>Konto i jego zawartość</b>: do usunięcia konta.</li>
+        <li><b>Dane o samopoczuciu</b>: do wycofania zgody albo usunięcia konta, zależnie od tego, co nastąpi wcześniej.</li>
+        <li><b>Kopie zapasowe</b>: znikają same najpóźniej po <mark class="todo">[do uzupełnienia: liczba dni]</mark> dniach.</li>
+        <li><b>Dowód zgód</b>: po usunięciu konta zostaje bez powiązania z kontem (zamiast e-maila jest jego nieodwracalny skrót) przez <mark class="todo">[do potwierdzenia: 3 lata]</mark>, na wypadek sporu. Potem go usuwamy.</li>
+        <li><b>Konta nieużywane</b>: <mark class="todo">[do ustalenia: po jakim czasie pytamy, czy usunąć konto]</mark>.</li>
+      </ul>
+    </section>
+
+    <section id="prawa">
+      <h2>8. Twoje prawa</h2>
+      <p>Masz prawo do:</p>
+      <ul>
+        <li><b>dostępu do danych i ich kopii</b>: „Pobierz moje dane” w „Konto i prywatność”,</li>
+        <li><b>poprawienia danych</b>: imię, roślinkę i kolor zmienisz w aplikacji,</li>
+        <li><b>usunięcia danych</b>: historii testów, pojedynczych wpisów albo całego konta,</li>
+        <li><b>wycofania zgody</b> w każdej chwili,</li>
+        <li><b>ograniczenia przetwarzania i sprzeciwu</b> tam, gdzie opieramy się na uzasadnionym interesie,</li>
+        <li><b>przeniesienia danych</b>: kopia jest w formacie, który odczyta inny program,</li>
+        <li><b>skargi</b> do Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa, uodo.gov.pl).</li>
+      </ul>
+      <p>Większość z nich załatwisz sam lub sama w aplikacji. W pozostałych sprawach napisz do nas. Odpowiemy najpóźniej w ciągu miesiąca.</p>
+    </section>
+
+    <section id="bezpieczenstwo">
+      <h2>9. Jak chronimy dane</h2>
+      <ul>
+        <li>Połączenie z aplikacją jest szyfrowane, a baza jest zaszyfrowana na dyskach.</li>
+        <li>Baza pozwala każdej osobie odczytać wyłącznie własne wiersze.</li>
+        <li>Skrytka jest szyfrowana na Twoim urządzeniu, zanim cokolwiek do nas trafi.</li>
+        <li>Wynik testu liczy serwer, a zgód nie da się zmienić ani skasować z telefonu.</li>
+        <li>Logujesz się kodem z e-maila, więc nie ma hasła, które mogłoby wyciec.</li>
+      </ul>
+      <p>Jeśli mimo to dojdzie do naruszenia, które może Ci zaszkodzić, poinformujemy Cię o tym bez zbędnej zwłoki.</p>
+    </section>
+
+    <section id="kryzys">
+      <h2>10. Gdy jest naprawdę ciężko</h2>
+      <div class="doc-note is-warm">
+        <p>ReLeaf nie jest pomocą w nagłych wypadkach. Nikt nie czyta Twoich wpisów na bieżąco i <b>nie zawiadamiamy nikogo automatycznie</b>. Jeśli Ty albo ktoś obok jest w niebezpieczeństwie, zadzwoń pod <a href="tel:112">112</a>. Gdy chcesz porozmawiać, <a href="tel:116111">116 111</a> działa bezpłatnie, całą dobę.</p>
+      </div>
+      <p>Gdy w tekście na blog pojawią się słowa wskazujące na kryzys, nie publikujemy wpisu i od razu pokazujemy numery pomocowe. Robi to program.</p>
+    </section>
+
+    <section id="zmiany">
+      <h2>11. Zmiany tej polityki</h2>
+      <p>Każda wersja ma numer i datę. O ważnych zmianach powiemy w aplikacji, a jeśli zmieni się treść zgody, poprosimy Cię o nią ponownie. Twoje dotychczasowe dane wtedy nie znikają.</p>
+    </section>
+
+    <section id="kontakt">
+      <h2>12. Kontakt</h2>
+      <p>Pytania o dane i prywatność: <mark class="todo">[do uzupełnienia: e-mail kontaktowy]</mark>.</p>
+    </section>
+  </article>
+
+  <footer class="doc-foot">
+    <a class="doc-back" href="aplikacja.html" data-back>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Wróć
+    </a>
+    <a href="regulamin.html">Regulamin</a>
+  </footer>
+  <p class="doc-meta">Polityka prywatności ReLeaf · wersja 0.1 (robocza)</p>
+</main>
+
+<!-- Arkusz SOS: te same numery co w aplikacji (do potwierdzenia przez zespół, notes/CLAUDE.md). Otwiera js/auth-common.js. -->
+<dialog class="sos-sheet" id="auth-sos" aria-labelledby="sos-title">
+  <h2 class="sos-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sos-sub">Rozmowa naprawdę może pomóc. Nie musisz mieć konta, żeby zadzwonić.</p>
+  <ul class="sos-list">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sos-close" data-sos-close>Zamknij</button>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

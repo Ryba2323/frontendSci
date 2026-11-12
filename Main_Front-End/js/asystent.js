@@ -96,6 +96,7 @@
   const START = {
     skrytka: ['Dziękuję, że mi to pokazujesz. Brzmi, jakby to mocno w Tobie siedziało. Chcesz o tym pogadać?', ['Tak, chcę pogadać', 'Co mogę z tym zrobić?', 'Tylko chciałem(-am) to komuś pokazać']],
     podlewanie: ['Widzę, że dziś było trudniej. Chcesz opowiedzieć, co się wydarzyło? Możesz też po prostu chwilę tu posiedzieć.', ['Opowiem', 'Tylko posiedzę', 'Pomóż mi się uspokoić']],
+    testy: ['Widzę, że ostatnie tygodnie były trudniejsze. Chcesz opowiedzieć, co się dzieje? Możesz też po prostu chwilę tu posiedzieć.', ['Opowiem', 'Tylko posiedzę', 'Pomóż mi się uspokoić']],
     dom: ['Cześć! Jestem tu, żeby posłuchać. O czym chcesz dziś pogadać?', ['Mam gorszy dzień', 'Stresuję się szkołą', 'Chcę się czymś pochwalić']],
   };
 

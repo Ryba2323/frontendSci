@@ -1,0 +1,237 @@
+<!doctype html>
+<!-- data-sciezka: jak w aplikacji, wieczorem i nocą strona jest ciemna (js/theme.js) -->
+<html lang="pl" data-sciezka>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Regulamin · ReLeaf</title>
+
+  <link rel="icon" type="image/png" href="img/favicon-64.png">
+  <link rel="apple-touch-icon" href="img/ikona-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/prawo.css">
+  <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
+  <script src="js/theme.js"></script>
+  <script src="js/auth-common.js" defer></script>
+  <script src="js/prawo.js" defer></script>
+</head>
+<!--
+  REGULAMIN — WERSJA ROBOCZA 0.1.
+  Prosty język dla nastolatków; zasady bloga, testów i Asystenta w jednym miejscu.
+  Zanim powstaną prawdziwe konta: sprawdza go prawnik, a miejsca <mark class="todo"> trzeba uzupełnić
+  (kto prowadzi aplikację, kontakt, model biznesowy). Numer wersji ten sam co w js/zgody.js (DOCS)
+  i w tabeli legal_documents (notes/supabase-schema.sql). Zmiana treści = nowy numer wersji.
+-->
+<body data-wersja="0.1" data-od="">
+
+<header class="doc-top">
+  <a class="brand" href="aplikacja.html" aria-label="ReLeaf — przejdź do aplikacji">
+    <span class="brand-word" aria-hidden="true"><span class="bw-re">Re</span><span class="bw-leaf">Leaf<svg class="bw-swoosh" viewBox="0 0 60 8" preserveAspectRatio="none"><path d="M2 5.5C18 2.2 38 1.6 58 3.4"/></svg></span></span>
+  </a>
+  <button type="button" class="sos" data-sos aria-haspopup="dialog">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+    <span>SOS</span>
+  </button>
+</header>
+
+<main class="doc-main">
+  <p class="doc-kicker">Wersja 0.1 (robocza)</p>
+  <h1>Regulamin</h1>
+  <p class="doc-lead">Zasady korzystania z ReLeaf: co dostajesz, czego się trzymamy i czego prosimy od Ciebie.</p>
+
+  <p class="doc-draft" role="note"><b>To wersja robocza.</b> Przed uruchomieniem prawdziwych kont sprawdzi ją prawnik, a zaznaczone miejsca zostaną uzupełnione.</p>
+
+  <section class="doc-short" aria-labelledby="skrot">
+    <h2 id="skrot">W skrócie</h2>
+    <ul>
+      <li>ReLeaf pomaga dbać o samopoczucie. <b>Nie jest terapią, lekarzem ani pomocą w nagłych wypadkach.</b></li>
+      <li>Możesz korzystać, jeśli masz skończone 13 lat. Poniżej 16 lat potrzebna jest zgoda opiekuna.</li>
+      <li>Testy i wnioski to podpowiedzi, nigdy diagnoza. Asystent to program, nie człowiek.</li>
+      <li>Na blogu piszemy życzliwie i anonimowo. Bez obrażania i bez podawania danych: swoich i cudzych.</li>
+      <li>Konto usuniesz w każdej chwili, razem ze wszystkimi danymi.</li>
+    </ul>
+  </section>
+
+  <nav class="doc-toc" aria-label="Spis treści">
+    <details>
+      <summary>Spis treści</summary>
+      <ol>
+        <li><a href="#czym-jest">Czym jest ReLeaf</a></li>
+        <li><a href="#kto">Kto może korzystać</a></li>
+        <li><a href="#konto">Konto</a></li>
+        <li><a href="#funkcje">Co jest w aplikacji</a></li>
+        <li><a href="#testy">Testy i wnioski</a></li>
+        <li><a href="#asystent">Asystent Wsparcia</a></li>
+        <li><a href="#blog">Zasady bloga</a></li>
+        <li><a href="#kryzys">W nagłej sytuacji</a></li>
+        <li><a href="#tresci">Twoje treści</a></li>
+        <li><a href="#odpowiedzialnosc">Za co odpowiadamy</a></li>
+        <li><a href="#usuniecie">Usunięcie konta</a></li>
+        <li><a href="#reklamacje">Uwagi i reklamacje</a></li>
+        <li><a href="#zmiany">Zmiany regulaminu</a></li>
+        <li><a href="#kontakt">Kontakt</a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <article class="doc-body">
+
+    <section id="czym-jest">
+      <h2>1. Czym jest ReLeaf</h2>
+      <p>ReLeaf to aplikacja, która pomaga dbać o samopoczucie: zauważać swój nastrój, zapisywać myśli, poznawać siebie i szukać wsparcia. Prowadzi ją <mark class="todo">[do uzupełnienia: nazwa podmiotu, adres, e-mail]</mark>.</p>
+      <div class="doc-note is-warm">
+        <p><b>ReLeaf nie zastępuje psychologa, lekarza ani terapii</b> i nie jest pomocą w nagłych wypadkach. Jeśli coś zagraża życiu lub zdrowiu, zadzwoń pod <a href="tel:112">112</a>. Gdy chcesz z kimś porozmawiać, <a href="tel:116111">116 111</a> działa bezpłatnie, całą dobę.</p>
+      </div>
+    </section>
+
+    <section id="kto">
+      <h2>2. Kto może korzystać</h2>
+      <ul>
+        <li>Z aplikacji mogą korzystać osoby, które skończyły <b>13 lat</b>.</li>
+        <li>Jeśli masz mniej niż <b>16 lat</b>, potrzebujemy zgody Twojego rodzica lub opiekuna. Prosimy o jego adres e-mail i wysyłamy mu wiadomość. Do czasu potwierdzenia roślinka czeka w pąku, a danych o samopoczuciu nie zapisujemy.</li>
+        <li>Przy rejestracji podaj swój prawdziwy wiek. Od niego zależy, o jakie zgody musimy poprosić.</li>
+      </ul>
+      <p><mark class="todo">[do sprawdzenia przez prawnika: akceptacja regulaminu przez osoby w wieku 13–17 lat]</mark></p>
+    </section>
+
+    <section id="konto">
+      <h2>3. Konto</h2>
+      <ul>
+        <li>Konto zakładasz na swój adres e-mail. Logujesz się kodem, który wysyłamy na ten adres. Hasła nie ma.</li>
+        <li>Konto jest tylko dla Ciebie. Nie udostępniaj nikomu kodów z e-maila.</li>
+        <li>Jedna osoba może mieć jedno konto.</li>
+      </ul>
+    </section>
+
+    <section id="funkcje">
+      <h2>4. Co jest w aplikacji</h2>
+      <ul>
+        <li><b>Roślinka i podlewanie</b>: krótki codzienny wpis o samopoczuciu. Roślinka nigdy nie więdnie, a dzień bez wpisu niczego nie zabiera.</li>
+        <li><b>Skrytka</b>: Twoje myśli, zaszyfrowane na Twoim urządzeniu, i słoik dobrych chwil.</li>
+        <li><b>Tracker</b>: wykresy i wnioski z Twoich wpisów.</li>
+        <li><b>Testy</b>: samopoczucia (WHO-5) i osobowości (IPIP-BFM-20).</li>
+        <li><b>Blog</b>: anonimowe wpisy i komentarze.</li>
+        <li><b>Asystent Wsparcia</b>, <b>oddech z roślinką</b> i <b>SOS</b> z numerami pomocowymi i Twoimi bliskimi osobami.</li>
+      </ul>
+      <p>Korzystanie z aplikacji jest bezpłatne. <mark class="todo">[do ustalenia po wyborze modelu biznesowego]</mark></p>
+      <p>Wpisy o nastroju i wyniki testów zapisujemy tylko za Twoją osobną zgodą. Szczegóły są w <a href="polityka-prywatnosci.html#zgoda">Polityce prywatności</a>.</p>
+    </section>
+
+    <section id="testy">
+      <h2>5. Testy i wnioski</h2>
+      <p>Wyniki testów i wnioski w Trackerze to <b>podpowiedzi</b>. Nie są diagnozą ani opinią specjalisty i nie mówią, czy jesteś zdrowy lub zdrowa. Jeśli wynik Cię niepokoi albo od dłuższego czasu jest Ci trudno, porozmawiaj z kimś zaufanym: rodzicem, pedagogiem, psychologiem szkolnym albo lekarzem.</p>
+      <p>Każdy test można powtórzyć po pewnym czasie (samopoczucie po 7 dniach, osobowość po 30), bo pytania dotyczą dłuższego okresu.</p>
+    </section>
+
+    <section id="asystent">
+      <h2>6. Asystent Wsparcia</h2>
+      <p>Asystent to <b>program komputerowy (AI)</b>. Nie jest człowiekiem, psychologiem ani terapeutą i może się mylić. Może posłuchać i podsunąć pomysł, ale nie zastąpi rozmowy z kimś, kto zna Cię i Twoją sytuację. Twoje wpisy ze Skrytki trafiają do Asystenta tylko wtedy, gdy sam lub sama o to poprosisz.</p>
+    </section>
+
+    <section id="blog">
+      <h2>7. Zasady bloga</h2>
+      <p>Blog ma być miejscem, w którym można bezpiecznie coś z siebie wyrzucić. Dlatego:</p>
+      <h3>Piszemy życzliwie</h3>
+      <ul>
+        <li>Nie obrażamy, nie wyśmiewamy, nie grozimy i nie nękamy.</li>
+        <li>Nie piszemy treści nienawistnych ani takich, które zachęcają do robienia krzywdy sobie lub innym.</li>
+        <li>Nie wstawiamy reklam ani spamu.</li>
+      </ul>
+      <h3>Zostajemy anonimowi</h3>
+      <ul>
+        <li>Wpis podpisuje roślinny pseudonim. Nie podawaj nazwiska, szkoły, adresu, telefonu, e-maila ani nicków z innych aplikacji. Ani swoich, ani cudzych.</li>
+        <li>Nie próbuj ustalać, kim są inni.</li>
+      </ul>
+      <h3>Jak działa moderacja</h3>
+      <ul>
+        <li>Każdy wpis i komentarz przed publikacją sprawdza program. Jeśli znajdzie obraźliwe słowa albo dane osobowe, poprosi Cię o poprawkę i pokaże, o który fragment chodzi.</li>
+        <li>Jeśli tekst wskazuje, że jest Ci bardzo ciężko, <b>nie publikujemy go</b>, tylko od razu pokazujemy numery pomocowe i proponujemy schowanie tekstu w Skrytce. To nie kara. Chodzi o Twoje bezpieczeństwo i innych czytających.</li>
+        <li>Każdy wpis i komentarz możesz zgłosić. Zgłoszenia sprawdza człowiek.</li>
+        <li>Jeśli nie zgadzasz się z decyzją o swoim wpisie, napisz do nas. Wyjaśnimy powód i sprawdzimy ją jeszcze raz.</li>
+      </ul>
+    </section>
+
+    <section id="kryzys">
+      <h2>8. W nagłej sytuacji</h2>
+      <p>Przycisk <b>SOS</b> jest na każdym ekranie. Znajdziesz tam telefon zaufania dla dzieci i młodzieży <a href="tel:116111">116 111</a> (bezpłatnie, całą dobę), numer alarmowy <a href="tel:112">112</a>, minutę oddechu i swoje bliskie osoby. ReLeaf nie monitoruje Twojego stanu i nikogo nie zawiadamia za Ciebie.</p>
+    </section>
+
+    <section id="tresci">
+      <h2>9. Twoje treści</h2>
+      <p>To, co piszesz, zostaje Twoje. Publikując wpis lub komentarz na blogu, pozwalasz nam pokazywać go innym użytkownikom pod pseudonimem, dopóki go nie usuniesz. Swój wpis i komentarz usuniesz w każdej chwili.</p>
+    </section>
+
+    <section id="odpowiedzialnosc">
+      <h2>10. Za co odpowiadamy</h2>
+      <ul>
+        <li>Dbamy o to, żeby aplikacja działała i żeby Twoje dane były bezpieczne. Zdarzają się jednak przerwy techniczne i błędy.</li>
+        <li>Treści w aplikacji mają charakter ogólny. Nie są poradą medyczną ani psychologiczną dopasowaną do Ciebie.</li>
+        <li>Nic w tym regulaminie nie ogranicza praw, które daje Ci prawo konsumenckie.</li>
+      </ul>
+    </section>
+
+    <section id="usuniecie">
+      <h2>11. Usunięcie konta</h2>
+      <ul>
+        <li>Z aplikacji możesz zrezygnować w każdej chwili: <b>Konto i prywatność → Usuń konto</b>. Usuwamy wtedy wszystkie Twoje dane. Co zostaje jako dowód zgód i na jak długo, opisuje <a href="polityka-prywatnosci.html#czas">Polityka prywatności</a>.</li>
+        <li>Możemy zablokować konto, które poważnie albo wielokrotnie łamie zasady bloga. Zawsze podamy powód i sposób odwołania.</li>
+      </ul>
+    </section>
+
+    <section id="reklamacje">
+      <h2>12. Uwagi i reklamacje</h2>
+      <p>Jeśli coś nie działa albo masz zastrzeżenia, napisz na adres <mark class="todo">[do uzupełnienia: e-mail kontaktowy]</mark>. Odpowiemy w ciągu 14 dni.</p>
+    </section>
+
+    <section id="zmiany">
+      <h2>13. Zmiany regulaminu</h2>
+      <p>Każda wersja ma numer i datę. O zmianach powiemy w aplikacji z wyprzedzeniem i poprosimy o ponowną akceptację. Jeśli nie zgodzisz się na nową wersję, możesz usunąć konto.</p>
+    </section>
+
+    <section id="kontakt">
+      <h2>14. Kontakt</h2>
+      <p><mark class="todo">[do uzupełnienia: nazwa podmiotu, adres, e-mail]</mark>. Do umowy stosuje się prawo polskie.</p>
+    </section>
+  </article>
+
+  <footer class="doc-foot">
+    <a class="doc-back" href="aplikacja.html" data-back>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+      Wróć
+    </a>
+    <a href="polityka-prywatnosci.html">Polityka prywatności</a>
+  </footer>
+  <p class="doc-meta">Regulamin ReLeaf · wersja 0.1 (robocza)</p>
+</main>
+
+<!-- Arkusz SOS: te same numery co w aplikacji (do potwierdzenia przez zespół, notes/CLAUDE.md). Otwiera js/auth-common.js. -->
+<dialog class="sos-sheet" id="auth-sos" aria-labelledby="sos-title">
+  <h2 class="sos-title" id="sos-title">Potrzebujesz wsparcia teraz?</h2>
+  <p class="sos-sub">Rozmowa naprawdę może pomóc. Nie musisz mieć konta, żeby zadzwonić.</p>
+  <ul class="sos-list">
+    <li>
+      <a class="sos-item is-main" href="tel:116111">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/></svg></span>
+        <span><b>Zadzwoń: 116 111</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę</small></span>
+      </a>
+    </li>
+    <li>
+      <a class="sos-item" href="tel:112">
+        <span class="sos-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/></svg></span>
+        <span><b>Zagrożenie życia: 112</b><small>Numer alarmowy</small></span>
+      </a>
+    </li>
+  </ul>
+  <button type="button" class="sos-close" data-sos-close>Zamknij</button>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+</body>
+</html>

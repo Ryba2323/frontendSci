@@ -192,12 +192,28 @@
   }
 
   const changed = () => window.dispatchEvent(new CustomEvent('entrychange', { detail: entry }));
+  // Zgoda na dane o samopoczuciu (js/zgody.js): po jej WYCOFANIU podlewania nie zapisujemy — zamiast pytań
+  // pokazujemy prośbę o zgodę (js/konto.js). Kto nigdy jej nie wycofał, podlewa jak dotąd (zgoda jest z rejestracji).
+  function consentBlocks() {
+    const Z = window.Zgody;
+    if (!Z || Z.has('health_data') || !Z.state('health_data').withdrawn) return false;
+    if (window.Konto) window.Konto.open('zgoda');
+    return true;
+  }
   function openCheckin(from, step) {
+    if (consentBlocks()) return;
     window.Checkin.open({ from, entry, step, onDone(e) { entry = e; pour(e); changed(); } });
   }
+  // wycofanie zgody usuwa dzisiejszy wpis (w bazie: wszystkie podlewania); roślinka zostaje
+  window.addEventListener('consentchange', e => {
+    if (e.detail.kind !== 'health_data' || e.detail.active || !entry) return;
+    entry = null;
+    changed();
+  });
   window.Podlewanie = {
     get entry() { return entry; },
     save(patch, opts = {}) {
+      if (consentBlocks()) return entry;
       const blank = window.Checkin ? window.Checkin.DATA.blank() : { mood: null, areas: {}, note: '' };
       const moodChanged = 'mood' in patch && patch.mood !== (entry && entry.mood);
       entry = Object.assign(blank, entry, patch, { areas: Object.assign({}, entry && entry.areas, patch.areas) });

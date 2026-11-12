@@ -268,6 +268,7 @@
         <span class="zy-foot-links">
           <button type="button" class="zy-link" data-zy-click="#color-open">Kolor roślinki</button>
           <button type="button" class="zy-link" data-zy-click="#plant-zoom">Roślinka na cały ekran</button>
+          <button type="button" class="zy-link" data-konto>Konto i prywatność</button>
         </span>`);
       foot.addEventListener('click', e => {
         const b = e.target.closest('[data-zy-click]');

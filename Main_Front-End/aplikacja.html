@@ -43,10 +43,13 @@
   <link rel="stylesheet" href="css/scrollbar.css">
   <!-- Ścieżka: wygląd całej aplikacji w kierunku „Ścieżka dookoła planety” (ładowany ostatni, działa tylko z <html data-sciezka>) -->
   <link rel="stylesheet" href="css/sciezka.css">
+  <!-- Testy i Konto: zakładka „Testy”, ekran testu, arkusz „Konto i prywatność” (klasy tst-* i kp-*) -->
+  <link rel="stylesheet" href="css/testy.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
 
   <script src="js/auth-common.js" defer></script>
+  <script src="js/zgody.js" defer></script>
   <script src="js/sheets.js" defer></script>
   <script src="js/moderacja.js" defer></script>
   <script src="js/mood-slider.js" defer></script>
@@ -60,7 +63,9 @@
   <script src="js/kontakty.js" defer></script>
   <script src="js/blog.js" defer></script>
   <script src="js/tracker.js" defer></script>
+  <script src="js/testy-dane.js" defer></script>
   <script src="js/testy.js" defer></script>
+  <script src="js/konto.js" defer></script>
   <script src="js/asystent.js" defer></script>
   <script src="js/dom-uklad.js" defer></script>
   <script src="js/pokoje.js" defer></script>
@@ -246,6 +251,7 @@
         <span>SOS</span>
       </button>
     </header>
+    <p class="lead view-lead">Krótkie testy, które pomagają lepiej siebie poznać.</p>
     <div id="testy-root"></div>
   </section>
 
@@ -347,6 +353,8 @@
   </ul>
   <button type="button" class="sos-close" data-close>Zamknij</button>
 </section>
+
+<!-- Arkusz „Konto i prywatność” (zgody, pobranie i usuwanie danych) wstawia js/konto.js; ekran testu (#test-flow) wstawia js/testy.js -->
 
 <!-- Arkusz: zapisane myśli na dziś (treść wstawia js/cytaty.js) -->
 <section class="bsheet" id="quotes-sheet" role="dialog" aria-modal="true" aria-labelledby="quotes-title" hidden></section>

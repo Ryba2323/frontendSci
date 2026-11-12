@@ -471,7 +471,8 @@
       data.parentEmail = needsParent() ? parentInput.value.trim() : null;
       data.parentPending = needsParent();
       // osobno regulamin i dane o zdrowiu, z datą — tak, jak pójdą do tabeli zgód (TODO backend)
-      data.consents = { terms: true, health: true, at: new Date().toISOString() };
+      // wersje dokumentów jak w js/zgody.js (DOCS) i w tabeli legal_documents; aplikacja przenosi to do dziennika zgód
+      data.consents = { terms: true, health: true, at: new Date().toISOString(), versions: { terms: '0.1', privacy: '0.1', health_data: '0.1' } };
       Theme.apply(data.theme, { save: true });
       // Tymczasowo, do czasu backendu: profil zostaje w przeglądarce, żeby logowanie mogło przywitać po imieniu.
       // TODO backend: supabase.auth.verifyOtp + zapis profilu; poniżej 16 lat wysyłka prośby do opiekuna
@@ -631,12 +632,8 @@
     }, 250);
   });
 
-  // Regulamin i polityka prywatności: dokumentów jeszcze nie ma (dojdą razem ze zgodami RODO, notes/CLAUDE.md).
-  // Bez tego href="#" dokładał wpis do historii i wywoływał „wstecz”, czyli cofał z ekranu zgód o ekran.
-  $$('.check a[href="#"]', f3).forEach(a => a.addEventListener('click', e => {
-    e.preventDefault();
-    toast('Ten dokument dodamy przed startem aplikacji.');
-  }));
+  // Regulamin i polityka prywatności (regulamin.html, polityka-prywatnosci.html) otwierają się w nowej karcie
+  // (target="_blank" w rejestracja.html), żeby formularz został tak, jak był.
 
   // ================================================================
   //  Gotowe

@@ -61,8 +61,26 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
   3. wynik interpretacyjny — komunikat, który użytkownik zobaczył danego dnia,
   4. znacznik czasu wykonania testu (do wykresów historii),
   5. metadane zgody RODO: ID zgody, wersja regulaminu/polityki, czas udzielenia, IP (rozliczalność, art. 5 ust. 2 RODO).
-- **Schemat bazy od Waldka:** `notes/supabase-testy.sql` (zastępuje sekcję 6 „Testy” w `supabase-schema.sql`). To **prototyp do poprawy** (Waldek: dużo błędów); przerabiamy go razem z całym schematem przy podłączaniu backendu. Na początku pliku są uwagi.
+- **Schemat bazy** (przepisany 12.11.2026, zastępuje prototyp Waldka): `notes/supabase-schema.sql` (konto, zgody, dane aplikacji) → `notes/supabase-testy.sql` (testy) → `notes/supabase-testy-dane.sql` (pytania; generowany z `Main_Front-End/js/testy-dane.js`). Sprawdzony na lokalnym Postgresie: `bash narzedzia/sprawdz-baze.sh` (około 220 sprawdzeń). **Jeszcze nie uruchomiony na prawdziwym projekcie Supabase.** Najważniejsze zasady:
+  - wynik testu liczy serwer (`submit_test`), telefon wysyła tylko odpowiedzi i może czytać wyłącznie swoje wiersze;
+  - zgody są dziennikiem, który zapisuje serwer (`give_consent`, `withdraw_consent`): nie da się ich skasować ani wpisać sobie zgody opiekuna; adres IP ustawia serwer;
+  - bez aktywnej zgody na dane o samopoczuciu (poniżej 16 lat także zgody opiekuna) nie zapisze się ani test, ani podlewanie;
+  - wycofanie zgody od razu usuwa testy, podlewania i wnioski; usuwanie jest prawdziwe (bez `deleted_at`), a w `privacy_events` zostaje tylko ślad bez treści;
+  - zmiana pytań albo opisów wyniku to nowa wersja kwestionariusza (`who5-v2`), więc historia pokazuje to, co osoba widziała tamtego dnia;
+  - niezalogowany (`anon`) nie ma dostępu do niczego.
 - Proponowane progi WHO-5 (standardowe w literaturze, do potwierdzenia): wynik surowy 0–25 × 4 = 0–100%. Poniżej 50% → „ostatnio jest Ci trudniej” + łagodna podpowiedź; 28% i mniej → zawsze wsparcie (116 111, Asystent, bliskie osoby). Słowa: podpowiedź, nigdy diagnoza.
+- **Zbudowane 12.11.2026 (propozycja do potwierdzenia przez zespół; opis w CLAUDE.md, „Tests, consents and legal pages”):** zakładka Testy (WHO-5 i Big Five jako IPIP-BFM-20: przebieg, wynik, historia), zgoda na dane o samopoczuciu i jej wycofanie, ekran „Konto i prywatność” (pobranie danych, usunięcie historii testów i konta), `regulamin.html` i `polityka-prywatnosci.html` w wersji roboczej 0.1.
+- **Decyzje przyjęte przy budowie, do potwierdzenia:**
+  - Big Five w wersji krótkiej, **20 zdań** (IPIP-BFM-20), nie 50: na telefonie to około 3 minut. Baza przyjmie też wersję 50, jeśli zespół ją wybierze.
+  - **Bez stenów.** IPIP-BFM-20 był badany na osobach 16–83 lata i nie mamy norm dla młodzieży, więc pokazujemy położenie na skali 0–100 i opis słowny. Poniżej 16 lat przy wyniku jest dopisek, że test powstał dla osób od 16 lat.
+  - Odstępy: WHO-5 co 7 dni (jak w planie „najwyżej raz w tygodniu”), Big Five co 30 dni.
+  - Dowód zgód po usunięciu konta zostaje 3 lata bez powiązania z kontem (skrót e-maila).
+  - Kolumn w bazie dodatkowo nie szyfrujemy (szyfrowanie dysku i połączenia w Supabase + RLS); Skrytka dalej szyfrowana na telefonie.
+- **Do załatwienia przed prawdziwymi kontami:**
+  - **Kto jest administratorem danych?** Regulamin i polityka mają puste miejsce na nazwę podmiotu, adres i e-mail. Zespół to uczniowie, więc trzeba ustalić, kto formalnie prowadzi aplikację (szkoła, fundacja, firma, opiekun praktyk).
+  - Prawnik sprawdza oba dokumenty, treść zgody i sposób potwierdzania zgody opiekuna.
+  - **Licencja WHO-5:** CC BY-NC-SA 3.0 IGO, czyli użycie niekomercyjne z podaniem źródła. Przy modelu biznesowym Piotrka trzeba sprawdzić, czy aplikacja się w tym mieści. IPIP jest w domenie publicznej.
+  - Dostawca modelu AI (moderacja, Asystent) i poczty z kodami: nazwa i kraj do polityki prywatności.
 
 ## Plan dalszej pracy (Marcel, 9.11.2026)
 1. **Animacja pokazowa** nowego wyglądu ReLeaf (telefon i komputer).
@@ -105,7 +123,7 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 - Nastrój jest w bazie wymagany, a design pytań pozwala go pominąć — czy wpis bez nastroju się zapisuje?
 - Moderacja bloga: w prototypie lista słów (`js/moderacja.js`); docelowo AI po stronie serwera. Co robimy z historiami wyjścia z kryzysu (np. „kiedyś myślałem o samobójstwie, dziś jest lepiej”) — publikować po sprawdzeniu przez człowieka?
 - Rejestracja: pytania o tematy (Nastrój, Energia, Stres, Sen…) i przypomnienia nie wynikają z planu — sprawdzić z zespołem, co z nimi robimy (np. powiązać z polami check-inu i pushami).
-- Rejestracja: brakuje osobnej zgody RODO na przetwarzanie danych o zdrowiu (Art. 9).
+- ~~Rejestracja: brakuje osobnej zgody RODO na przetwarzanie danych o zdrowiu (Art. 9).~~ Jest od 11.11.2026; od 12.11.2026 trafia do dziennika zgód i da się ją wycofać w „Konto i prywatność”.
 
 ## Propozycja strony głównej (z podsumowania, nieustalona)
 1. Główna akcja: check-in nastroju, suwak 1–10 widoczny od razu, bez przewijania.
