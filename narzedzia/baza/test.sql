@@ -138,7 +138,10 @@ select t.ok((select count(*) = 3 from public.give_consent(array['terms','privacy
         and (select count(*) = 3 from public.user_consents), 'powtórne give_consent nie dubluje');
 select t.ok((select bool_and(active and not needs_renewal and version = '0.1') from public.my_consents), 'my_consents: aktywne, wersja 0.1');
 reset role;
-select t.ok((select bool_and(subject_hash = encode(sha256('ala@example.com'::bytea), 'hex')) from public.user_consents where user_id = :'ala'), 'zgoda ma odcisk e-maila (widzi go tylko serwer)');
+select t.ok((select bool_and(subject_hash = private.hash_email('ala@example.com')) from public.user_consents where user_id = :'ala'), 'zgoda ma odcisk e-maila (widzi go tylko serwer)');
+select t.ok((select bool_and(subject_hash <> encode(sha256('ala@example.com'::bytea), 'hex') and subject_hash ~ '^[0-9a-f]{64}$') from public.user_consents where user_id = :'ala')
+        and private.hash_email(' ALA@example.com') = private.hash_email('ala@example.com'),
+            'odcisk jest liczony z sekretem (zwykłe sha256 adresu go nie odtworzy), a wielkość liter adresu nie ma znaczenia');
 set role authenticated;
 select t.ok((public.health_consent_status()->>'active')::boolean, 'status zgody: aktywna');
 select t.raises($$insert into public.user_consents (user_id, subject_hash, document_id, kind)
@@ -181,7 +184,9 @@ select t.ok(public.delete_checkin(t.dzis() - 2), 'delete_checkin usuwa podlewani
 select t.ok(not public.delete_checkin(t.dzis() - 2) and (select count(*) = 1 from public.daily_checkins), 'drugi raz nie ma czego usuwać');
 select t.raises($$update public.daily_checkins set mood = 10$$, 'permission denied', 'bezpośrednia zmiana podlewania: brak prawa');
 select t.raises($$insert into public.checkin_tags values ('00000000-0000-0000-0000-000000000000', 'move', 1)$$, 'permission denied', 'bezpośredni zapis znaczników: brak prawa');
-select t.ok((select count(*) = 12 from public.checkin_fields), 'katalog ma 6 obszarów i 6 rzeczy „co dziś było”');
+select t.ok((select count(*) = 10 and count(*) filter (where kind = 'area') = 4 from public.checkin_fields where is_active), 'katalog ma 4 obszary i 6 rzeczy „co dziś było”');
+select t.raises($$select public.save_checkin(t.dzis(), 5::smallint, p_tags => '{"food": 1}'::jsonb)$$, 'invalid_tags', 'usunięte pole „Jedzenie”: baza go nie przyjmie');
+select t.raises($$select public.save_checkin(t.dzis(), 5::smallint, p_tags => '{"love": 1}'::jsonb)$$, 'invalid_tags', 'usunięte pole „Miłość”: baza go nie przyjmie');
 
 -- ---------------------------------------------------------------- wnioski: zapisuje serwer, osoba czyta i ocenia
 select t.raises($$select public.replace_insights(auth.uid(), 1::smallint, 30::smallint, '[]')$$, 'permission denied', 'wniosków nie zapisuje telefon');
@@ -366,7 +371,13 @@ select t.ok((select count(*) = 1 and bool_and(guardian_email = 'mama@example.com
 reset role;
 select t.ok((select c.given_by = 'guardian' and c.ip = '203.0.113.7' from public.user_consents c where c.kind = 'guardian' and c.user_id = :'kuba'),
             'zgoda opiekuna zapisana z adresem (widzi to tylko serwer)');
+select t.ok((select c.guardian_hash = private.hash_email('mama@example.com') and c.guardian_hash <> c.subject_hash
+             from public.user_consents c where c.kind = 'guardian' and c.user_id = :'kuba'),
+            'dowód zgody opiekuna mówi, który opiekun ją dał (odcisk jego adresu)');
 set role authenticated;
+select t.raises('select guardian_hash from public.user_consents', 'permission denied', 'dziecko nie czyta odcisku adresu opiekuna');
+select t.raises($$select public.submit_test('ipip20', array[3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3]::smallint[])$$, 'age_required',
+                '14 lat: test osobowości (od 16 lat) jest zamknięty, także po zgodzie opiekuna');
 
 -- ---------------------------------------------------------------- baza liczy tak samo jak aplikacja
 \ir _wyniki.sql
@@ -450,6 +461,72 @@ select t.ok((select count(*) = 0 from public.push_tokens), 'i znika u poprzednie
 reset role;
 select t.ok((select score = -1 from public.posts where id = :'post_ok') and (select status = 'open' from public.reports), 'licznik głosów i zgłoszenie zapisane poprawnie');
 
+-- ---------------------------------------------------------------- czego serwer NIE trzyma: wpisy kryzysowe, bliskie osoby
+select t.raises(format($$insert into public.posts (author_id, pseudonym, title, body, status) values (%L, 'Cicha Paproć', 'Tytuł', 'Treść wpisu testowego.', 'crisis')$$, :'ola'),
+                'invalid input value for enum', 'wpisu o statusie „kryzys” nie zapisze nawet serwer: takiego statusu nie ma');
+select t.ok(to_regclass('public.trusted_contacts') is null, 'bliskie osoby nie mają tabeli (zostają na telefonie)');
+
+-- ---------------------------------------------------------------- zgłoszenia i decyzje moderacyjne (DSA)
+set role authenticated;
+select t.login(:'kuba');
+select t.ok((select count(*) = 1 and bool_and(status = 'open') from public.reports), 'zgłaszający widzi swoje zgłoszenie i jego status');
+select t.login(:'ola');
+select t.ok((select count(*) = 0 from public.reports), 'cudzych zgłoszeń nie widać');
+reset role;
+insert into public.moderation_decisions (user_id, post_id, action, reason_code, reason, automated)
+  values (:'ola', :'post_zly', 'rejected', 'obrazliwe', 'Wpis zawierał wyzwiska.', true);
+select id as dec from public.moderation_decisions \gset
+set role authenticated;
+select t.login(:'kuba');
+select t.ok((select count(*) = 0 from public.moderation_decisions), 'cudzej decyzji moderacyjnej nie widać');
+select t.raises(format($$select public.appeal_moderation(%L, 'To nie moje')$$, :'dec'), 'appeal_unavailable', 'odwołać się może tylko autor');
+select t.login(:'ola');
+select t.ok((select automated and appeal_status = 'none' and reason_code = 'obrazliwe' from public.moderation_decisions), 'autor widzi powód decyzji i to, że podjął ją automat');
+select t.raises($$update public.moderation_decisions set appeal_status = 'reversed'$$, 'permission denied', 'autor nie zmienia decyzji sam');
+select t.raises(format($$select public.appeal_moderation(%L, ' ')$$, :'dec'), 'invalid_input', 'puste odwołanie: odrzucone');
+select public.appeal_moderation(:'dec', 'To był cytat, nie wyzwisko.');
+select t.ok((select appeal_status = 'open' and appealed_at is not null from public.moderation_decisions), 'odwołanie zapisane');
+select t.raises(format($$select public.appeal_moderation(%L, 'Jeszcze raz')$$, :'dec'), 'appeal_unavailable', 'drugie odwołanie od tej samej decyzji: odrzucone');
+reset role;
+insert into public.moderation_decisions (user_id, action, reason_code, reason, automated, blocked_until)
+  values (:'ola', 'blog_blocked', 'obrazliwe', 'Trzy odrzucone wpisy z wyzwiskami.', false, now() + interval '7 days');
+select t.raises(format($$insert into public.posts (author_id, pseudonym, title, body) values (%L, 'Cicha Paproć', 'Nowy wpis', 'Treść wpisu w czasie blokady.')$$, :'ola'),
+                'blog_blocked', 'w czasie blokady serwer nie przyjmie wpisu');
+select t.raises(format($$insert into public.comments (post_id, author_id, pseudonym, body) values (%L, %L, 'Cicha Paproć', 'Komentarz w czasie blokady.')$$, :'post_ok', :'ola'),
+                'blog_blocked', 'ani komentarza');
+update public.moderation_decisions set appeal_status = 'reversed', appealed_at = now(), resolved_at = now() where action = 'blog_blocked';
+insert into public.posts (author_id, pseudonym, title, body) values (:'ola', 'Cicha Paproć', 'Nowy wpis', 'Treść wpisu po uchyleniu blokady.');
+select t.ok((select count(*) = 3 from public.posts where author_id = :'ola'), 'po uchyleniu blokady pisanie wraca');
+
+-- ---------------------------------------------------------------- okresy przechowywania: rozmowy z Asystentem, prośby do opiekuna, sekret
+insert into public.assistant_messages (user_id, role, content, created_at) values
+  (:'ola', 'user', 'stara wiadomość', now() - interval '31 days'),
+  (:'ola', 'assistant', 'nowa wiadomość', now() - interval '2 days'),
+  (:'kuba', 'user', 'wiadomość innej osoby', now());
+select t.ok(private.purge_assistant_messages() = 1, 'rozmowy z Asystentem starsze niż 30 dni znikają');
+select t.ok((select count(*) = 2 from public.assistant_messages), 'nowsze rozmowy zostają');
+set role authenticated;
+select t.login(:'ola');
+select t.raises('delete from public.assistant_messages', 'permission denied', 'rozmów nie kasuje się wprost');
+select t.ok(public.delete_assistant_messages() = 1, '„Usuń rozmowy” kasuje moje wiadomości');
+select t.ok((select count(*) = 0 from public.assistant_messages), 'po usunięciu nie widzę żadnej');
+select t.ok(public.delete_assistant_messages() = 0, 'drugie „Usuń rozmowy” nic nie psuje');
+reset role;
+select t.ok((select count(*) = 1 from public.assistant_messages where user_id = :'kuba')
+        and (select count(*) = 1 and bool_and(details = '{}'::jsonb) from public.privacy_events where event = 'assistant_history_deleted'),
+            'cudze rozmowy zostają, a usunięcie zostawia jeden ślad bez treści');
+insert into public.guardian_requests (user_id, guardian_email, token_hash, created_at, expires_at)
+  values (:'ola', 'tata@example.com', repeat('b', 64), now() - interval '20 days', now() - interval '6 days');
+select t.ok(private.purge_guardian_requests() = 1, 'niepotwierdzona prośba do opiekuna znika po wygaśnięciu');
+select t.ok((select count(*) = 1 and bool_and(confirmed_at is not null) from public.guardian_requests), 'potwierdzona prośba zostaje');
+select t.ok(private.run_retention() ?& array['consents', 'assistant', 'guardian_requests'], 'codzienne sprzątanie uruchamia wszystkie trzy czyszczenia');
+set role authenticated;
+select t.raises('select * from private.secrets', 'permission denied', 'sekretu do odcisków nie czyta nikt z aplikacji');
+reset role;
+set role service_role;
+select t.raises('select * from private.secrets', 'permission denied', 'ani klucz serwera (service_role)');
+reset role;
+
 -- ---------------------------------------------------------------- katalog uprawnień: nic nie zostało otwarte przez pomyłkę
 select t.ok(not exists (
   select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -465,6 +542,7 @@ select t.ok((select array_agg(n.nspname || '.' || p.proname order by n.nspname, 
              where n.nspname in ('public', 'private') and p.prokind = 'f' and has_function_privilege('authenticated', p.oid, 'execute')
                and not exists (select 1 from pg_depend d where d.objid = p.oid and d.deptype = 'e'))
   = array['private.can_read_questionnaire', 'private.current_document', 'private.is_timezone',
+          'public.appeal_moderation', 'public.delete_assistant_messages',
           'public.delete_checkin', 'public.delete_my_account', 'public.delete_test_results', 'public.finish_experiment',
           'public.give_consent', 'public.health_consent_status', 'public.register_push_token', 'public.save_checkin',
           'public.set_insight_feedback', 'public.start_experiment', 'public.submit_test', 'public.withdraw_consent'],
@@ -484,7 +562,7 @@ select t.ok(not exists (select 1 from auth.users where id = :'ala')
         and not exists (select 1 from public.test_sessions where user_id = :'ala')
         and not exists (select 1 from public.daily_checkins where user_id = :'ala'), 'usunięcie konta kasuje profil i dane');
 select t.ok((select count(*) = 5 and bool_and(user_id is null and orphaned_at is not null)
-             from public.user_consents where subject_hash = encode(sha256('ala@example.com'::bytea), 'hex')),
+             from public.user_consents where subject_hash = private.hash_email('ala@example.com')),
             'dowód zgód zostaje bez powiązania z kontem');
 select t.ok((select count(*) = 1 from public.privacy_events where event = 'account_deleted' and user_id is null), 'usunięcie konta zostawia ślad');
 select t.ok(private.purge_orphaned_records(interval '10 years') = 0, 'przed terminem nic nie znika');

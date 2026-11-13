@@ -23,9 +23,9 @@
     'Zwyczajny dzień też się liczy.',
     'Nieźle! Co dziś pomogło?',
     'Miło to słyszeć.',
-    'Super! Roślinka zakwita.',
-    'Świetnie! Zapamiętaj, co pomogło.',
-    'Wspaniale! Pełny rozkwit.',
+    'Dobrze to słyszeć.',
+    'Fajnie. Zapamiętaj, co dziś pomogło.',
+    'Cieszę się razem z Tobą.',
   ];
   const LOW = 3; // do tej wartości włącznie wyróżniamy wsparcie
 

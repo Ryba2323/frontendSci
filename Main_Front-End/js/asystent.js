@@ -8,7 +8,8 @@
  *   • Skrytka: „Zapytaj Asystenta” → zgoda → myśl zwija się w liść, liść leci do postaci w przycisku i z liścia wyrasta ekran rozmowy,
  *   • podlewanie: „Porozmawiaj z Asystentem Wsparcia” przy niskim nastroju.
  * Ekran wyrasta kołem z miejsca, z którego go otwarto (jak podlewanie). SOS jest zawsze widoczny.
- * Wiadomości użytkownika sprawdza js/moderacja.js: słowa kryzysowe → od razu 116 111 / 112 / oddech.
+ * Wiadomości użytkownika sprawdza js/moderacja.js: słowa kryzysowe → od razu 116 111 / 112 / oddech;
+ * słowa o krzywdzie („tata mnie bije”) → „to nigdy nie jest Twoja wina” + 116 111 / 112.
  *
  * MAKIETA: odpowiedzi są przykładowe, nic nie jest wysyłane. Myśl ze Skrytki trafia tu tylko po zgodzie.
  * TODO backend: prawdziwy model AI (funkcja po stronie serwera), historia rozmów.
@@ -18,7 +19,7 @@
   'use strict';
 
   const { haptic } = window.AuthCommon;
-  const Mod = window.Moderacja || { check: () => ({ verdict: 'ok', hits: [] }) };
+  const Mod = window.Moderacja || { check: () => ({ verdict: 'ok', hits: [], krzywda: false }), krzywdaCard: () => '' };
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(location.search).has('widok');
   const wait = ms => new Promise(r => setTimeout(r, reduceMotion ? 0 : ms));
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -177,8 +178,11 @@
   // ================================================================
   function userSays(text) {
     add(Bubble('me', text));
-    if (Mod.check(text).verdict === 'kryzys') {
+    const r = Mod.check(text);
+    if (r.verdict === 'kryzys') {
       say('Dobrze, że to napisałeś(-aś). To, co czujesz, jest ważne i nie musisz z tym zostawać sam(a).', Crisis());
+    } else if (r.krzywda && Mod.krzywdaCard) {
+      say('Dobrze, że mi o tym piszesz. To, co się dzieje, nie powinno się dziać.', Mod.krzywdaCard({ hidden: false }));
     } else {
       say('Rozumiem. Opowiedz mi o tym trochę więcej, jeśli chcesz. Nie spiesz się.');
     }

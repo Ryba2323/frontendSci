@@ -63,7 +63,9 @@
 :root[data-sciezka][data-uklad="d"] .stage-fade {
   display: block; position: fixed; z-index: 3; left: 0; right: 0; top: 0; height: calc(var(--sc-top) + var(--sp-8));
   opacity: 1 !important; transform: none !important; pointer-events: none;
-  background: linear-gradient(var(--sky-top) 42%, color-mix(in srgb, var(--sky-top) 0%, transparent));
+  /* pełny kolor sięga pod dolną krawędź logo i kafelków (ok. 60 px), wygaszenie zaczyna się dopiero pod nimi:
+     przy 42% tekst kart prześwitywał tuż pod logo (rada 12.11.2026) */
+  background: linear-gradient(var(--sky-top) calc(100% - var(--sp-10)), color-mix(in srgb, var(--sky-top) 0%, transparent));
 }
 
 /* strefa krajobrazu przy horyzoncie: treść jest tu zasłonięta, więc dotyk łapie ta warstwa (js/sciezka.js), a nie przyciski pod spodem.

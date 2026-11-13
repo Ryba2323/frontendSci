@@ -61,7 +61,7 @@
       ${svg(ICO.chev)}
     </button>`;
 
-  function main() {
+  function main(status) {
     const acc = account.load();
     const terms = Zgody.state('terms'), health = Zgody.state('health_data');
     const D = Zgody.DOCS;
@@ -73,13 +73,14 @@
       <span class="grabber" aria-hidden="true"></span>
       <h2 class="sos-title" id="kp-title" tabindex="-1">Konto i prywatność</h2>
       <p class="sos-sub">${acc ? `${esc(acc.nick || 'Twoje konto')}${acc.email ? ` · ${esc(acc.email)}` : ''}` : 'Wersja pokazowa bez konta — dane zostają tylko w tej przeglądarce.'}</p>
+      ${status ? `<p class="kp-status" role="status">${svg(ICO.check)}<span>${status}</span></p>` : ''}
 
       <p class="sheet-label" id="kp-l-zgody">Twoje zgody</p>
       <ul class="sos-list kp-list" aria-labelledby="kp-l-zgody">
         <li class="sos-item kp-static">
           <span class="sos-ico">${svg(ICO.doc)}</span>
           <span><b>Regulamin i polityka prywatności</b>
-            <small>${terms.active ? `Zaakceptowane ${day(terms.row.givenAt)} · wersja ${terms.row.version}` : 'Do przeczytania przed założeniem konta'}</small>
+            <small>${terms.active ? `Regulamin zaakceptowany ${day(terms.row.givenAt)} · wersja ${terms.row.version}` : 'Do przeczytania przed założeniem konta'}</small>
           </span>
           <span class="kp-links"><a href="${D.terms.url}" target="_blank" rel="noopener">Regulamin</a><a href="${D.privacy.url}" target="_blank" rel="noopener">Polityka prywatności</a></span>
         </li>
@@ -98,7 +99,7 @@
       <ul class="sos-list kp-list" aria-labelledby="kp-l-dane">
         <li>${row(ICO.down, 'Pobierz moje dane', 'Plik z Twoimi wpisami i wynikami. Nie zostawiaj go na wspólnym komputerze', 'data-kp-do="eksport"')}</li>
         <li>${row(ICO.list, 'Usuń historię testów', n ? `${n} ${plural(n)} · zgoda zostaje` : 'Historia jest pusta', `data-kp="usun-historie"${n ? '' : ' disabled'}`)}</li>
-        <li>${row(ICO.user, 'Usuń konto', 'Twoje dane znikną na zawsze', 'data-kp="usun-konto"')}</li>
+        <li>${row(ICO.user, 'Usuń konto', 'Dane znikną na zawsze. Zostanie tylko zapis, że i kiedy były zgody', 'data-kp="usun-konto"')}</li>
       </ul>
       <button type="button" class="sos-close" data-close>Gotowe</button>`;
   }
@@ -170,7 +171,7 @@
       return `
         <span class="grabber" aria-hidden="true"></span>
         <h2 class="sos-title" id="kp-title" tabindex="-1">Konto usunięte</h2>
-        <p class="sos-sub">Twoje dane zniknęły. Dziękujemy za wspólny czas — dbaj o siebie. Gdy zechcesz wrócić, nowa roślinka wyrośnie od nasionka.</p>
+        <p class="sos-sub">Twoje dane zniknęły. Został tylko zapis, że i kiedy były zgody, bez powiązania z kontem (szczegóły w polityce prywatności). Dziękujemy za wspólny czas — dbaj o siebie. Gdy zechcesz wrócić, nowa roślinka wyrośnie od nasionka.</p>
         <a class="sos-item is-main" href="tel:116111">
           <span class="sos-ico">${svg('<path d="M6.6 3.5h2.6l1.5 4-2 1.3a11 11 0 0 0 6.5 6.5l1.3-2 4 1.5v2.6A2 2 0 0 1 18.4 19 15 15 0 0 1 5 5.6a2 2 0 0 1 1.6-2.1z"/>')}</span>
           <span><b>116 111 działa zawsze</b><small>Telefon zaufania dla dzieci i młodzieży — bezpłatnie, całą dobę, bez konta</small></span>
@@ -180,9 +181,11 @@
   };
 
   let current = 'main', entered = 'main';
-  function paint(name) {
+  // `status`: krótkie potwierdzenie tego, co się właśnie stało, pokazane pod tytułem widoku głównego.
+  // Toast przy otwartym arkuszu zasłaniał jego tytuł (rada 12.11.2026), więc zostaje tylko tam, gdzie arkusz się zamyka.
+  function paint(name, status) {
     current = VIEWS[name] ? name : 'main';
-    sheet.innerHTML = VIEWS[current]();
+    sheet.innerHTML = VIEWS[current](status);
     sheet.dataset.view = current;
     sheet.scrollTop = 0;
     const h = sheet.querySelector('#kp-title');
@@ -222,7 +225,8 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast('Kopia danych zapisana jako plik.');
+    if (Sheets.current === sheet && current === 'main') paint('main', 'Kopia danych zapisana jako plik.');
+    else toast('Kopia danych zapisana jako plik.');
   }
 
   function deleteAccount() {
@@ -238,22 +242,20 @@
     eksport: exportData,
     zgoda() {
       Zgody.give('health_data');
-      toast('Dziękujemy. Zgodę cofniesz w każdej chwili.');
       // prośba o zgodę otwarta wprost (np. z „Podlej roślinkę”) zamyka się, żeby można było wrócić do tego, co się robiło
-      if (entered === 'zgoda') Sheets.hide(); else paint('main');
+      if (entered === 'zgoda') { Sheets.hide(); toast('Dziękujemy. Zgodę cofniesz w każdej chwili.'); }
+      else paint('main', 'Dziękujemy. Zgodę cofniesz w każdej chwili.');
     },
     wycofaj() {
       // dane usuwają moduły, które je trzymają (zdarzenie consentchange): js/testy.js, js/home2.js
       Zgody.withdraw('health_data');
       haptic(12);
-      toast('Zgoda wycofana. Dane o samopoczuciu usunięte.');
-      paint('main');
+      paint('main', 'Zgoda wycofana. Dane o samopoczuciu usunięte.');
     },
     'usun-historie'() {
       const n = window.Testy ? window.Testy.deleteAll() : 0;
       haptic(12);
-      toast(n ? 'Historia testów usunięta.' : 'Historia była już pusta.');
-      paint('main');
+      paint('main', n ? 'Historia testów usunięta.' : 'Historia była już pusta.');
     },
     'usun-konto': deleteAccount,
   };

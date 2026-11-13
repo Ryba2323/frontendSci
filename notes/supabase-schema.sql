@@ -132,20 +132,45 @@ create trigger on_auth_user_created after insert on auth.users
 -- opiekuna nie potrzebuje. Kto podał mniej, potrzebuje go, dopóki od rejestracji nie minie tyle pełnych lat, ile
 -- brakowało do 16 (ostrożnie: urodziny mogły być dzień przed rejestracją albo dzień po).
 -- Brak roku urodzenia albo profilu = traktujemy jak osobę poniżej 16 lat.
-create or replace function private.needs_guardian(p_user uuid) returns boolean
+-- Ta sama ostrożna reguła służy testom z minimalnym wiekiem (questionnaires.validated_from_age, np. Big Five od 16 lat).
+create or replace function private.reached_age(p_user uuid, p_age int) returns boolean
 language sql stable security definer set search_path = '' as $$
   select coalesce(
-    (select p.birth_year is null
-         or current_date < (p.created_at + make_interval(years =>
-              greatest(0, 16 - (extract(year from p.created_at)::int - p.birth_year))))::date
+    (select p.birth_year is not null
+        and current_date >= (p.created_at + make_interval(years =>
+              greatest(0, p_age - (extract(year from p.created_at)::int - p.birth_year))))::date
      from public.profiles p where p.id = p_user),
-    true);
+    false);
+$$;
+create or replace function private.needs_guardian(p_user uuid) returns boolean
+language sql stable security definer set search_path = '' as $$
+  select not private.reached_age(p_user, 16);
 $$;
 
--- odcisk adresu e-mail: zostaje przy dowodzie zgody po usunięciu konta (sam adres znika)
+-- Odcisk adresu e-mail: zostaje przy dowodzie zgody po usunięciu konta (sam adres znika).
+-- Liczony Z SEKRETEM (13.11.2026, uwaga prawnika z rady): zwykłe sha256(e-mail) da się sprawdzić słownikiem adresów,
+-- więc kto zobaczyłby tabelę dowodów, mógłby ustalić, czy dana osoba miała konto w aplikacji o zdrowiu psychicznym.
+-- Sekret powstaje raz, przy instalacji. NIE WOLNO go zmieniać ani zgubić: bez niego nie dopasujemy dowodu zgody do
+-- adresu osoby, która o to zapyta. Na prawdziwym projekcie przenieść go do Supabase Vault (kopia bazy nie powinna
+-- zawierać sekretu obok odcisków) — TODO przy podłączaniu, razem z kopią sekretu poza bazą.
+create table private.secrets (
+  name   text primary key,
+  value  text not null
+);
+alter table private.secrets enable row level security;      -- bez polityk i bez uprawnień: czytają tylko funkcje security definer
+revoke all on private.secrets from public;
+insert into private.secrets (name, value)
+values ('hash_pepper', encode(sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text || clock_timestamp()::text, 'UTF8')), 'hex'))
+on conflict (name) do nothing;
+
+create or replace function private.hash_email(p_email text) returns text
+language sql stable security definer set search_path = '' as $$
+  select encode(sha256(convert_to(s.value || ':' || lower(trim(p_email)), 'UTF8')), 'hex')
+  from private.secrets s where s.name = 'hash_pepper';
+$$;
 create or replace function private.subject_hash(p_user uuid) returns text
 language sql stable security definer set search_path = '' as $$
-  select encode(sha256(convert_to(lower(u.email), 'UTF8')), 'hex') from auth.users u where u.id = p_user;
+  select private.hash_email(u.email) from auth.users u where u.id = p_user;
 $$;
 
 -- tokeny push (kilka urządzeń na osobę)
@@ -197,7 +222,10 @@ $$;
 create table public.user_consents (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid references auth.users(id) on delete set null,
-  subject_hash  text not null,                                             -- sha256(e-mail) osoby, której dotyczy zgoda
+  subject_hash  text not null,                                             -- odcisk e-maila osoby, której dotyczy zgoda (private.hash_email)
+  -- kto dał zgodę opiekuna: odcisk JEGO adresu. Prośba (guardian_requests) znika razem z kontem dziecka,
+  -- więc bez tego dowód „opiekun się zgodził” nie mówiłby, który opiekun (uwaga prawnika z rady, 12.11.2026).
+  guardian_hash text check (guardian_hash is null or (kind = 'guardian' and guardian_hash ~ '^[0-9a-f]{64}$')),
   document_id   uuid not null,
   kind          public.legal_doc_kind not null,
   given_by      text not null default 'user' check (given_by in ('user','guardian')),
@@ -238,9 +266,9 @@ begin
   if old.user_id is not null and new.user_id is null then
     new.orphaned_at := now();
   end if;
-  if (new.id, new.subject_hash, new.document_id, new.kind, new.given_by, new.given_at, new.ip, new.user_agent)
+  if (new.id, new.subject_hash, new.guardian_hash, new.document_id, new.kind, new.given_by, new.given_at, new.ip, new.user_agent)
      is distinct from
-     (old.id, old.subject_hash, old.document_id, old.kind, old.given_by, old.given_at, old.ip, old.user_agent)
+     (old.id, old.subject_hash, old.guardian_hash, old.document_id, old.kind, old.given_by, old.given_at, old.ip, old.user_agent)
      or (new.user_id is distinct from old.user_id and new.user_id is not null)
      or (old.withdrawn_at is not null and new.withdrawn_at is distinct from old.withdrawn_at)
      or (old.superseded_at is not null and new.superseded_at is distinct from old.superseded_at) then
@@ -358,7 +386,7 @@ create table public.privacy_events (
   id            bigint generated always as identity primary key,
   user_id       uuid references auth.users(id) on delete set null,
   subject_hash  text not null,
-  event         text not null check (event in ('health_data_erased', 'test_history_deleted', 'account_deleted', 'data_exported')),
+  event         text not null check (event in ('health_data_erased', 'test_history_deleted', 'account_deleted', 'data_exported', 'assistant_history_deleted')),
   details       jsonb not null default '{}',
   created_at    timestamptz not null default now()
 );
@@ -401,8 +429,8 @@ begin
   end if;
   if req.confirmed_at is null then
     update public.guardian_requests r set confirmed_at = now() where r.id = req.id;
-    insert into public.user_consents (user_id, subject_hash, document_id, kind, given_by, ip)
-    values (req.user_id, private.subject_hash(req.user_id), doc, 'guardian', 'guardian', p_ip)
+    insert into public.user_consents (user_id, subject_hash, guardian_hash, document_id, kind, given_by, ip)
+    values (req.user_id, private.subject_hash(req.user_id), private.hash_email(req.guardian_email), doc, 'guardian', 'guardian', p_ip)
     on conflict do nothing;
   end if;
   return req.user_id;
@@ -446,6 +474,18 @@ declare n int;
 begin
   delete from public.privacy_events e where e.user_id is null and e.created_at < now() - p_keep;
   delete from public.user_consents c where c.user_id is null and c.orphaned_at < now() - p_keep;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+-- Prośba do opiekuna, której nikt nie potwierdził, wygasa po 14 dniach. Adres opiekuna to dane osoby trzeciej,
+-- więc po wygaśnięciu kasujemy cały wiersz (dziecko może wysłać nową prośbę). Potwierdzone prośby zostają,
+-- dopóki istnieje konto: z nich bierze się link, którym opiekun cofa zgodę.
+create or replace function private.purge_guardian_requests() returns int
+language plpgsql security definer set search_path = '' as $$
+declare n int;
+begin
+  delete from public.guardian_requests r where r.confirmed_at is null and r.expires_at < now();
   get diagnostics n = row_count;
   return n;
 end $$;
@@ -506,17 +546,12 @@ create table public.good_moments (
 create index on public.good_moments (user_id, created_at desc);
 
 -- ---------------------------------------------------------------------
---  5. SOS: bliskie osoby (max 3)
+--  5. SOS: bliskie osoby — BEZ TABELI (decyzja Marcela, 13.11.2026, po uwadze prawnika z rady)
 -- ---------------------------------------------------------------------
-create table public.trusted_contacts (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  name        text not null check (char_length(name) between 1 and 30),
-  phone       text not null check (phone ~ '^\+?[0-9 ]{6,20}$'),
-  position    smallint not null check (position between 1 and 3),
-  created_at  timestamptz not null default now(),
-  unique (user_id, position)                -- unikalna pozycja 1–3 = najwyżej 3 osoby
-);
+-- Imię i numer telefonu mamy, przyjaciela albo pedagoga to dane osoby trzeciej, która nie jest naszym użytkownikiem.
+-- Umowa z użytkownikiem nie jest podstawą prawną, żeby trzymać je na serwerze, a do działania SOS serwer nie jest
+-- potrzebny. Kontakty zostają więc tylko na urządzeniu (prototyp: localStorage `sci.kontakty`; w aplikacji:
+-- expo-secure-store). Skutek do opisania w aplikacji: po zmianie telefonu trzeba je wpisać jeszcze raz.
 
 -- ---------------------------------------------------------------------
 --  6. Myśl na dziś
@@ -564,7 +599,11 @@ create trigger user_consents_erase_health after update of withdrawn_at on public
 -- ---------------------------------------------------------------------
 --  9. Blog (anonimowy, moderowany)
 -- ---------------------------------------------------------------------
-create type public.mod_status as enum ('pending','published','rejected','crisis','removed');
+-- BEZ statusu „crisis” (decyzja Marcela, 13.11.2026, po uwadze prawnika z rady): wpis albo komentarz, który moderacja
+-- uzna za kryzysowy (myśli samobójcze, samookaleczenie), NIE trafia na serwer. Edge Function `moderate-post` oddaje
+-- telefonowi sam werdykt „kryzys”, aplikacja pokazuje wsparcie (116 111, 112), a treść zostaje na urządzeniu.
+-- Niepublikowany tekst o myślach samobójczych przypięty do konta to dane o zdrowiu bez celu i bez podstawy.
+create type public.mod_status as enum ('pending','published','rejected','removed');
 
 create table public.posts (
   id             uuid primary key default gen_random_uuid(),
@@ -619,6 +658,72 @@ create index on public.reports (post_id);
 create index on public.reports (comment_id);
 create index on public.reports (reporter_id);
 
+-- Decyzje moderacyjne (DSA art. 17 i 20: blog to usługa hostingu). Każde odrzucenie, usunięcie albo blokada pisania
+-- dostaje wiersz z powodem i informacją, czy decydował automat; autor go widzi i może się raz odwołać.
+-- Bez treści wpisu: gdy wpis zniknie, zostaje sam powód. Znika razem z kontem.
+-- KTO rozpatruje odwołania i w jakim terminie — DO USTALENIA przez zespół (regulamin ma w tym miejscu lukę).
+create table public.moderation_decisions (
+  id            uuid primary key default gen_random_uuid(),
+  user_id       uuid not null references auth.users(id) on delete cascade,       -- kogo dotyczy decyzja (autor)
+  post_id       uuid references public.posts(id) on delete set null,
+  comment_id    uuid references public.comments(id) on delete set null,
+  action        text not null check (action in ('rejected','removed','blog_blocked')),
+  reason_code   text not null check (reason_code in ('obrazliwe','dane_osobowe','tresc_bezprawna','spam','inne')),
+  reason        text not null check (char_length(reason) between 3 and 500),      -- zdanie dla autora, zwykłym językiem
+  automated     boolean not null,                                                 -- true = zdecydował model, bez człowieka
+  blocked_until timestamptz,                                                      -- tylko dla blog_blocked
+  appeal_status text not null default 'none' check (appeal_status in ('none','open','upheld','reversed')),
+  appeal_text   text check (char_length(appeal_text) <= 1000),
+  appealed_at   timestamptz,
+  resolved_at   timestamptz,
+  created_at    timestamptz not null default now(),
+  check ((action = 'blog_blocked') = (blocked_until is not null)),
+  check ((appeal_status = 'none') = (appealed_at is null))
+);
+create index on public.moderation_decisions (user_id, created_at desc);
+create index on public.moderation_decisions (appeal_status) where appeal_status = 'open';
+create index on public.moderation_decisions (post_id);
+create index on public.moderation_decisions (comment_id);
+
+-- RPC: supabase.rpc('appeal_moderation', { p_decision, p_text }) — jedno odwołanie na decyzję.
+create or replace function public.appeal_moderation(p_decision uuid, p_text text) returns void
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid();
+begin
+  if uid is null then
+    raise exception 'not_authenticated' using errcode = '28000';
+  end if;
+  if p_text is null or char_length(trim(p_text)) not between 3 and 1000 then
+    raise exception 'invalid_input' using detail = 'Napisz w kilku słowach, dlaczego się nie zgadzasz (do 1000 znaków).';
+  end if;
+  update public.moderation_decisions d
+     set appeal_status = 'open', appeal_text = trim(p_text), appealed_at = now()
+   where d.id = p_decision and d.user_id = uid and d.appeal_status = 'none';
+  if not found then
+    raise exception 'appeal_unavailable' using detail = 'Nie ma takiej decyzji albo odwołanie zostało już złożone.';
+  end if;
+end $$;
+
+-- Blokada pisania na blogu (zapowiada ją regulamin): dopóki trwa, serwer nie przyjmie wpisu ani komentarza.
+-- Czytanie bloga i cała reszta aplikacji działają dalej: wsparcia nie odbieramy za złamanie zasad bloga.
+create or replace function private.blog_blocked_until(p_user uuid) returns timestamptz
+language sql stable security definer set search_path = '' as $$
+  select max(d.blocked_until) from public.moderation_decisions d
+  where d.user_id = p_user and d.action = 'blog_blocked' and d.appeal_status <> 'reversed' and d.blocked_until > now();
+$$;
+create or replace function private.blog_block_guard() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if private.blog_blocked_until(new.author_id) is not null then
+    raise exception 'blog_blocked' using detail = 'Pisanie na blogu jest chwilowo wyłączone dla tego konta. Powód i odwołanie: moderation_decisions.';
+  end if;
+  return new;
+end $$;
+create trigger posts_block_guard before insert on public.posts
+  for each row execute function private.blog_block_guard();
+create trigger comments_block_guard before insert on public.comments
+  for each row execute function private.blog_block_guard();
+
 -- liczniki głosów i komentarzy
 create or replace function private.refresh_post_counters() returns trigger
 language plpgsql security definer set search_path = '' as $$
@@ -656,7 +761,46 @@ create table public.assistant_messages (
   created_at  timestamptz not null default now()
 );
 create index on public.assistant_messages (user_id, created_at desc);
+create index on public.assistant_messages (created_at);
 -- limit liczy Edge Function `ai-chat` (count z dzisiaj, role = 'user')
+
+-- Rozmowy z Asystentem trzymamy najwyżej 30 dni (decyzja Marcela, 13.11.2026; wcześniej nie miały żadnego okresu).
+-- To treści o samopoczuciu, więc dodatkowo: znikają przy wycofaniu zgody (erase_health_data) i na żądanie osoby.
+create or replace function private.purge_assistant_messages(p_keep interval default interval '30 days') returns int
+language plpgsql security definer set search_path = '' as $$
+declare n int;
+begin
+  delete from public.assistant_messages a where a.created_at < now() - p_keep;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+-- RPC: supabase.rpc('delete_assistant_messages') — przycisk „Usuń rozmowy”. Zwraca, ile wiadomości usunięto.
+create or replace function public.delete_assistant_messages() returns int
+language plpgsql security definer set search_path = '' as $$
+declare uid uuid := auth.uid(); n int;
+begin
+  if uid is null then
+    raise exception 'not_authenticated' using errcode = '28000';
+  end if;
+  delete from public.assistant_messages a where a.user_id = uid;
+  get diagnostics n = row_count;
+  if n > 0 then
+    perform private.log_privacy_event(uid, 'assistant_history_deleted');
+  end if;
+  return n;
+end $$;
+
+-- Jedno codzienne sprzątanie: osierocone dowody zgód (3 lata), rozmowy z Asystentem (30 dni), wygasłe prośby do opiekuna.
+-- Brakuje jeszcze zasad dla kont nieaktywnych i kont czekających bez końca na opiekuna — okresy DO DECYZJI zespołu i prawnika.
+create or replace function private.run_retention() returns jsonb
+language plpgsql security definer set search_path = '' as $$
+begin
+  return jsonb_build_object(
+    'consents', private.purge_orphaned_records(),
+    'assistant', private.purge_assistant_messages(),
+    'guardian_requests', private.purge_guardian_requests());
+end $$;
 
 -- Czat peer (P2): Supabase Realtime Broadcast, BEZ zapisu do bazy.
 
@@ -683,13 +827,13 @@ alter table public.guardian_requests  enable row level security;
 alter table public.daily_checkins     enable row level security;
 alter table public.vault_entries      enable row level security;
 alter table public.good_moments       enable row level security;
-alter table public.trusted_contacts   enable row level security;
 alter table public.daily_quotes       enable row level security;
 alter table public.saved_quotes       enable row level security;
 alter table public.posts              enable row level security;
 alter table public.comments           enable row level security;
 alter table public.votes              enable row level security;
 alter table public.reports            enable row level security;
+alter table public.moderation_decisions enable row level security;
 alter table public.assistant_messages enable row level security;
 
 -- (select auth.uid()) zamiast auth.uid(): Postgres liczy to raz na zapytanie, nie raz na wiersz.
@@ -707,7 +851,7 @@ create policy own_update on public.profiles for update to authenticated
 do $$
 declare t text;
 begin
-  foreach t in array array['vault_entries','good_moments','trusted_contacts','saved_quotes'] loop
+  foreach t in array array['vault_entries','good_moments','saved_quotes'] loop
     execute format('grant select, insert, update, delete on public.%I to authenticated', t);
     execute format('create policy own_all on public.%I for all to authenticated
                     using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))', t);
@@ -757,9 +901,10 @@ grant select on public.my_consents to authenticated;
 grant execute on function private.current_document(public.legal_doc_kind) to authenticated;
 grant execute on function public.health_consent_status() to authenticated;
 
--- Asystent: czytasz swoje, zapisuje tylko serwer (service_role omija RLS).
+-- Asystent: czytasz swoje, zapisuje tylko serwer (service_role omija RLS); usuwasz przez delete_assistant_messages().
 grant select on public.assistant_messages to authenticated;
 create policy own_select on public.assistant_messages for select to authenticated using (user_id = (select auth.uid()));
+grant execute on function public.delete_assistant_messages() to authenticated;
 
 -- Myśli na dziś: każdy zalogowany czyta
 grant select on public.daily_quotes to authenticated;
@@ -785,14 +930,33 @@ create policy own_all on public.votes for all to authenticated
 create policy only_published on public.votes as restrictive for insert to authenticated
   with check (exists (select 1 from public.blog_posts b where b.id = post_id));
 
--- Zgłoszenie: status ustawia moderator, nie zgłaszający.
+-- Zgłoszenie: status ustawia moderator, nie zgłaszający. Zgłaszający widzi swoje zgłoszenia i ich status (DSA art. 16 ust. 5).
 grant insert (reporter_id, post_id, comment_id, reason) on public.reports to authenticated;
+grant select (id, reporter_id, post_id, comment_id, reason, status, created_at) on public.reports to authenticated;
 create policy add_report on public.reports for insert to authenticated with check (reporter_id = (select auth.uid()));
+create policy own_select on public.reports for select to authenticated using (reporter_id = (select auth.uid()));
+
+-- Decyzje moderacyjne: autor czyta swoje (powód, czy automat, stan odwołania), zapisuje serwer, odwołanie przez RPC.
+grant select on public.moderation_decisions to authenticated;
+create policy own_select on public.moderation_decisions for select to authenticated using (user_id = (select auth.uid()));
+grant execute on function public.appeal_moderation(uuid, text) to authenticated;
 
 -- Edge Functions (service_role) omijają RLS, ale potrzebują praw do obiektów
 grant all on all tables    in schema public to service_role;
 grant all on all sequences in schema public to service_role;
 grant execute on all functions in schema private to service_role;
+
+-- =====================================================================
+--  SPRZĄTANIE WEDŁUG HARMONOGRAMU
+--  W Supabase włącz rozszerzenie pg_cron (Database → Extensions), potem uruchom ten blok jeszcze raz.
+--  Lokalnie (testy) pg_cron nie ma, więc blok nic nie robi.
+-- =====================================================================
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.schedule('releaf-retention', '15 3 * * *', 'select private.run_retention()');
+  end if;
+end $$;
 
 -- =====================================================================
 --  DANE STARTOWE: dokumenty (wersje robocze — przed startem podmienić url i odciski)

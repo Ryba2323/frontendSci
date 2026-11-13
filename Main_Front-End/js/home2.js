@@ -192,11 +192,15 @@
   }
 
   const changed = () => window.dispatchEvent(new CustomEvent('entrychange', { detail: entry }));
-  // Zgoda na dane o samopoczuciu (js/zgody.js): po jej WYCOFANIU podlewania nie zapisujemy — zamiast pytań
-  // pokazujemy prośbę o zgodę (js/konto.js). Kto nigdy jej nie wycofał, podlewa jak dotąd (zgoda jest z rejestracji).
+  // Zgoda na dane o samopoczuciu (js/zgody.js): bez niej podlewania nie zapisujemy — zamiast pytań pokazujemy prośbę
+  // o zgodę (js/konto.js). Dotyczy to osoby, która zgodę WYCOFAŁA, i osoby z kontem, która pominęła ją w rejestracji
+  // (od 13.11.2026 zgoda nie jest warunkiem konta). Wersja pokazowa bez konta podlewa jak dotąd, a konto czekające
+  // na zgodę opiekuna też (w prototypie; w bazie zapis ruszy dopiero po zgodzie opiekuna).
   function consentBlocks() {
     const Z = window.Zgody;
-    if (!Z || Z.has('health_data') || !Z.state('health_data').withdrawn) return false;
+    if (!Z || Z.has('health_data')) return false;
+    const st = Z.state('health_data');
+    if (!st.withdrawn && (st.row || !saved)) return false;
     if (window.Konto) window.Konto.open('zgoda');
     return true;
   }
@@ -217,6 +221,8 @@
       const blank = window.Checkin ? window.Checkin.DATA.blank() : { mood: null, areas: {}, acts: {}, note: '' };
       const moodChanged = 'mood' in patch && patch.mood !== (entry && entry.mood);
       entry = Object.assign(blank, entry, patch, { areas: Object.assign({}, entry && entry.areas, patch.areas), acts: Object.assign({}, entry && entry.acts, patch.acts) });
+      // pusta wartość w łatce cofa znacznik (np. drugie stuknięcie w „Ruch” na Domu)
+      ['areas', 'acts'].forEach(k => Object.keys(entry[k]).forEach(c => { if (entry[k][c] == null) delete entry[k][c]; }));
       if (moodChanged && opts.rain !== false) pour(entry);
       else if (watered) showWatered(entry);
       changed();

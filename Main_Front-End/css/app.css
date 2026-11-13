@@ -262,7 +262,8 @@ body, .sheet { transition: background-color var(--dur-base) ease, color var(--du
    Pytania podlewania (nakładka; kroki z checkin.css)
    ================================================================ */
 .ci-overlay {
-  position: fixed; inset: 0; z-index: 25; overflow-y: auto; overscroll-behavior: contain;
+  /* overflow-x: hidden — poświata suwaka nastroju wystaje poza szybę na komputerze i dawała przewijanie w bok */
+  position: fixed; inset: 0; z-index: 25; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
   background: var(--glow), linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
   background-attachment: fixed;
   clip-path: circle(0 at var(--ox, 50%) var(--oy, 100%));
@@ -391,7 +392,7 @@ body, .sheet { transition: background-color var(--dur-base) ease, color var(--du
 .vault-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: 0 var(--sp-1); }
 .vault-bar .btn-primary svg { width: 17px; height: 17px; }
 .vault-bar .btn-primary:hover svg { transform: none; }
-#vault-alert { margin-top: var(--sp-3); }
+#vault-alert, #vault-harm { margin-top: var(--sp-3); }
 
 /* dwie kolumny karteczek; rozwinięta zajmuje całą szerokość, „dense” zapełnia luki */
 .vault-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; align-items: start; gap: var(--sp-2); }
@@ -475,7 +476,7 @@ body, .sheet { transition: background-color var(--dur-base) ease, color var(--du
 .insight p { margin: 0; font-size: .93rem; line-height: 1.55; color: var(--text-muted); }
 .insight b { color: var(--text); }
 .insight-more summary {
-  display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) 0; list-style: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: var(--sp-2); min-height: 44px; padding: var(--sp-2) 0; list-style: none; cursor: pointer;
   font-size: .88rem; font-weight: 700; color: var(--primary-dark);
 }
 .insight-more summary::-webkit-details-marker { display: none; }
@@ -632,7 +633,7 @@ body.sheet-open .fab, body.ci-open .fab { display: none; }
 .mod-live svg { flex: 0 0 18px; width: 18px; height: 18px; }
 .mod-live[data-kind="ok"] { background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); }
 .mod-live[data-kind="obrazliwe"], .mod-live[data-kind="dane"] { background: var(--bg-2); color: var(--text); box-shadow: inset 3px 0 0 var(--warning); }
-.mod-live[data-kind="kryzys"] { background: rgba(var(--mist-rgb), .6); color: var(--text); }
+.mod-live[data-kind="kryzys"], .mod-live[data-kind="krzywda"] { background: rgba(var(--mist-rgb), .6); color: var(--text); }
 .compose .btn-primary svg { transition: none; }
 .compose .btn-primary:hover svg { transform: none; }
 

@@ -9,10 +9,8 @@
 
   <link rel="icon" type="image/png" href="img/favicon-64.png">
   <link rel="apple-touch-icon" href="img/ikona-180.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
+  <!-- czcionki z własnego serwera (css/fonts.css + fonts/), bez połączeń z Google: narzedzia/pobierz-czcionki.js -->
+  <link rel="stylesheet" href="css/fonts.css">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/prawo.css">
@@ -123,7 +121,7 @@
           <tr>
             <th scope="row">Bliskie osoby: imię i numer telefonu (najwyżej 3)</th>
             <td data-th="Po co">Żebyś w trudnej chwili mógł lub mogła zadzwonić jednym dotknięciem. Podaj numer tylko za zgodą tej osoby.</td>
-            <td data-th="Podstawa">Umowa (art. 6 ust. 1 lit. b RODO).</td>
+            <td data-th="Podstawa">Tych danych nie mamy: zostają wyłącznie na Twoim telefonie i nie trafiają na nasz serwer. Po zmianie telefonu wpiszesz je jeszcze raz.</td>
           </tr>
           <tr>
             <th scope="row">Blog: wpisy, komentarze, głosy, zgłoszenia</th>
@@ -133,7 +131,7 @@
           <tr>
             <th scope="row">Rozmowy z Asystentem Wsparcia</th>
             <td data-th="Po co">Udzielenie odpowiedzi. Asystent to program, nie człowiek. Rozmowy mówią o samopoczuciu, więc znikają razem z wycofaniem zgody.</td>
-            <td data-th="Podstawa">Twoja wyraźna zgoda, ta sama co wyżej. <mark class="todo">[do potwierdzenia przez prawnika; do ustalenia, jak długo rozmowy są przechowywane]</mark></td>
+            <td data-th="Podstawa">Twoja wyraźna zgoda, ta sama co wyżej. Rozmowy trzymamy najwyżej 30 dni, a wcześniej usuniesz je sam lub sama. <mark class="todo">[do potwierdzenia przez prawnika]</mark></td>
           </tr>
           <tr>
             <th scope="row">Dowód zgód: rodzaj zgody, wersja dokumentu, data, adres IP, rodzaj przeglądarki</th>
@@ -179,7 +177,7 @@
 
     <section id="testy">
       <h2>5. Testy</h2>
-      <p>W aplikacji są dwa testy: samopoczucia (WHO-5) i osobowości (IPIP-BFM-20). Ich wynik to <b>podpowiedź, a nie diagnoza</b>. Po każdym teście zapisujemy tylko:</p>
+      <p>W aplikacji są dwa testy: samopoczucia (WHO-5) i osobowości (IPIP-BFM-20). Test osobowości jest dla osób od 16 lat, bo tylko na takich osobach był sprawdzany. Wynik testu to <b>podpowiedź, a nie diagnoza</b>. Po każdym teście zapisujemy tylko:</p>
       <ol>
         <li>Twoje odpowiedzi,</li>
         <li>policzony wynik,</li>
@@ -222,7 +220,7 @@
         <li><b>Konto i jego zawartość</b>: do usunięcia konta.</li>
         <li><b>Dane o samopoczuciu</b>: do wycofania zgody albo usunięcia konta, zależnie od tego, co nastąpi wcześniej.</li>
         <li><b>Kopie zapasowe</b>: znikają same najpóźniej po <mark class="todo">[do uzupełnienia: liczba dni]</mark> dniach.</li>
-        <li><b>Dowód zgód</b>: po usunięciu konta zostaje zapis, że i kiedy były zgody, razem z adresem IP. Zamiast e-maila jest jego skrót: nie da się z niego odczytać adresu, ale znając adres, możemy potwierdzić, że zgoda dotyczyła Ciebie. Trzymamy to <mark class="todo">[do potwierdzenia: 3 lata]</mark>, na wypadek sporu, potem usuwamy.</li>
+        <li><b>Dowód zgód</b>: po usunięciu konta zostaje zapis, że i kiedy były zgody, razem z adresem IP. Zamiast e-maila jest jego skrót liczony z tajnym kluczem: nie da się z niego odczytać adresu, ale znając adres, możemy potwierdzić, że zgoda dotyczyła Ciebie. Przy zgodzie opiekuna zostaje taki sam skrót jego adresu. Trzymamy to <mark class="todo">[do potwierdzenia: 3 lata]</mark>, na wypadek sporu, potem usuwamy.</li>
         <li><b>Konta nieużywane</b>: <mark class="todo">[do ustalenia: po jakim czasie pytamy, czy usunąć konto]</mark>.</li>
       </ul>
     </section>
@@ -259,7 +257,7 @@
       <div class="doc-note is-warm">
         <p>ReLeaf nie jest pomocą w nagłych wypadkach. Nikt nie czyta Twoich wpisów na bieżąco i <b>program sam nikogo nie zawiadamia</b>. Jeśli Ty albo ktoś obok jest w niebezpieczeństwie, zadzwoń pod <a href="tel:112">112</a>. Gdy chcesz porozmawiać, <a href="tel:116111">116 111</a> działa bezpłatnie, całą dobę.</p>
       </div>
-      <p>Gdy w tekście na blog pojawią się słowa wskazujące na kryzys, nie publikujemy wpisu i od razu pokazujemy numery pomocowe. Robi to program. <mark class="todo">[do decyzji: takiego tekstu nie zapisujemy na serwerze]</mark></p>
+      <p>Gdy w tekście na blog pojawią się słowa wskazujące na kryzys, nie publikujemy wpisu i od razu pokazujemy numery pomocowe. Robi to program. Takiego tekstu nie zapisujemy na serwerze: zostaje tylko na Twoim telefonie.</p>
       <p>Wyjątek: gdy człowiek z zespołu, sprawdzając zgłoszenie na blogu, zobaczy, że komuś grozi poważne niebezpieczeństwo albo doszło do przestępstwa, prawo może nas zobowiązać do zawiadomienia służb. <mark class="todo">[do potwierdzenia przez prawnika]</mark></p>
     </section>
 

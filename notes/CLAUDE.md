@@ -38,8 +38,8 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 **P2 (później):** Asystent Wsparcia (chatbot AI, limit 10 wiadomości dziennie), umówienie wizyty u psychologa (formularz albo link), tryb SOS (animacja oddechowa + kontakty zaufane jednym dotknięciem), czat peer (Realtime, bez zapisu, sesja wygasa po 2 h), Dashboard (zawartość nie ustalona).
 
 ## Check-in (`daily_checkins`)
-- Wymagany **nastrój 1–10**. Opcjonalnie: godziny snu, jakość snu, jedzenie, rodzina, przyjaciele, miłość, natura, nauka, notatka.
-- Od 12.11.2026 także (propozycja, dla spersonalizowanych wniosków): **pora pójścia spać** i **„Co dziś było?”** (ruch, hobby, odpoczynek, szczera rozmowa, coś dla kogoś, plecak na jutro). Zasada: zbieramy tylko to, z czego powstaje jakiś wniosek; **„Miłość” i „Jedzenie” jej dziś nie spełniają** (nic z nich nie korzysta, rada 12.11.2026 radzi je usunąć). Szczegóły i pytania do zespołu: `notes/wnioski.md`.
+- Wymagany **nastrój 1–10**. Opcjonalnie: godziny snu, jakość snu, rodzina, przyjaciele, natura, nauka, notatka. **„Jedzenie” i „Miłość” usunięte 13.11.2026** (decyzja Marcela po uwagach rady).
+- Od 12.11.2026 także (propozycja, dla spersonalizowanych wniosków): **pora pójścia spać** i **„Co dziś było?”** (ruch, hobby, odpoczynek, szczera rozmowa, coś dla kogoś, plecak na jutro). Zasada: zbieramy tylko to, z czego powstaje jakiś wniosek; „Miłość” i „Jedzenie” jej nie spełniały, więc od 13.11.2026 ich nie ma. Szczegóły i pytania do zespołu: `notes/wnioski.md`.
 - Skale pól poza nastrojem i częstotliwość nie są ustalone (zakładamy codziennie).
 - **Streak** jest liczony z danych, nie przechowywany.
 - Nierozstrzygnięte: `moods` (plan) czy `daily_checkins` (rozmowa o bazie).
@@ -77,6 +77,13 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
   - Odstępy: WHO-5 co 7 dni (jak w planie „najwyżej raz w tygodniu”), Big Five co 30 dni.
   - Dowód zgód po usunięciu konta zostaje 3 lata bez powiązania z kontem (skrót e-maila).
   - Kolumn w bazie dodatkowo nie szyfrujemy (szyfrowanie dysku i połączenia w Supabase + RLS); Skrytka dalej szyfrowana na telefonie.
+- **Decyzje Marcela z 13.11.2026 (po uwagach rady, stan każdego punktu: `notes/rada-uwagi.md`):**
+  - zgoda na dane o zdrowiu w rejestracji jest nieobowiązkowa; prośba wraca przy pierwszym podlaniu i przy teście;
+  - Big Five dostępny od 16 lat (w aplikacji i w bazie);
+  - rozmowy z Asystentem trzymamy najwyżej 30 dni, a osoba może je usunąć wcześniej;
+  - wpisu na blog uznanego za kryzysowy nie zapisujemy na serwerze;
+  - bliskie osoby zostają tylko na telefonie (bez tabeli w bazie);
+  - czcionki są hostowane lokalnie, strony nie łączą się z Google.
 - **Do załatwienia przed prawdziwymi kontami:**
   - **Kto jest administratorem danych?** Regulamin i polityka mają puste miejsce na nazwę podmiotu, adres i e-mail. Zespół to uczniowie, więc trzeba ustalić, kto formalnie prowadzi aplikację (szkoła, fundacja, firma, opiekun praktyk).
   - Prawnik sprawdza oba dokumenty, treść zgody i sposób potwierdzania zgody opiekuna.
@@ -92,11 +99,19 @@ Podsumowanie planu projektu (plan realizacji v2.0, wrzesień 2026, i ustalenia z
 6. Z backendem: **zbieranie i interpretacja danych**, żeby aplikacja mówiła, co robisz w dni, kiedy czujesz się gorzej, i dawała spersonalizowane insighty. **Projekt i silnik są gotowe (12.11.2026, wersja 2 po recenzji rady): `notes/wnioski.md`.** Zostają decyzje zespołu z rozdziału 12 tego pliku, zatwierdzenie tekstów wsparcia przez psychologa, podłączenie do bazy i sprawdzenie progów na prawdziwych danych.
 - Test z nastolatkami: 20.11.2026 (`notes/test-z-nastolatkami.md`).
 
+### Podział zadań (Marcel, 9.11.2026)
+- **Marcel (z Claude)**: przejmuje dalszą część Waldka. Testy WHO-5 i Big Five (wygląd i przebieg testu, wynik, historia) oraz cała strona prawna: zgoda RODO art. 9 i jej wycofanie, regulamin, polityka prywatności, usuwanie historii testów i konta, poprawa `notes/supabase-testy.sql`.
+- **Tymek i Piotrek**: design zakładania konta (rejestracja) w nowym wyglądzie „Żywej planety”, z budową roślinki przy rejestracji. Bez regulaminów i zgód — te dorabiają Marcel i Claude.
+- **Bartek (pomaga Waldek)**: kilka wariantów pierwszego uruchomienia aplikacji (przed kontem) i wyglądu aplikacji zaraz po zalogowaniu.
+- **Dopiero potem**: React Native + Expo, backend Supabase, model Asystenta, zbieranie i interpretacja danych.
+- **Bez właściciela na razie**: animacja pokazowa, model biznesowy od Piotrka, ekran logowania, ekran konta / ustawień, przygotowanie testu z nastolatkami (20.11).
+
 ## Zespół
 - **Marcel**: założyciel, koordynacja, backend, baza, Supabase.
 - **Waldek**: backend, baza, Supabase.
 - **Bartek**: design (Figma) i frontend.
 - **Tymek**: frontend.
+- **Piotrek**: model biznesowy; od 9.11.2026 też design rejestracji (z Tymkiem).
 
 ## Decyzje podjęte w tym repo (poza planem)
 - **Roślinka** jest motywem przewodnim aplikacji (decyzja Marcela). Rośnie z każdym krokiem użytkownika i kwitnie na końcu. W planie jej nie ma, więc mechanika w codziennym użyciu (za co rośnie, czy więdnie, nagrody) jest do ustalenia.

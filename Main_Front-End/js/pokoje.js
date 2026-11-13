@@ -63,8 +63,9 @@
         <button type="button" class="sos" data-sos aria-haspopup="dialog">${svg(ICON.heart)}<span>SOS</span></button>
       </header>`);
     // wsparcie przy słowach kryzysowych musi być widać w trakcie pisania
-    const alert = $('#vault-alert');
+    const alert = $('#vault-alert'), harm = $('#vault-harm');
     if (alert) text.insertAdjacentElement('afterend', alert);
+    if (harm) (alert || text).insertAdjacentElement('afterend', harm);   // karta przy słowach o krzywdzie (js/moderacja.js)
 
     const openBtn = $('#pk-write');
     let writing = false, token = 0;

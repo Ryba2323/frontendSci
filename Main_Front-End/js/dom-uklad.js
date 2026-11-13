@@ -164,6 +164,15 @@
         <p class="kicker" id="zy-next-title">Dla Ciebie teraz</p>
         <div id="du-suggest">${Suggest(suggestion(null))}</div>
         <div class="du-more" id="du-more" hidden>
+          ${D && D.ACTS.length ? `
+          <!-- „Co dziś było?” jednym stuknięciem, bez nowego ekranu (13.11.2026, propozycja rady, punkt 12): odkąd podlewanie
+               kończy się na nastroju, mało kto wchodzi w dalsze pytania, a bez tych znaczników wnioski i eksperymenty
+               w Trackerze nie mają z czego powstać. Stuknięcie zapisuje od razu (Podlewanie.save), drugie cofa. -->
+          <div class="zy-acts" role="group" aria-labelledby="zy-acts-title">
+            <p class="du-more-title" id="zy-acts-title">Co dziś było? Stuknij, co pasuje.</p>
+            <div class="du-add" id="zy-acts">${D.ACTS.map(a =>
+              `<button type="button" class="du-chip zy-act" data-act="${a.code}" aria-pressed="false">${svg(a.icon)}${a.name}</button>`).join('')}</div>
+          </div>` : ''}
           <p class="du-more-title">Chcesz dodać więcej? Nie musisz.</p>
           <div class="du-add">
             <button type="button" class="du-chip" data-step="sleep">${svg(ICON.plus)}Sen</button>
@@ -207,6 +216,14 @@
       setTimeout(() => root.classList.remove('is-pulse'), 800);
     });
     next.addEventListener('click', e => {
+      const act = e.target.closest('[data-act]');
+      if (act) {
+        // pusta wartość cofa znacznik (Podlewanie.save wyrzuca puste); bez deszczu, bo nastrój się nie zmienił
+        const on = act.getAttribute('aria-pressed') !== 'true';
+        haptic(6);
+        P.save({ acts: { [act.dataset.act]: on ? 1 : null } }, { rain: false });
+        return;
+      }
       const add = e.target.closest('[data-step]');
       if (add) P.open({ from: add, step: add.dataset.step });
     });
@@ -234,6 +251,7 @@
       $('#zy-done-text').textContent = said;
       $('#zy-low-text').textContent = said;
       $('#du-more').hidden = !m;
+      $$('.zy-act', next).forEach(b => b.setAttribute('aria-pressed', String(!!(entry && entry.acts && entry.acts[b.dataset.act]))));
       $('#du-suggest').innerHTML = Suggest(suggestion(m));
       if (entry) [['sleep', entry.sleepHours != null || entry.sleepQuality != null], ['areas', Object.keys(entry.areas || {}).length + Object.keys(entry.acts || {}).length], ['note', !!(entry.note || '').trim()]]
         .forEach(([k, done]) => { const c = $(`[data-step="${k}"]`, next); c.classList.toggle('is-done', !!done); c.querySelector('svg').innerHTML = done ? ICON.check : ICON.plus; });
@@ -271,8 +289,14 @@
         <span class="zy-foot-links">
           <button type="button" class="zy-link" data-zy-click="#color-open">Kolor roślinki</button>
           <button type="button" class="zy-link" data-zy-click="#plant-zoom">Roślinka na cały ekran</button>
-          <button type="button" class="zy-link" data-konto>Konto i prywatność</button>
-        </span>`);
+        </span>
+        <!-- Wejście do konta jako wyraźny wiersz z ikoną osoby (13.11.2026, uwaga rady: mały link na końcu Domu był
+             schowany, a na komputerze nie było go wcale). Górny pasek zostaje bez zmian: logo, Asystent, SOS. -->
+        <button type="button" class="zy-konto" data-konto>
+          <span class="zy-konto-ico" aria-hidden="true">${svg('<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/>')}</span>
+          <span><b>Konto i prywatność</b><small>Zgody, Twoje dane, usuwanie konta</small></span>
+          ${svg('<path d="M9 6l6 6-6 6"/>')}
+        </button>`);
       foot.addEventListener('click', e => {
         const b = e.target.closest('[data-zy-click]');
         if (!b) return;

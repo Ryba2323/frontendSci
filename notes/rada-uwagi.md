@@ -1,5 +1,39 @@
 # Uwagi rady z 12.11.2026 — lista do przejścia po kolei
 
+## Stan po 13.11.2026 (gałąź `marcel-rada-poprawki`, bez commita)
+
+Marcel zdecydował 13.11.2026: „rób wszystko, co trzeba”, Big Five od 16 lat, rozmowy z Asystentem 30 dni, wpisów kryzysowych nie zapisujemy, bliskie osoby tylko na telefonie. Reszta poniżej to stan każdego punktu po tej sesji. Opis punktów niżej w pliku jest z 12.11 i zostaje jako uzasadnienie.
+
+| Punkt | Stan | Co zrobione albo dlaczego czeka |
+|---|---|---|
+| 1. Podlewanie kończy się na nastroju | **zrobione i sprawdzone** | Przebieg sprawdzony w Chrome na 375×812, 320×640 i 1280×800. Przy okazji naprawione: przy nastroju 1–3 przyklejony przycisk zasłaniał „Zadzwoń: 116 111” (teraz karta wsparcia sama wjeżdża nad przycisk), na niskich telefonach zasłaniał skalę suwaka, a na komputerze ekran pytań przewijał się w bok. |
+| 2. Ekran „Co dziś miało znaczenie?” | czeka na test 20.11 | Zgodnie z rekomendacją rady. Zadanie 7 testu to rozstrzyga. |
+| 3. „Miłość” i „Jedzenie” | **zrobione** | Usunięte z podlewania, z katalogu pól w bazie (wyłączone, stare znaczniki kasowane) i z danych pokazowych. |
+| 4. „O której do łóżka?” | czeka na test 20.11 | Pytanie dopisane do zadania 7. |
+| 5. Protokół testu | **zrobione** | `notes/test-z-nastolatkami.md`: bezpieczeństwo, co powiedzieć przed testem, zadania 7–9, arkusz. Zasady bezpieczeństwa musi potwierdzić dorosły odpowiedzialny za test. |
+| 6. Zgoda zasłaniała Testy | **zrobione** | Testy widać od razu, o zgodę pytamy po „Zacznij”, potem test otwiera się sam. |
+| 7. Wymuszona zgoda w rejestracji | **zrobione w aplikacji** | Zgoda na dane o zdrowiu jest nieobowiązkowa; prośba wraca przy pierwszym „Podlej roślinkę” i przy „Zacznij”. Zostaje: odciski treści dokumentów (`body_sha256`) przy wersji 1.0. |
+| 8. Niski wynik WHO-5 | **zrobione** | „Gotowe” nie zasłania 116 111; pole koloru bez wielkiej liczby; miernik ma końce skali i podpis; drugi niski wynik z rzędu dopisuje zdanie o dorosłym. |
+| 9. Big Five 13–15 lat | **zrobione** | Dostępny od 16 lat, w aplikacji i w bazie (`age_required`). |
+| 10. Nagroda za wysoki nastrój | **teksty zrobione** | Zielnik i „mały liść” czekają na test 20.11. |
+| 11. Tracker za długi | **trzy zmiany zrobione**, reszta po teście 20.11 | Po drugiej radzie (13.11.2026, tylko o Trackerze) w `js/tracker.js`: przy karcie wsparcia z powodu nastroju znika wniosek „Ostatnie dwa tygodnie są trudniejsze” i dopisek „o … mniej niż tydzień wcześniej”; „Co Ci pomaga” pokazuje tylko to, co nie ma już karty w „Co zauważyliśmy”; zdanie pod wykresem wniosku jest opisem wykresu dla czytnika ekranu, nie tekstem na ekranie. Pytania o długość zostają w zadaniu 8. |
+| 12. Pytanie na Domu po podlaniu | **zrobione częściowo** | Jest rząd „Co dziś było?” (stuknięcie zapisuje, drugie cofa). Nie ma osobnego pytania w trakcie eksperymentu („Był dziś ruch?”). Miejsce i wygląd rzędu do obejrzenia przez Bartka i Tymka: leży w „Dla Ciebie teraz”, nie w panelu na planecie, żeby nie łamać zasady stałej wysokości panelu. |
+| 13. Wejście do „Konto i prywatność” | **zrobione** | Wiersz z ikoną osoby na końcu Domu, także na komputerze (wcześniej nie było go tam wcale). „Wycofaj zgodę” ma 44 px. |
+| 14. Słowa o krzywdzie | **zrobione** | Notatka, Skrytka i Asystent pokazują kartę „To nigdy nie jest Twoja wina.” z 116 111 i 112; blog pokazuje podpowiedź. Numery 800 12 12 12 i 800 120 002 niedodane, bo niepotwierdzone. Czy wpis o krzywdzie wolno publikować na blogu: do decyzji zespołu. |
+| 15. Obietnice o danych | **zrobione** | Teksty przy usuwaniu konta mówią o dowodzie zgód. Kto ma dostęp do bazy: nadal do decyzji zespołu. |
+| 16. Potwierdzenie wniosku po 7 czy 7 i 14 | bez zmian | Zostaje 7, jak w rekomendacji. |
+| 17. Progi i teksty wsparcia | poza kodem | Do psychologa. Doszły dwa nowe teksty do zatwierdzenia: karta przy słowach o krzywdzie (`js/moderacja.js`, `KRZYWDA`) i zdanie przy drugim niskim wyniku WHO-5 (`js/testy.js`). |
+| 18. Drobiazgi | **zrobione** | Treść pod logo, SOS na stronach prawnych, toast na tytule arkusza, ornament pod strzałką, 44 px, jeden głos („my”), ikony, teksty. Nieruszone: formy „Czułem(-am)” w WHO-5 bez konta (to oficjalne brzmienie kwestionariusza; w teście 20.11 wystarczy konto pokazowe z wybraną formą). |
+| 19. Czcionki Google | **zrobione** | Czcionki są w `Main_Front-End/fonts/`, żadna strona nie łączy się z zewnętrznym serwerem. |
+| 20. Baza | **w większości zrobione** | Rozmowy z Asystentem 30 dni i funkcja usuwania; brak statusu „kryzys”; brak tabeli bliskich osób; odcisk e-maila z sekretem; odcisk adresu opiekuna w dowodzie zgody; decyzje moderacyjne z odwołaniem, blokada pisania na blogu, status zgłoszenia dla zgłaszającego; sprzątanie według harmonogramu. Testy: 353. Zostaje (wymaga decyzji albo serwera): okresy dla kont nieaktywnych i czekających na opiekuna, `export-data`, ekran zmiany imienia i usuwania pojedynczego podlewania, procedura sprostowania wieku, braki regulaminu (data, wymagania techniczne, adres odwołań), informacja o `localStorage`. |
+| 21–23 | poza kodem | Prawnik, zespół, prawdziwy projekt Supabase. Dochodzi: sekret do odcisków przenieść do Supabase Vault i zrobić jego kopię poza bazą. |
+
+Sprawdzone 13.11.2026, wszystko przeszło: `bash narzedzia/sprawdz-baze.sh` (353), `node narzedzia/sprawdz-wnioski.js` (208), `node narzedzia/sprawdz-moderacje.js` (63), `node narzedzia/sprawdz-podlewanie.js` (70), `sprawdz-nakladanie.js`, `sprawdz-kontrast.js`, `sprawdz-kontrast-auth.js`, `sprawdz-niebo.js` oraz przejście rejestracji bez zgody na dane o zdrowiu w Chrome (Playwright). Test kontrastu nie wchodzi w każdy nowy stan (karta przy słowach o krzywdzie, potwierdzenie w arkuszu konta, zaznaczony kafelek „Co dziś było?”); używają one kolorów już sprawdzanych kart. Nic nie było sprawdzane na prawdziwym telefonie ani na prawdziwym projekcie Supabase.
+
+Przy okazji wyszło: zwykły `python3 -m http.server` pozwala przeglądarce mieszać stare pliki z nowymi (podlewanie przestało się otwierać, gdy nowy `checkin.js` dostał stary `moderacja.js`). Do pracy i na test 20.11 jest `python3 narzedzia/serwer.py`, który wyłącza pamięć podręczną.
+
+---
+
 Ten plik jest dla Marcela i dla Claude'a w lokalnej sesji. Wklej go do rozmowy i idźcie punkt po punkcie.
 
 **Co to była za „rada”.** Pięciu niezależnych recenzentów-agentów przeczytało kod i dokumenty z zadania „Testy, zgody, strona prawna, baza” oraz „Spersonalizowane wnioski”: psycholog dzieci i młodzieży, prawnik (RODO, dzieci, DSA), projektantka z głosem nastolatka, inżynier baz danych, statystyk. Psycholog, inżynier i statystyk uruchamiali kod na własnych danych. To nie byli prawdziwi specjaliści: prawdziwy prawnik i psycholog muszą to potwierdzić przed prawdziwymi kontami.

@@ -32,7 +32,7 @@ Silnik jest jeden. Dziś działa w przeglądarce, docelowo ten sam plik ma liczy
    - „ciężko” w domu albo ze znajomymi (zasada 4).
    W cięższym czasie ekran **nie dokłada zadań**: znikają „Spróbuj”, przyciski eksperymentu i zdanie „po gorszym dniu nastrój wraca”.
 7. **Żadnej kary.** Eksperyment to nie zadanie do zaliczenia: mniej razy niż plan to „mniej okazji”. Brak danych to „roślinka poczeka”.
-8. **Zbieramy tylko to, z czego powstaje jakiś wniosek** (RODO: minimalizacja danych). **Dziś ta zasada jest złamana w dwóch miejscach:** pola „Miłość” i „Jedzenie” są w podlewaniu, a nic z nich nie korzysta. Decyzja zespołu: usunąć je (zalecenie psychologa i projektantki z rady) albo zostawić.
+8. **Zbieramy tylko to, z czego powstaje jakiś wniosek** (RODO: minimalizacja danych). Pola „Miłość” i „Jedzenie” łamały tę zasadę (były w podlewaniu, a nic z nich nie korzystało), więc 13.11.2026 zostały usunięte (decyzja Marcela, zalecenie psychologa, prawnika i projektantki z rady).
 9. **„Co Ci pomaga” i podpowiedź na Domu zawierają tylko rzeczy, na które ma się wpływ.** Dobry czas w domu i lżejsza nauka zostają opisem, bez rady: klimat w domu nie jest zadaniem nastolatka.
 
 ## 3. Co zbieramy w podlewaniu
@@ -46,7 +46,7 @@ Podlewanie dalej ma 4 kroki i każdy można pominąć. Doszły dwie rzeczy (ozna
 | **O której do łóżka?** (nowe) | przed 22 · 22–23 · 23–24 · po północy | „gdy kładziesz się przed 23…” |
 | Jak się spało? | źle · tak sobie · dobrze · świetnie | jakość snu |
 | **Co dziś było?** (nowe, kilka naraz) | ruch · hobby · odpoczynek · szczera rozmowa · coś dla kogoś · plecak na jutro | rzeczy, na które ma się wpływ |
-| Jak poszło? | rodzina, przyjaciele, natura, nauka: ciężko / ok / dobrze (jedzenie i miłość są jeszcze w formularzu, ale nic z nich nie korzysta) | co pomaga, co ciąży |
+| Jak poszło? | rodzina, przyjaciele, natura, nauka: ciężko / ok / dobrze (jedzenie i miłość usunięte z formularza 13.11.2026) | co pomaga, co ciąży |
 | Chcesz coś dopisać? | notatka | nie jest analizowana |
 | (samo) | dzień tygodnia, godzina wpisu | „niedzielne wieczory” |
 
@@ -136,9 +136,9 @@ Co z tego wynika:
 
 | Kiedy | Co widać w Trackerze |
 |---|---|
-| 0–6 podlań | „Zbieram pierwsze dni. Jeszcze N podlań i pokażę, co było w Twoich dniach. Bez pośpiechu.” |
+| 0–6 podlań | „Zbieramy pierwsze dni. Jeszcze N podlań i pokażemy, co było w Twoich dniach. Bez pośpiechu.” |
 | od 7 podlań | podsumowanie tygodnia + **opis ostatnich dwóch tygodni**: „Ruch · 4 z 9 dni”. Sam opis, bez wiązania z nastrojem, tylko dla rzeczy z tonu „pomaga”. |
-| od 14 podlań | liczymy wnioski; pokazują się po potwierdzeniu, czyli realnie po około trzech tygodniach. Gdy nie ma: „Na razie nic się wyraźnie nie powtarza. Sprawdzam dalej.” |
+| od 14 podlań | liczymy wnioski; pokazują się po potwierdzeniu, czyli realnie po około trzech tygodniach. Gdy nie ma: „Na razie nic się wyraźnie nie powtarza. Sprawdzamy dalej.” |
 | zawsze, gdy lista „Co Ci pomaga” ma mniej niż 3 pozycje | **wiedza ogólna**: „Wielu osobom w Twoim wieku pomaga 8 h snu albo więcej. Sprawdź, jak jest u Ciebie.” Tylko cztery dobrze udokumentowane sprawy: sen, ruch, dwór, kontakt z ludźmi. |
 
 Wcześniejsze „obserwacje” („W Twoje lepsze dni często był ruch (4 z 5)”) zostały usunięte. Pomiar statystyka: z czystego szumu miało je 36–76% osób, a przy prawdziwym wpływie ruchu obserwacja o ruchu wychodziła rzadziej niż o czymś bez wpływu. Żadne progi tego nie naprawiały, więc został sam opis.
@@ -215,7 +215,7 @@ Czego rada **nie** rozstrzygnęła i co zostaje zespołowi: rozdział 12.
 
 ## 12. Pytania do zespołu
 
-- **Pola „Miłość” i „Jedzenie” w podlewaniu**: nic z nich nie korzysta (zasada 8). Psycholog i projektantka radzą je usunąć. Jeśli „Jedzenie” zostaje, psycholog proponuje kartę wsparcia przy „ciężko” 5 razy w 14 dni.
+- ~~**Pola „Miłość” i „Jedzenie” w podlewaniu**~~: rozstrzygnięte 13.11.2026, oba pola usunięte (zasada 8).
 - **Podlewanie a test 20.11**: najkrótsza droga do deszczu to 6 stuknięć i 4 ekrany. Projektantka: zadanie „10 sekund do deszczu” tego nie przejdzie. Propozycja: na kroku nastroju główny przycisk „Podlej roślinkę” kończy i pada deszcz, pod nim „Dodaj więcej”; macierz „Jak poszło?” 6×3 zamienić na kafelki. To zmienia projekt Bartka i Tymka, więc decyzja zespołu.
 - **Pora snu**: trzecia grupa w kroku o śnie, 12 przycisków na ekranie. Zostawić?
 - **Wiedza ogólna i lista „Co Ci pomaga”**: projektantka uważa, że powtarzają karty wyżej i brzmią jak ulotka. Zostawić, skrócić do jednej pozycji, wyciąć?

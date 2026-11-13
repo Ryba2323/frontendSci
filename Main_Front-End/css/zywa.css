@@ -252,6 +252,24 @@
 .zy-link { min-height: var(--tap); padding: 0 var(--sp-1); border: 0; background: none; font: inherit; font-size: .9rem; font-weight: 500; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .zy-link:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 @media (min-width: 1024px) { .zy-foot-links { display: none; } }
+/* wejście do „Konto i prywatność”: wiersz z ikoną osoby, na każdej szerokości */
+.zy-konto {
+  display: flex; align-items: center; gap: var(--sp-3); width: 100%; min-height: 64px; margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4);
+  border: 0; border-radius: var(--leaf-sm, var(--radius-sm)); background: var(--surface); box-shadow: var(--e1);
+  font: inherit; text-align: left; color: var(--text); cursor: pointer; transition: transform var(--dur-base) var(--spring);
+}
+.zy-konto:active { transform: scale(.98); transition-duration: .1s; }
+.zy-konto:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+.zy-konto-ico { flex: 0 0 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 14%, transparent); }
+.zy-konto svg { width: 20px; height: 20px; }
+.zy-konto > svg { flex: 0 0 18px; width: 18px; height: 18px; margin-left: auto; color: var(--text-muted); }
+.zy-konto b { display: block; font-size: 1rem; font-weight: 600; }
+.zy-konto small { display: block; margin-top: 2px; font-size: .85rem; line-height: 1.4; color: var(--text-body, var(--text-muted)); }
+/* „Co dziś było?” na Domu: zaznaczony kafelek ma odcień i obwódkę motywu (jak wybrana odpowiedź w podlewaniu) */
+.zy-acts .du-more-title { margin-top: var(--sp-4); }
+/* długi selektor: tło kafelków ustawia css/pola.css regułą o wysokiej specyficzności (:is z :not) */
+.zy-act[aria-pressed="true"],
+:root[data-uklad="d"][data-pola] .du-more .du-add .du-chip.zy-act[aria-pressed="true"] { background: color-mix(in srgb, var(--primary) 18%, var(--surface)); box-shadow: inset 0 0 0 2px var(--primary); }
 /* Czcionka: mniej grubych napisów. Hierarchię budują rozmiar i kolor; pogrubienie 600–700 tylko tam, gdzie coś trzeba wyróżnić */
 :root[data-uklad="d"] body { font-family: var(--font); font-weight: 400; letter-spacing: 0; }
 :root[data-uklad="d"] :is(b, strong) { font-weight: 600; }
@@ -545,5 +563,12 @@
 
 @media (min-width: 700px) {
   :root[data-uklad="d"] .ci-q { font-size: 2.4rem; }
+}
+/* Niski telefon (do 700 px wysokości, np. 320×640 i 360×640): pytanie jest mniejsze, żeby przyklejone
+   „Podlej roślinkę” + „Dodaj więcej” nie zasłaniały skali suwaka nastroju (13.11.2026). */
+@media (max-width: 699px) and (max-height: 700px) {
+  :root[data-uklad="d"] .ci-q { font-size: 1.6rem; margin-top: var(--sp-2); }
+  :root[data-uklad="d"] .ci-hint { margin-bottom: var(--sp-2); }
+  :root[data-uklad="d"] .ci-progress { margin-top: 0; }
 }
 :root.is-static .ci-progress i::before, :root.is-static .ci-progress i::after { transition: none !important; }

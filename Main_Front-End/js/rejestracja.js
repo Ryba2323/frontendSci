@@ -79,7 +79,6 @@
     parentEmpty: 'Podaj adres e-mail opiekuna.',
     parentSame: 'To musi być adres opiekuna, nie Twój.',
     terms: 'Zaakceptuj regulamin, żeby założyć konto.',
-    health: 'Bez tej zgody nie możemy zapisywać Twoich wpisów.',
   };
 
   // Podpis nad roślinką: etap + czy jest już za połową etapu
@@ -131,7 +130,8 @@
     const v = parentInput.value.trim().toLowerCase();
     return EMAIL_RE.test(v) && v !== emailInput.value.trim().toLowerCase();
   };
-  const consentsOk = () => $('#terms').checked && $('#health').checked;
+  // zgoda na dane o zdrowiu jest nieobowiązkowa (art. 7 ust. 4 RODO): konto wymaga tylko regulaminu
+  const consentsOk = () => $('#terms').checked;
 
   // Ekran jest „zrobiony”, gdy ma poprawną odpowiedź albo użytkownik już przez niego przeszedł
   // (np. nie nadał roślince imienia). Każdy zrobiony ekran to kawałek wzrostu rośliny.
@@ -174,8 +174,7 @@
       return setErr('pemail', !v ? MSG.parentEmpty : !EMAIL_RE.test(v) ? MSG.emailBad : parentOk() ? '' : MSG.parentSame);
     },
     consents: () => {
-      const ok = setErr('terms', $('#terms').checked ? '' : MSG.terms);
-      return setErr('health', $('#health').checked ? '' : MSG.health) && ok;
+      return setErr('terms', $('#terms').checked ? '' : MSG.terms);
     },
   };
   function validatePages(pages) {
@@ -472,7 +471,7 @@
       data.parentPending = needsParent();
       // osobno regulamin i dane o zdrowiu, z datą — tak, jak pójdą do tabeli zgód (TODO backend)
       // wersje dokumentów jak w js/zgody.js (DOCS) i w tabeli legal_documents; aplikacja przenosi to do dziennika zgód
-      data.consents = { terms: true, health: true, at: new Date().toISOString(), versions: { terms: '0.1', privacy: '0.1', health_data: '0.1' } };
+      data.consents = { terms: true, health: $('#health').checked, at: new Date().toISOString(), versions: { terms: '0.1', privacy: '0.1', health_data: '0.1' } };
       Theme.apply(data.theme, { save: true });
       // Tymczasowo, do czasu backendu: profil zostaje w przeglądarce, żeby logowanie mogło przywitać po imieniu.
       // TODO backend: supabase.auth.verifyOtp + zapis profilu; poniżej 16 lat wysyłka prośby do opiekuna

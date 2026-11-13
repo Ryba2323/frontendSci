@@ -3,7 +3,9 @@
  * Treść pytań, skale i opisy wyników: js/testy-dane.js (dane osobno od znaczników).
  *
  * Zakładka, od góry:
- *   1. Zgoda — bez aktywnej zgody na dane o samopoczuciu (js/zgody.js) widać tylko prośbę o nią.
+ *   1. Zgoda — testy widać od razu; o zgodę na dane o samopoczuciu (js/zgody.js) pytamy dopiero po „Zacznij”,
+ *      arkuszem z js/konto.js (13.11.2026, uwaga rady: karta zgody zasłaniała testy). Po zgodzie test otwiera się sam.
+ *      Tylko „czekamy na zgodę opiekuna” zostaje kartą na górze, bo wtedy nie ma czego stuknąć.
  *   2. Pole koloru (jedno na ekran): ostatni wynik samopoczucia z małą historią słupków albo zaproszenie do pierwszego testu.
  *   3. Karta „Osobowość”: pięć cech jako suwaki między dwoma końcami (żaden nie jest lepszy) albo zaproszenie.
  *   4. Historia: każde podejście; stuknięcie pokazuje wynik dokładnie tak, jak wyglądał tamtego dnia.
@@ -49,6 +51,10 @@
   const form = ['f', 'm', 'n'].includes(acc.form) ? acc.form : 'n';
   // dopisek „test powstał dla osób od 16 lat” pokazujemy także wtedy, gdy wieku nie znamy (brak konta)
   const under16 = !acc.age || /^1[3-5]$/.test(String(acc.age));
+  // Test z `validatedFromAge` (Big Five: 16) jest dla młodszych ZAMKNIĘTY (13.11.2026, decyzja Marcela po uwadze psychologa
+  // z rady: narzędzie badano na osobach 16–83 lata). Dotyczy kont ze znanym wiekiem 13–15; wersja pokazowa bez konta
+  // zostaje otwarta z dopiskiem. To samo sprawdza baza w submit_test (notes/supabase-testy.sql).
+  const tooYoung = t => !!(t && t.validatedFromAge && acc.age && Number.parseInt(acc.age, 10) < t.validatedFromAge);
 
   // ================================================================
   //  Pamięć
@@ -137,7 +143,6 @@
   // ---------- Zgoda ----------
   function consentCard() {
     const st = Zgody.state('health_data');
-    const doc = Zgody.DOCS.health_data;
     if (st.pendingGuardian) {
       return `
       <section class="insight tst-consent" style="--i:0" aria-labelledby="tst-consent-title">
@@ -147,25 +152,14 @@
         <button type="button" class="tst-proto" data-tst-guardian>Wersja testowa: opiekun potwierdził</button>
       </section>`;
     }
-    return `
-      <section class="insight tst-consent" style="--i:0" aria-labelledby="tst-consent-title">
-        <h3 id="tst-consent-title">${st.withdrawn ? 'Testy czekają na Twoją zgodę' : 'Zanim zaczniesz'}</h3>
-        <p>Wyniki testów mówią o Twoim samopoczuciu. Inni użytkownicy ich nie widzą, a Ty usuniesz je, kiedy zechcesz.</p>
-        <label class="ci-check tst-agree">
-          <input type="checkbox" id="tst-agree">
-          <span class="ci-check-box" aria-hidden="true">${CHECK}</span>
-          <span>${doc.text}</span>
-        </label>
-        <p class="tst-small">${doc.note} <a href="${doc.url}" target="_blank" rel="noopener">Polityka prywatności</a></p>
-        <button type="button" class="btn-primary" id="tst-consent-btn" disabled><span>Zgadzam się</span>${ARROW}</button>
-      </section>`;
+    return '';
   }
 
   // ---------- Pole koloru: samopoczucie ----------
   function lockLine(test) {
     const d = nextDate(test);
     return `
-      <p class="tst-lock">Kolejny raz od ${dateDay(d)}. ${test.code === 'who5' ? 'Pytania dotyczą dwóch tygodni, więc warto dać im czas.' : 'Cechy zmieniają się powoli.'}</p>
+      <p class="tst-lock">Kolejny raz od ${dateDay(d)}. ${test.code === 'who5' ? 'Test pyta o dwa tygodnie, więc częściej nic nowego nie pokaże.' : 'Cechy zmieniają się powoli.'}</p>
       <button type="button" class="tst-proto" data-tst-unlock="${test.code}">Wersja testowa: zrób teraz</button>`;
   }
 
@@ -197,6 +191,21 @@
       return `<span class="sum-day${s === last ? ' is-today' : ''}" style="--v:${Math.max(.08, v / 100).toFixed(2)};--k:${i}"><b>${pct(v)}</b><i></i><small>${dateShort(s.completedAt)}</small></span>`;
     }).join('');
     const label = 'Wyniki: ' + shown.map(s => `${dateDay(s.completedAt)} ${pct(s.scores[0].scaled)} procent`).join(', ');
+    // Wynik w paśmie wsparcia: bez wielkiej liczby i opadłych słupków, które przez dwa tygodnie wyglądałyby jak ocena
+    // (uwaga rady, 12.11.2026). Zostaje zdanie i wejście do wyniku; karta wsparcia jest tuż pod spodem (tabSupport).
+    if (band && band.wsparcie) {
+      return `
+      <section class="tr-sec week-sum tst-hero" aria-labelledby="tst-hero-title">
+        <p class="kicker" id="tst-hero-title">Twoje samopoczucie</p>
+        <p class="tst-hero-q">${band.title}</p>
+        <p class="sum-sub">Test z ${dateDay(last.completedAt)}. To sygnał, nie ocena.</p>
+        <div class="tst-hero-foot">
+          <button type="button" class="tst-btn-light" data-session="${last.id}">Zobacz wynik</button>
+          ${canTake(test) ? `<button type="button" class="tst-btn-ghost" data-test="${test.code}">Zrób ponownie</button>` : ''}
+        </div>
+        ${canTake(test) ? '' : lockLine(test)}
+      </section>`;
+    }
     return `
       <section class="tr-sec week-sum tst-hero" aria-labelledby="tst-hero-title">
         <p class="kicker" id="tst-hero-title">Twoje samopoczucie</p>
@@ -220,13 +229,16 @@
 
   function cardIpip(test, locked) {
     const last = lastOf(test.code);
+    const young = tooYoung(test);
     if (!last) {
       return `
       <li class="insight tst-card" style="--i:1">
         <p class="insight-tag">${test.kicker}</p>
         <h3>${test.title}</h3>
         <p>${test.lead}</p>
-        <button type="button" class="btn-soft tst-btn" data-test="${test.code}"${locked ? ' disabled' : ''}>Zacznij${ARROW}</button>
+        ${young
+          ? `<p class="tst-lock">Ten test jest dla osób od ${test.validatedFromAge} lat, bo tylko na nich był sprawdzany. Poczeka tu na Ciebie.</p>`
+          : `<button type="button" class="btn-soft tst-btn" data-test="${test.code}"${locked ? ' disabled' : ''}>Zacznij${ARROW}</button>`}
       </li>`;
     }
     const t = Dane.byId(last.questionnaireId);
@@ -237,9 +249,9 @@
         <ul class="tst-mini">${last.scores.map(sc => { const s = Dane.scaleOf(t, sc.scale); return `<li><b>${s.name}</b>${poleBar(s, sc)}</li>`; }).join('')}</ul>
         <div class="tst-card-foot">
           <button type="button" class="btn-soft tst-btn" data-session="${last.id}">Zobacz opis${ARROW}</button>
-          ${canTake(test) ? `<button type="button" class="tst-btn-text" data-test="${test.code}">Zrób ponownie</button>` : ''}
+          ${canTake(test) && !young ? `<button type="button" class="tst-btn-text" data-test="${test.code}">Zrób ponownie</button>` : ''}
         </div>
-        ${canTake(test) ? '' : lockLine(test)}
+        ${young ? '' : canTake(test) ? '' : lockLine(test)}
       </li>`;
   }
 
@@ -268,14 +280,15 @@
   // ================================================================
   function render() {
     const ok = Zgody.has('health_data');
+    const waiting = Zgody.state('health_data').pendingGuardian;     // tylko wtedy testy są wyszarzone
     const who = Dane.byCode('who5'), ipip = Dane.byCode('ipip20');
     const n = load().length;
     root.innerHTML = `
-      ${ok ? '' : consentCard()}
-      <div class="tst-body${ok ? '' : ' is-locked'}">
-        ${heroWho5(who, !ok)}
+      ${consentCard()}
+      <div class="tst-body${waiting ? ' is-locked' : ''}">
+        ${heroWho5(who, waiting)}
         ${ok ? tabSupport() : ''}
-        <ul class="tr-list tst-list">${cardIpip(ipip, !ok)}</ul>
+        <ul class="tr-list tst-list">${cardIpip(ipip, waiting)}</ul>
         ${ok ? historyBlock() : ''}
       </div>
       <div class="tst-foot">
@@ -285,23 +298,9 @@
       <p class="demo-note">Testy to podpowiedź, nie diagnoza. ${who.officialName}: © WHO 2024, ${who.licence}. ${ipip.officialName}: ${ipip.licence}.</p>`;
   }
 
-  root.addEventListener('change', e => {
-    if (e.target.id === 'tst-agree') $('#tst-consent-btn', root).disabled = !e.target.checked;
-  });
-
   root.addEventListener('click', e => {
     const b = e.target.closest('button');
     if (!b) return;
-    if (b.id === 'tst-consent-btn') {
-      Zgody.give('health_data');                       // render() przyjdzie ze zdarzenia consentchange
-      haptic(10);
-      toast('Dziękujemy. Zgodę cofniesz w każdej chwili.');
-      // karta zgody znika, więc wracamy na górę listy testów
-      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
-      const btn = $('.tst-hero button', root);
-      if (btn) btn.focus({ preventScroll: true });
-      return;
-    }
     if (b.dataset.tstAssist != null) { openAssistant(b); return; }
     if (b.dataset.tstGuardian != null) { Zgody.confirmGuardian(); toast('Opiekun potwierdził zgodę.'); return; }
     if (b.dataset.tstUnlock) { unlocked.add(b.dataset.tstUnlock); render(); return; }
@@ -411,10 +410,17 @@
           ? `<p class="tst-compare">O <b>${Math.abs(diff)} ${diff > 0 ? 'więcej' : 'mniej'}</b> niż ${dateDay(prev.completedAt)} (${pct(prev.scores[0].scaled)}%).</p>`
           : `<p class="tst-compare">Podobnie jak ${dateDay(prev.completedAt)} (${pct(prev.scores[0].scaled)}%).</p>`;
       }
+      // Drugi z rzędu wynik w paśmie wsparcia: dopisujemy zdanie o dorosłym, to samo co karta w Trackerze przy długo niskim
+      // nastroju (js/wnioski.js). Propozycja psychologa z rady; tekst czeka na zatwierdzenie (notes/rada-uwagi.md, punkt 17).
+      const prevBand = prev ? Dane.bandOf(Dane.byId(prev.questionnaireId), prev.scores[0].scale, prev.scores[0].band) : null;
+      const longer = band.wsparcie && prevBand && prevBand.wsparcie
+        ? '<p class="ci-hint tst-longer"><b>To drugi taki wynik z rzędu, więc to trwa już dłużej.</b> Warto powiedzieć o tym dorosłemu, któremu ufasz: rodzicowi, pedagogowi albo psychologowi w szkole.</p>' : '';
       return `${head}
         <p class="tst-score"><b>${pct(sc.scaled)}</b><span>%</span></p>
         <div class="tst-meter" role="img" aria-label="${pct(sc.scaled)} na 100"><i style="--v:${(sc.scaled / 100).toFixed(3)}"></i></div>
+        <p class="tst-scale" aria-hidden="true"><span>0</span><span>wskaźnik samopoczucia z dwóch tygodni</span><span>100</span></p>
         <h2 class="ci-q tst-res-title" id="tst-q" tabindex="-1">${band.title}</h2>
+        ${longer}
         <p class="ci-hint">${band.body}</p>
         ${band.wsparcie ? '' : compare}
         ${band.wsparcie ? supportHTML(true) : band.code === 'lower' ? supportHTML(false) : ''}
@@ -440,6 +446,8 @@
     const t = cur.test, n = t.questions.length;
     const mode = cur.session ? 'result' : cur.step < 0 ? 'intro' : 'question';
     flow.dataset.mode = cur.session && !cur.fresh ? 'history' : mode;
+    // wynik ze wsparciem: dolny przycisk nie jest przyklejony, żeby nie zasłaniał 116 111 (css/testy.css)
+    if (mode === 'result' && cur.session.supportShown) flow.dataset.support = ''; else delete flow.dataset.support;
     $('#tst-kicker span', flow).textContent = t.title;
     $('#tst-count', flow).textContent = mode === 'question' ? `${cur.step + 1} z ${n}` : '';
 
@@ -627,10 +635,14 @@
     const t = Dane.byCode(code);
     if (!t || isOpen) return;
     if (location.hash !== '#/testy') location.hash = '#/testy';
+    if (tooYoung(t)) { toast(`Ten test jest dla osób od ${t.validatedFromAge} lat.`); return; }
     if (!Zgody.has('health_data')) {
-      // bez zgody nie zaczynamy: pokazujemy kartę zgody na zakładce
+      // bez zgody nie zaczynamy. Czekamy na opiekuna → pokazujemy kartę z wyjaśnieniem; inaczej prosimy o zgodę arkuszem
+      // (ten sam co po wycofaniu zgody) i pamiętamy, który test miał się otworzyć.
       const card = $('.tst-consent', root);
-      if (card) { card.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }); const c = $('#tst-agree', root); if (c) c.focus({ preventScroll: true }); }
+      if (card) { card.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }); return; }
+      wanted = { code, at: Date.now() };
+      if (window.Konto) window.Konto.open('zgoda');
       return;
     }
     if (!canTake(t)) { toast(`Kolejny raz od ${dateDay(nextDate(t))}.`); return; }
@@ -684,9 +696,17 @@
     return n;
   }
   // wycofanie zgody od razu usuwa wyniki (w bazie robi to wyzwalacz na user_consents)
+  let wanted = null;      // test, o który ktoś poprosił, zanim dał zgodę
   window.addEventListener('consentchange', e => {
     if (e.detail.kind !== 'health_data') return;
-    if (!e.detail.active && Zgody.state('health_data').withdrawn) { if (isOpen) close(); deleteAll(); } else render();
+    if (!e.detail.active && Zgody.state('health_data').withdrawn) { if (isOpen) close(); deleteAll(); return; }
+    render();
+    // zgoda dana przed chwilą w arkuszu po „Zacznij”: otwieramy ten test, gdy arkusz zdąży się schować
+    const w = wanted;
+    wanted = null;
+    if (e.detail.active && w && Date.now() - w.at < 5 * 60e3) {
+      setTimeout(() => { if (location.hash === '#/testy' && !(window.Sheets && window.Sheets.current)) open(w.code, $(`[data-test="${w.code}"]`, root)); }, reduceMotion ? 50 : 450);
+    }
   });
 
   window.Testy = {

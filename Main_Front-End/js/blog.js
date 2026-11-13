@@ -302,10 +302,13 @@
     obrazliwe: 'Niektóre słowa nie przejdą moderacji.',
     dane: 'Usuń numer, maila albo nick — blog jest anonimowy.',
     kryzys: 'Widzimy, że może być Ci bardzo ciężko. Pomoc jest pod SOS.',
+    // słowa o krzywdzie nie blokują wpisu (decyzja o publikacji takich wpisów należy do zespołu), ale mówimy, gdzie jest pomoc
+    krzywda: 'Jeśli ktoś Cię krzywdzi, to nigdy nie jest Twoja wina. 116 111 działa całą dobę, pomoc jest pod SOS.',
   };
   function liveCheck() {
     const t = `${head.value}\n${body.value}`.trim();
-    const kind = t.length < 3 ? 'idle' : Mod.check(t).verdict;
+    const r = t.length < 3 ? null : Mod.check(t);
+    const kind = !r ? 'idle' : r.verdict === 'ok' && r.krzywda ? 'krzywda' : r.verdict;
     live.dataset.kind = kind;
     live.querySelector('span').textContent = LIVE[kind];
   }

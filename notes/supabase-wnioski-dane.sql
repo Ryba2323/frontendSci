@@ -7,12 +7,10 @@
 -- =====================================================================
 
 insert into public.checkin_fields (code, kind, name, position, min_value, max_value) values
-  ('food', 'area', 'Jedzenie', 1, -1, 1),
-  ('family', 'area', 'Rodzina', 2, -1, 1),
-  ('friends', 'area', 'Przyjaciele', 3, -1, 1),
-  ('love', 'area', 'Miłość', 4, -1, 1),
-  ('nature', 'area', 'Natura', 5, -1, 1),
-  ('study', 'area', 'Nauka', 6, -1, 1),
+  ('family', 'area', 'Rodzina', 1, -1, 1),
+  ('friends', 'area', 'Przyjaciele', 2, -1, 1),
+  ('nature', 'area', 'Natura', 3, -1, 1),
+  ('study', 'area', 'Nauka', 4, -1, 1),
   ('move', 'activity', 'Ruch', 1, 1, 1),
   ('hobby', 'activity', 'Hobby', 2, 1, 1),
   ('rest', 'activity', 'Odpoczynek', 3, 1, 1),
@@ -22,6 +20,11 @@ insert into public.checkin_fields (code, kind, name, position, min_value, max_va
 on conflict (code) do update
   set kind = excluded.kind, name = excluded.name, position = excluded.position,
       min_value = excluded.min_value, max_value = excluded.max_value, is_active = true;
+
+-- pola usunięte z aplikacji (np. „Jedzenie” i „Miłość”, 13.11.2026): wyłączone, żeby nowe podlewania ich nie przyjmowały
+update public.checkin_fields set is_active = false where code not in ('family', 'friends', 'nature', 'study', 'move', 'hobby', 'rest', 'talk', 'kindness', 'prepare');
+-- …a to, co już z nich zebrano, usuwamy: nie trzymamy danych, z których nic nie korzysta (RODO art. 5 ust. 1 lit. c)
+delete from public.checkin_tags t using public.checkin_fields f where f.code = t.field_code and not f.is_active;
 
 -- czynniki silnika: ton i to, czy wolno zacząć z nich tygodniową próbę
 insert into public.insight_factors (code, tone, can_try) values

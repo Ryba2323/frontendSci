@@ -56,9 +56,9 @@ function simulate(opts) {
     put('friends', o.friendsOnWeekends ? pick(weekend ? 0.75 : 0.08, 0.05) : pick(0.3, 0.1));
     put('family', pick(0.25, 0.2));
     put('nature', pick(0.3, 0.08));
-    put('food', pick(0.3, 0.08));
+    pick(0.3, 0.08);   // dawne pole „Jedzenie” (usunięte 13.11.2026): losowanie zostaje, żeby ciąg liczb w symulacji się nie przesunął
     put('study', pick(0.2, 0.25));
-    put('love', pick(0.1, 0.05));
+    pick(0.1, 0.05);   // dawne pole „Miłość”, jak wyżej
     const acts = {};
     ['move', 'hobby', 'rest', 'talk', 'kindness', 'prepare'].forEach(k => { if (r() < 0.38) acts[k] = 1; });
     ar = o.rho * ar + gauss(r) * o.noise * Math.sqrt(1 - o.rho * o.rho);

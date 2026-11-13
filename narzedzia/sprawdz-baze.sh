@@ -6,10 +6,13 @@
 #      w tym porównanie wyników z bazy z wynikami liczonymi w aplikacji dla losowych odpowiedzi.
 #
 # Wymaga: Node i serwer PostgreSQL 15+ (initdb, pg_ctl, psql; np. `apt install postgresql`).
+# macOS: `brew install postgresql@17`, potem PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" bash narzedzia/sprawdz-baze.sh
 # Użycie:  bash narzedzia/sprawdz-baze.sh
 # Niczego nie zostawia: baza powstaje w katalogu tymczasowym i znika po testach.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# macOS: bez poprawnego LC_ALL serwer kończy start błędem „postmaster became multithreaded during startup”
+if [ "$(uname)" = Darwin ]; then export LC_ALL="${LC_ALL:-en_US.UTF-8}"; fi
 
 BIN=$(dirname "$(command -v initdb 2>/dev/null || ls /usr/lib/postgresql/*/bin/initdb 2>/dev/null | sort -V | tail -1)")
 [ -x "$BIN/initdb" ] || { echo "Nie znaleziono PostgreSQL (initdb). Zainstaluj: apt install postgresql"; exit 1; }

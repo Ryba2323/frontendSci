@@ -9,12 +9,10 @@
 
   <link rel="icon" type="image/png" href="img/favicon-64.png">
   <link rel="apple-touch-icon" href="img/ikona-180.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- czcionki z własnego serwera (css/fonts.css + fonts/), bez połączeń z Google: narzedzia/pobierz-czcionki.js -->
+  <link rel="stylesheet" href="css/fonts.css">
   <!-- Te same czcionki co w aplikacji: Bricolage Grotesque (tytuły, pytania) + Figtree (reszta) -->
-  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600&display=swap" rel="stylesheet">
   <!-- Napis ReLeaf: tylko litery z nazwy, kilka kB -->
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600&text=ReLaf&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/auth.css">
@@ -275,10 +273,12 @@
               <p class="err" id="terms-err" aria-live="polite"></p>
 
               <!-- Osobna zgoda na dane o zdrowiu (RODO art. 9). Treść robocza — do sprawdzenia z prawnikiem przed prawdziwymi kontami.
-                   To samo zdanie co Zgody.DOCS.health_data.text (js/zgody.js) i w polityce prywatności — zmieniaj we wszystkich trzech miejscach. -->
+                   To samo zdanie co Zgody.DOCS.health_data.text (js/zgody.js) i w polityce prywatności — zmieniaj we wszystkich trzech miejscach.
+                   NIEOBOWIĄZKOWA (13.11.2026, uwaga prawnika z rady): zgoda, od której zależy założenie konta, nie jest dobrowolna
+                   (art. 7 ust. 4 RODO). Konto powstaje także bez niej; prośba wraca przy pierwszym „Podlej roślinkę” (js/home2.js). -->
               <label class="check">
                 <input type="checkbox" id="health" name="health" aria-describedby="health-err">
-                <span>Zgadzam się, żeby ReLeaf zapisywał i automatycznie analizował moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i wnioski o tym, co zwykle idzie w parze z moim nastrojem.<small>To dane o zdrowiu, dlatego pytamy osobno. Zgodę cofniesz w każdej chwili.</small></span>
+                <span>Zgadzam się, żeby ReLeaf zapisywał i automatycznie analizował moje dane o samopoczuciu: wpisy z podlewania i wyniki testów. Posłużą tylko do tego, żeby pokazać mi moją historię, wykresy i wnioski o tym, co zwykle idzie w parze z moim nastrojem.<small>To dane o zdrowiu, więc ta zgoda jest osobna i nieobowiązkowa: możesz zdecydować przy pierwszym podlaniu. Cofniesz ją w każdej chwili.</small></span>
               </label>
               <p class="err" id="health-err" aria-live="polite"></p>
 

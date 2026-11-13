@@ -3,7 +3,8 @@
  *
  * Pierwszy ekran to design z nastroj.html (suwak-łodyga + wsparcie przy niskim nastroju), dalej krótkie pytania
  * z tabeli `daily_checkins`: sen (godziny, pora pójścia spać, jakość), co dziś było (ruch, hobby, odpoczynek, rozmowa,
- * coś dla kogoś, spakowanie na jutro) i jak poszło (jedzenie, rodzina, przyjaciele, miłość, natura, nauka), na końcu notatka.
+ * coś dla kogoś, spakowanie na jutro) i jak poszło (rodzina, przyjaciele, natura, nauka; „Jedzenie” i „Miłość” usunięte
+ * 13.11.2026, bo nic z nich nie korzystało — powód w js/wnioski-dane.js), na końcu notatka.
  * Każde pytanie można pominąć („Pomiń” → po odpowiedzi „Dalej”).
  * PODLEWANIE KOŃCZY SIĘ JUŻ NA NASTROJU (12.11.2026, po uwadze rady: do deszczu było 6 stuknięć i 4 ekrany, a test
  * z nastolatkami zakłada 10 sekund). Na pierwszym ekranie główny przycisk to „Podlej roślinkę”: zapisuje nastrój i pada
@@ -17,14 +18,15 @@
  *
  * Wejście: ekran „wylewa się” kołem z przycisku. Wyjście po ostatnim pytaniu: koło zwija się do roślinki,
  * a strona główna odpala deszcz (js/home2.js → Home2Scene.water(mood)).
- * Przy słowach kryzysowych w notatce (js/moderacja.js) od razu pokazujemy 116 111 i 112.
+ * Przy słowach kryzysowych w notatce (js/moderacja.js) od razu pokazujemy 116 111 i 112; przy słowach o krzywdzie
+ * („tata mnie bije”) kartę „to nigdy nie jest Twoja wina” z tymi samymi numerami. Notatka i tak się zapisuje.
  *
  * window.Checkin.open({ from, entry, step, onDone(entry) })
  *   from     element, z którego wychodzi animacja (przycisk)
  *   entry    poprzedni dzisiejszy wpis do edycji albo null
  *   step     od którego pytania zacząć: 'mood' (domyślnie), 'sleep', 'areas', 'note' — np. gdy nastrój jest już z Dom
  * window.Checkin.DATA — skale pytań (sen, jakość snu, obszary dnia), żeby strona główna mogła pokazać te same odpowiedzi
- *   onDone   dostaje { mood, sleepHours, bedtime, sleepQuality, acts: { move: 1, … }, areas: { food: 1, … }, note, toVault }
+ *   onDone   dostaje { mood, sleepHours, bedtime, sleepQuality, acts: { move: 1, … }, areas: { friends: 1, … }, note, toVault }
  * W React Native: osobny ekran Expo Router (modal) + Reanimated do przejść.
  */
 (function () {
@@ -36,7 +38,7 @@
   const $ = (s, r = root) => r.querySelector(s);
   const $$ = (s, r = root) => [...r.querySelectorAll(s)];
   const { toast, haptic } = window.AuthCommon;
-  const Mod = window.Moderacja || { check: () => ({ verdict: 'ok', hits: [] }) };
+  const Mod = window.Moderacja || { check: () => ({ verdict: 'ok', hits: [], krzywda: false }), krzywdaCard: () => '' };
   const view = new URLSearchParams(location.search).get('widok');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!view;
 
@@ -52,9 +54,9 @@
     'Zwyczajny dzień też się liczy.',
     'Nieźle! Co dziś pomogło?',
     'Miło to słyszeć.',
-    'Super! Roślinka zakwita.',
-    'Świetnie! Zapamiętaj, co pomogło.',
-    'Wspaniale! Pełny rozkwit.',
+    'Dobrze to słyszeć.',
+    'Fajnie. Zapamiętaj, co dziś pomogło.',
+    'Cieszę się razem z Tobą.',
   ];
   const LOW = 3; // do tej wartości włącznie wyróżniamy wsparcie
 
@@ -79,10 +81,8 @@
     { v: 1, label: 'Dobrze' },
   ];
   const AREAS = [
-    { id: 'food', name: 'Jedzenie', icon: '<path d="M4 11h16a8 8 0 0 1-16 0z"/><path d="M9 7.5c0-1.5 1-2 1-3.5M13.5 7.5c0-1.5 1-2 1-3.5"/>' },
     { id: 'family', name: 'Rodzina', icon: '<path d="M4 11 12 4l8 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/>' },
     { id: 'friends', name: 'Przyjaciele', icon: '<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2A4.5 4.5 0 0 1 21 18.5"/>' },
-    { id: 'love', name: 'Miłość', icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
     { id: 'nature', name: 'Natura', icon: '<path d="M12 21v-7"/><path d="M12 14c-4 0-7-2.7-7-6.5C5 4.5 8 3 12 3s7 1.5 7 4.5C19 11.3 16 14 12 14z"/>' },
     { id: 'study', name: 'Nauka', icon: '<path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v14H5.5A1.5 1.5 0 0 0 4 18.5zM4 18.5A1.5 1.5 0 0 0 5.5 20H20"/>' },
   ];
@@ -120,7 +120,7 @@
 
   const stepSleep = () => `
     <h2 class="ci-q">Jak minęła noc?</h2>
-    <p class="ci-hint">Wystarczy mniej więcej. Sen mocno wpływa na samopoczucie.</p>
+    <p class="ci-hint">Na oko wystarczy.</p>
     <div class="ci-group" role="group" aria-labelledby="ci-l-hours">
       <p class="ci-label" id="ci-l-hours">Ile godzin snu?</p>
       ${chips('sleepHours', SLEEP_HOURS)}
@@ -168,7 +168,8 @@
       <p class="support-text">Dobrze, że to piszesz. Porozmawiaj teraz z kimś, kto pomoże — za darmo, o każdej porze.</p>
       <a class="support-call" href="tel:116111">${svg(PHONE)}Zadzwoń: 116 111 <small>całą dobę</small></a>
       <a class="support-call" href="tel:112">${svg('<path d="M12 3l8 4v5c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V7z"/><path d="M12 8.5v4M12 15.5h.01"/>')}Zagrożenie życia: 112</a>
-    </section>`;
+    </section>
+    ${Mod.krzywdaCard ? Mod.krzywdaCard({ id: 'ci-harm' }) : ''}`;   /* stara wersja moderacja.js z pamięci przeglądarki nie ma tej funkcji: wtedy bez karty, ale podlewanie działa */
 
   const STEPS = [
     { id: 'mood', html: stepMood },
@@ -229,7 +230,7 @@
   // ---------- Krok 1: nastrój ----------
   const moodNote = $('#ci-mood-note');
   const support = $('#ci-support');
-  let noteTimer;
+  let noteTimer, revealTimer;
   function showMoodNote(v) {
     const text = v == null ? '' : NOTES[v - 1];
     if (v == null && moodNote.textContent === ASK_MOOD) return;      // prośba o nastrój zostaje, dopóki nic nie wybrano
@@ -243,6 +244,20 @@
     showMoodNote(v);
     support.classList.toggle('is-low', v != null && v <= LOW);
     syncFooter();
+  }
+  // Wsparcie przy niskim nastroju nie może chować się pod przyklejonym „Podlej roślinkę”: po puszczeniu suwaka
+  // (nie w trakcie przeciągania, żeby ekran nie uciekał spod palca) przewijamy tak, by było widać Asystenta i 116 111.
+  function onMoodSet(v) {
+    onMood(v);
+    clearTimeout(revealTimer);
+    if (v == null || v > LOW || !isOpen || idx !== 0) return;
+    // chwilę później: zdanie pod suwakiem pojawia się z opóźnieniem (showMoodNote) i przesuwa kartę wsparcia w dół
+    revealTimer = setTimeout(() => {
+      if (!isOpen || idx !== 0 || !support.classList.contains('is-low')) return;
+      const sticky = getComputedStyle(actions).position === 'sticky';
+      root.style.scrollPaddingBottom = sticky ? `${actions.offsetHeight + 8}px` : '';
+      support.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+    }, reduceMotion ? 0 : 200);
   }
   $('[data-assist]').addEventListener('click', e => {
     // Asystent Wsparcia (js/asystent.js) wyrasta z przycisku nad ekranem podlewania
@@ -282,11 +297,13 @@
   }
 
   // ---------- Krok 4: notatka (+ wsparcie przy słowach kryzysowych) ----------
-  const note = $('#ci-note'), chars = $('#ci-chars'), alertBox = $('#ci-alert'), vault = $('#ci-vault');
+  const note = $('#ci-note'), chars = $('#ci-chars'), alertBox = $('#ci-alert'), harmBox = $('#ci-harm'), vault = $('#ci-vault');
   function onNote() {
     ans.note = note.value;
     chars.textContent = `${note.value.length}/${NOTE_MAX}`;
-    alertBox.hidden = Mod.check(note.value).verdict !== 'kryzys';
+    const r = Mod.check(note.value);
+    alertBox.hidden = r.verdict !== 'kryzys';
+    if (harmBox) harmBox.hidden = !r.krzywda || r.verdict === 'kryzys';   // kryzys ma pierwszeństwo, jego karta też ma oba numery
     syncFooter();
   }
   note.addEventListener('input', onNote);
@@ -354,7 +371,7 @@
     root.classList.add('is-open');
 
     // suwak powstaje przy pierwszym otwarciu (potrzebuje widocznego miejsca na układ)
-    if (!mood) mood = window.MoodSlider.create($('#ci-mood'), { value: ans.mood, onInput: onMood, onChange: onMood });
+    if (!mood) mood = window.MoodSlider.create($('#ci-mood'), { value: ans.mood, onInput: onMood, onChange: onMoodSet });
     else if (ans.mood != null) mood.set(ans.mood);
     note.value = ans.note || '';
     vault.checked = !!ans.toVault;

@@ -10,11 +10,14 @@
  *  1. Twój tydzień w skrócie (pole koloru): średnia, 7 słupków, najlepszy dzień i co wtedy było.
  *  2. Twój eksperyment — „spróbuj 3 razy w tygodniu i zobacz”: postęp, a po tygodniu opis tygodnia (bez wyroku: tydzień
  *     niczego nie rozstrzyga). Bez kar: mniej razy niż plan to „mniej okazji”. W kodzie i w bazie nazywa się to „proba”.
- *  3. Co zauważyliśmy — najwyżej 3 wnioski naraz, każdy z wykresem, jednym zdaniem i słowem pewności
- *     („Wstępnie” / „Dość wyraźnie” / „Wyraźnie” + z ilu wpisów). Powody i podpowiedź są zwinięte pod „Skąd to może się brać?”.
+ *  3. Co zauważyliśmy — najwyżej 3 wnioski naraz, każdy z tytułem, wykresem i słowem pewności
+ *     („Wstępnie” / „Dość wyraźnie” / „Wyraźnie” + z ilu wpisów). Zdanie z liczbą jest opisem wykresu dla czytnika ekranu
+ *     (pod wykresem powtarzało tytuł). Gdy karta wsparcia jest z powodu nastroju, nie ma wniosku „Ostatnie dwa tygodnie
+ *     są trudniejsze” ani „o … mniej niż tydzień wcześniej”: ta sama wiadomość nie pada trzy razy. Powody i podpowiedź są zwinięte pod „Skąd to może się brać?”.
  *     Pod każdym: „Pasuje do mnie” / „Nie pasuje” (chowa wniosek na 60 dni, z „Cofnij”) i „Wypróbuj przez tydzień”.
  *     Zanim danych wystarczy: ile podlań brakuje (bez poganiania) i opis ostatnich dwóch tygodni („Ruch · 4 z 9 dni”).
- *  4. Co Ci pomaga — do 3 rzeczy z danych tej osoby, tylko takie, na które ma się wpływ; puste miejsca uzupełnia
+ *  4. Co Ci pomaga — do 3 rzeczy z danych tej osoby, tylko takie, na które ma się wpływ, i tylko te, które nie mają
+ *     już karty wyżej (bez powtórzeń; gdy nic nie zostaje, sekcji nie ma); puste miejsca uzupełnia
  *     wiedza ogólna z dopiskiem „sprawdź u siebie”.
  *  5. Zielnik — kwiat za każdy tydzień z co najmniej 3 podlaniami (bez kar za przerwę).
  *
@@ -67,7 +70,7 @@
     put('friends', pick(sun ? .15 : .32, .08));
     put('nature', pick(sun ? .12 : .3, .06));
     put('family', pick(.25, .1));
-    put('food', pick(.3, .06));
+    pick(.3, .06);   // dawne pole „Jedzenie” (usunięte 13.11.2026); losowanie zostaje, żeby dane pokazowe się nie przesunęły
     put('study', pick(.15, sun ? .55 : .18));
     const acts = {};
     const maybe = (k, p) => { if (rnd() < p) acts[k] = 1; };
@@ -147,11 +150,13 @@
   // ---------- 1. tydzień ----------
   function weekCard(res) {
     const t = res.tydzien;
+    // gdy na górze jest karta wsparcia z powodu nastroju, nie powtarzamy tego samego liczbą („o 2,6 mniej”)
+    const roznica = cisza && t.roznica < 0 ? null : t.roznica;
     const strip = t.dni.map((d, k) => `<span class="sum-day${d.today ? ' is-today' : ''}${d.mood == null ? ' is-rest' : ''}" style="--v:${d.mood == null ? .12 : d.mood / 10};--k:${k}"><b>${d.mood == null ? '' : d.mood}</b><i></i><small>${d.today ? 'dziś' : DNI.litera[d.dow]}</small></span>`).join('');
     const label = 'Ostatnie 7 dni: ' + t.dni.map(d => `${d.today ? 'dziś' : DNI.nazwa[d.dow]} ${d.mood == null ? 'odpoczynek' : `${d.mood} na 10`}`).join(', ');
     const head = t.srednia == null
       ? '<p class="wn-empty-lead">Tu pojawi się Twój tydzień, gdy podlejesz roślinkę.</p>'
-      : `<p class="sum-head"><b>${fmt(t.srednia)}</b><span>/10${t.roznica == null ? '' : ` · ${Math.abs(t.roznica) < .2 ? 'podobnie jak tydzień wcześniej' : `o ${fmt(Math.abs(t.roznica))} ${t.roznica > 0 ? 'lepiej' : 'mniej'} niż tydzień wcześniej`}`}</span></p>`;
+      : `<p class="sum-head"><b>${fmt(t.srednia)}</b><span>/10${roznica == null ? '' : ` · ${Math.abs(roznica) < .2 ? 'podobnie jak tydzień wcześniej' : `o ${fmt(Math.abs(roznica))} ${roznica > 0 ? 'lepiej' : 'mniej'} niż tydzień wcześniej`}`}</span></p>`;
     const best = t.najlepszy;
     return `
     <section class="tr-sec week-sum" aria-labelledby="tr-week-title">
@@ -172,7 +177,7 @@
         <p class="insight-tag">Twój eksperyment · jeszcze ${dni(pr.zostaloDni)}</p>
         <h3 id="wn-proba-title">${pr.cel} ${pr.co}</h3>
         <p class="wn-dots" role="img" aria-label="${pr.zrobione} z ${pr.cel}">${dots}<span>${pr.zrobione} z ${pr.cel}</span></p>
-        <p>${pr.gdzie || 'Liczę to z Twojego podlewania.'} Bez presji: ile wyjdzie, tyle wyjdzie.</p>
+        <p>${pr.gdzie || 'Liczymy to z Twojego podlewania.'} Bez presji: ile wyjdzie, tyle wyjdzie.</p>
         <button type="button" class="wn-text-btn" data-wn-proba-stop>Kończę wcześniej</button>
       </section>`;
     }
@@ -191,11 +196,13 @@
   // ---------- 3. wniosek ----------
   function chart(w) {
     const g = w.wykres;
-    if (!g) return '';
+    // zdanie z liczbą nie stoi już pod wykresem (powtarzało tytuł i słupki); zostaje jako opis wykresu dla czytnika ekranu
+    if (!g) return `<p>${w.zdanie}</p>`;
+    const opis = `role="img" aria-label="${w.zdanie.replace(/<[^>]+>/g, '')}"`;
     if (g.typ === 'tydzien') {
-      return `<div class="mini-bars" aria-hidden="true">${g.slupki.map(b => `<span class="mb${b.hl ? ' is-hl' : ''}" style="--v:${b.v == null ? 0 : b.v / 10}"><b>${b.v == null ? '–' : fmt(b.v)}</b><i></i><small>${b.label}</small></span>`).join('')}</div>`;
+      return `<div class="mini-bars" ${opis}>${g.slupki.map(b => `<span class="mb${b.hl ? ' is-hl' : ''}" style="--v:${b.v == null ? 0 : b.v / 10}"><b>${b.v == null ? '–' : fmt(b.v)}</b><i></i><small>${b.label}</small></span>`).join('')}</div>`;
     }
-    return `<div class="compare" aria-hidden="true">${g.wiersze.map(r => `<span${r.hl ? ' class="is-hl"' : ''} style="--v:${r.v / 10}"><small>${r.label}</small><i></i><b>${fmt(r.v)}</b></span>`).join('')}</div>`;
+    return `<div class="compare" ${opis}>${g.wiersze.map(r => `<span${r.hl ? ' class="is-hl"' : ''} style="--v:${r.v / 10}"><small>${r.label}</small><i></i><b>${fmt(r.v)}</b></span>`).join('')}</div>`;
   }
 
   function insightCard(w, i, hasProba) {
@@ -215,7 +222,6 @@
       <p class="insight-tag"><i class="cat-dot" aria-hidden="true"></i>${w.tag}<span class="wn-sure">${w.slowo} · ${w.n} ${WD.PL(w.n, 'wpis', 'wpisy', 'wpisów')}</span></p>
       <h3>${w.tytul}</h3>
       ${chart(w)}
-      <p>${w.zdanie}</p>
       ${body}
       <div class="wn-actions wn-foot">
         ${w.proba && !hasProba ? `<button type="button" class="btn-soft wn-btn" data-wn-try="${w.key}" data-czynnik="${w.proba.czynnik}" data-ile="${w.proba.ile}">Wypróbuj przez tydzień</button>` : ''}
@@ -237,31 +243,34 @@
         ${o.proba && !hasProba ? `<button type="button" class="wn-text-btn" data-wn-try="${o.key}" data-czynnik="${o.proba.czynnik}" data-ile="${o.proba.ile}">Wypróbuj</button>` : ''}
       </li>`).join('')}
     </ul>
-    <p class="helps-note wn-obs-note">Tyle razy było to w Twoich ostatnich dwóch tygodniach. Co z tego idzie w parze z nastrojem, pokażę, gdy podlań będzie więcej.</p>` : '');
+    <p class="helps-note wn-obs-note">Tyle razy było to w Twoich ostatnich dwóch tygodniach. Co z tego idzie w parze z nastrojem, pokażemy, gdy podlań będzie więcej.</p>` : '');
 
   function noticedBlock(res, hasProba) {
     if (res.etap === 'start') {
-      return waitCard('Zbieram pierwsze dni', res.dni
-        ? `Jeszcze ${podlan(res.doPodsumowania)} i pokażę, co było w Twoich dniach. Bez pośpiechu, roślinka poczeka.`
-        : 'Po kilku podlaniach pokażę tu, co było w Twoich dniach. Bez pośpiechu.');
+      return waitCard('Zbieramy pierwsze dni', res.dni
+        ? `Jeszcze ${podlan(res.doPodsumowania)} i pokażemy, co było w Twoich dniach. Bez pośpiechu, roślinka poczeka.`
+        : 'Po kilku podlaniach pokażemy tu, co było w Twoich dniach. Bez pośpiechu.');
     }
     if (res.etap === 'tydzien') {
-      return obsList(res.obserwacje, hasProba) + waitCard('Wnioski rosną razem z roślinką', 'Potrzebują około trzech tygodni podlewania: pokazuję je dopiero wtedy, gdy coś powtarza się dłużej niż kilka dni.');
+      return obsList(res.obserwacje, hasProba) + waitCard('Wnioski rosną razem z roślinką', 'Potrzebują około trzech tygodni podlewania: pokazujemy je dopiero wtedy, gdy coś powtarza się dłużej niż kilka dni.');
     }
     const note = res.powrot ? `<p class="helps-note wn-note">${res.powrot.tekst}</p>` : '';
-    if (!res.wnioski.length) {
-      return obsList(res.obserwacje, hasProba) + waitCard('Na razie nic pewnego', 'Na razie nic się wyraźnie nie powtarza. Sprawdzam dalej — to też informacja.') + note;
+    if (!karty.length) {
+      return obsList(res.obserwacje, hasProba) + waitCard('Na razie nic pewnego', 'Na razie nic się wyraźnie nie powtarza. Sprawdzamy dalej — to też informacja.') + note;
     }
-    return `<ol class="tr-list">${res.wnioski.map((w, i) => insightCard(w, i, hasProba)).join('')}</ol>
-      ${res.wnioski.length < 2 ? obsList(res.obserwacje, hasProba) : ''}${note}`;
+    return `<ol class="tr-list">${karty.map((w, i) => insightCard(w, i, hasProba)).join('')}</ol>
+      ${karty.length < 2 ? obsList(res.obserwacje, hasProba) : ''}${note}`;
   }
   const undoRow = () => (schowany ? `<p class="wn-undo" role="status">Schowane: „${schowany.tytul}”. <button type="button" class="wn-text-btn" data-wn-undo>Cofnij</button></p>` : '');
 
   // ---------- 4. co pomaga ----------
   function helpsBlock(res, hasProba) {
-    if (!res.pomaga.length && !res.ogolne.length) return '';
+    // to, co ma już swoją kartę w „Co zauważyliśmy”, nie wraca tu drugi raz jako pasek
+    const naKartach = new Set(karty.map(w => w.key));
+    const pomaga = res.pomaga.filter(h => !naKartach.has(h.key));
+    if (!pomaga.length && !res.ogolne.length) return '';
     const max = Math.max(...res.pomaga.map(h => h.efekt), 1);
-    const own = res.pomaga.map((h, i) => `
+    const own = pomaga.map((h, i) => `
       <li class="help" style="--i:${i + 1};--w:${(h.efekt / max * 100).toFixed(0)}%;--cat:var(${h.kat})">
         <i class="cat-dot" aria-hidden="true"></i>
         <span class="help-name">${h.nazwa}</span>
@@ -269,7 +278,7 @@
         <span class="help-bar" aria-hidden="true"><i></i></span>
       </li>`).join('');
     const gen = res.ogolne.map((g, i) => `
-      <li class="help wn-general" style="--i:${res.pomaga.length + i + 1};--cat:var(${g.kat})">
+      <li class="help wn-general" style="--i:${pomaga.length + i + 1};--cat:var(${g.kat})">
         <i class="cat-dot" aria-hidden="true"></i>
         <span class="help-name">${g.nazwa}</span>
         <span class="wn-general-text">${g.tekst} <em>Sprawdź, jak jest u Ciebie.</em>
@@ -277,7 +286,7 @@
       </li>`).join('');
     return `
       <h2 class="sub-title">Co Ci pomaga</h2>
-      ${res.pomaga.length ? '<p class="helps-note">Mniej więcej o tyle lepszy bywa Twój nastrój w takie dni.</p>' : '<p class="helps-note">Jeszcze za mało Twoich dni. Na start: co pomaga wielu osobom.</p>'}
+      ${pomaga.length ? '<p class="helps-note">Mniej więcej o tyle lepszy bywa Twój nastrój w takie dni.</p>' : '<p class="helps-note">Jeszcze za mało Twoich dni. Na start: co pomaga wielu osobom.</p>'}
       <ul class="helps">${own}${gen}</ul>`;
   }
 
@@ -320,7 +329,7 @@
   // ================================================================
   //  Widok
   // ================================================================
-  let res = null, cisza = false, schowany = null;       // cisza: cięższy czas, nie dokładamy zadań · schowany: wniosek schowany przed chwilą („Nie pasuje”) — do cofnięcia
+  let res = null, cisza = false, karty = [], schowany = null;   // karty: wnioski pokazane w „Co zauważyliśmy” · cisza: cięższy czas, nie dokładamy zadań · schowany: wniosek schowany przed chwilą („Nie pasuje”) — do cofnięcia
   function render() {
     // bez zgody na dane o samopoczuciu (po jej wycofaniu) nie ma z czego liczyć wniosków
     if (Zgody && !Zgody.has('health_data') && Zgody.state('health_data').withdrawn) {
@@ -340,6 +349,8 @@
     // w cięższym czasie nie dokładamy zadań: przyciski eksperymentu znikają (trwający eksperyment zostaje, bez poganiania)
     cisza = !!(res.wsparcie && res.wsparcie.cisza);
     const hasProba = !!pr || cisza;
+    // karta wsparcia już mówi, że ostatnie dni są ciężkie: wniosek „Ostatnie dwa tygodnie są trudniejsze” byłby tą samą wiadomością drugi raz
+    karty = res.wnioski.filter(w => !(cisza && w.key === 'trend:dol'));
     window.WnioskiStan = { najlepsze: res.pomaga[0] || null, etap: res.etap };
 
     const open = new Set([...root.querySelectorAll('.insight-more[open]')].map(d => d.closest('.insight').querySelector('h3').textContent));
@@ -354,7 +365,7 @@
       ${herbarium(data)}
       <details class="wn-how">
         <summary>Jak powstają wnioski?</summary>
-        <p>Porównuję Twoje dni „z” i „bez” danej rzeczy z ostatnich 3 miesięcy. Pokazuję tylko różnice, które utrzymują się co najmniej tydzień i nie wyglądają na przypadek. „Wstępnie” znaczy, że warto to sprawdzić; im więcej podlań, tym wniosek pewniejszy. Mimo to wniosek może być mylny: to opis Twoich dni, nie diagnoza, i nie mówi, co jest przyczyną (w lepszy dzień po prostu łatwiej się ruszyć albo z kimś spotkać).</p>
+        <p>Porównujemy Twoje dni „z” i „bez” danej rzeczy z ostatnich 3 miesięcy. Pokazujemy tylko różnice, które utrzymują się co najmniej tydzień i nie wyglądają na przypadek. „Wstępnie” znaczy, że warto to sprawdzić; im więcej podlań, tym wniosek pewniejszy. Mimo to wniosek może być mylny: to opis Twoich dni, nie diagnoza, i nie mówi, co jest przyczyną (w lepszy dzień po prostu łatwiej się ruszyć albo z kimś spotkać).</p>
       </details>
       <p class="demo-note">Dane przykładowe${window.Podlewanie && window.Podlewanie.entry ? ' + Twój dzisiejszy wpis' : ''}. Wnioski to podpowiedzi, nie diagnoza.</p>`;
     // rozwinięte „Skąd to może się brać?” zostaje rozwinięte po odświeżeniu
@@ -368,7 +379,7 @@
       state.opinie[fb.dataset.key] = { v: fb.dataset.wnFb, at: new Date().toISOString() };
       schowany = fb.dataset.wnFb === 'nie' ? { key: fb.dataset.key, tytul: card ? card.querySelector('h3').textContent : '' } : null;
       save(); haptic(8);
-      toast(fb.dataset.wnFb === 'pasuje' ? 'Zapamiętane. Zostaje w „Co Ci pomaga”.' : 'Jasne, chowam ten wniosek. Dzięki, że mówisz.');
+      toast(fb.dataset.wnFb === 'pasuje' ? 'Zapamiętane. Dzięki, że mówisz.' : 'Jasne, chowam ten wniosek. Dzięki, że mówisz.');
       render();
       return;
     }

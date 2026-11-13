@@ -84,6 +84,16 @@ body {
 .sos:active { transform: scale(.96); transition-duration: .1s; }
 .sos:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
+/* Telefon i tablet: SOS jest przyklejony w rogu, więc przewijany tekst chowa się pod pasem w kolorze nieba
+   (jak pod górnym paskiem aplikacji), zamiast wchodzić pod przycisk. Od 1100 px SOS stoi obok kolumny tekstu. */
+@media (max-width: 1099px) {
+  html { scroll-padding-top: calc(env(safe-area-inset-top) + var(--tap) + var(--sp-8)); }
+  body::before {
+    content: ""; position: fixed; z-index: 2; inset: 0 0 auto 0; height: calc(env(safe-area-inset-top) + var(--tap) + var(--sp-10)); pointer-events: none;
+    background: linear-gradient(var(--doc-sky) calc(100% - var(--sp-6)), color-mix(in srgb, var(--doc-sky) 0%, transparent));
+  }
+}
+
 /* ---------- układ ---------- */
 .doc-main { max-width: 720px; margin: 0 auto; padding: var(--sp-8) var(--sp-5) var(--sp-16); }
 .doc-kicker { margin: 0 0 var(--sp-2); font-size: .9rem; font-weight: 600; color: var(--text-muted); }
@@ -210,6 +220,6 @@ body {
 }
 @media print {
   body { background: #fff; }
-  .sos, .doc-foot, .doc-toc, .toast { display: none !important; }
+  .sos, .doc-foot, .doc-toc, .toast, body::before { display: none !important; }
   .doc-main { max-width: none; padding: 0; display: block; }
 }

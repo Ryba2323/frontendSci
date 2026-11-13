@@ -3,7 +3,7 @@
  * Liczenie jest w js/wnioski.js, ekran w js/tracker.js. Pełny opis zasad: notes/wnioski.md.
  *
  * POLA — to, co osoba zaznacza w podlewaniu poza nastrojem i snem (kody jak w tabeli `checkin_fields`):
- *   obszary dnia  (−1 ciężko / 0 ok / 1 dobrze): food, family, friends, love, nature, study,
+ *   obszary dnia  (−1 ciężko / 0 ok / 1 dobrze): family, friends, nature, study,
  *   co dziś było  (zaznaczone = 1):               move, hobby, rest, talk, kindness, prepare.
  * Z tego pliku powstaje zasiew bazy: node narzedzia/baza/generuj-dane-wnioskow.js → notes/supabase-wnioski-dane.sql.
  *
@@ -49,11 +49,12 @@
   // ================================================================
   //  Pola podlewania
   // ================================================================
+  // „Jedzenie” i „Miłość” usunięte 13.11.2026 (rada: psycholog, prawnik i projektantka niezależnie). Nic z nich nie
+  // korzystało, więc łamały zasadę „zbieramy tylko to, z czego powstaje wniosek” (RODO art. 5 ust. 1 lit. c),
+  // a codzienna ocena jedzenia podtrzymuje skupienie na nim. W bazie pola zostają wyłączone (is_active = false).
   const AREAS = [
-    { code: 'food', name: 'Jedzenie' },
     { code: 'family', name: 'Rodzina' },
     { code: 'friends', name: 'Przyjaciele' },
-    { code: 'love', name: 'Miłość' },
     { code: 'nature', name: 'Natura' },
     { code: 'study', name: 'Nauka' },
   ];
@@ -61,9 +62,9 @@
   const ACTS = [
     { code: 'move', name: 'Ruch', icon: '<circle cx="13" cy="4.5" r="2"/><path d="M7 21l3-6 3 2v4M10 15l1.5-6 4 2 2.5 3M11.5 9L8 10.5 6.5 14"/>' },
     { code: 'hobby', name: 'Hobby', icon: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>' },
-    { code: 'rest', name: 'Odpoczynek', icon: '<path d="M4 18h16M6 18v-5a6 6 0 0 1 12 0v5M12 4v2"/>' },
+    { code: 'rest', name: 'Odpoczynek', icon: '<path d="M7 11V8a2.5 2.5 0 0 1 2.5-2.5h5A2.5 2.5 0 0 1 17 8v3"/><path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4.500H3V13a2 2 0 0 1 2-2z"/><path d="M6 17.500V20M18 17.500V20"/>' },   // fotel (dawna ikona wyglądała jak dzwonek)
     { code: 'talk', name: 'Szczera rozmowa', icon: '<path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12z"/>' },
-    { code: 'kindness', name: 'Coś dla kogoś', icon: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>' },
+    { code: 'kindness', name: 'Coś dla kogoś', icon: '<rect x="4" y="10" width="16" height="10" rx="1"/><path d="M3 7h18v3H3zM12 7v13"/><path d="M12 7C10.500 3.500 6.500 4 7.500 7M12 7c1.500-3.500 5.500-3 4.500 0"/>' },   // prezent (serce jest już w „Miłość” i SOS)
     { code: 'prepare', name: 'Plecak na jutro', icon: '<path d="M6 8h12v12H6zM9 8V6a3 3 0 0 1 6 0v2M9 13h6"/>' },
   ];
   // „O której do łóżka?” — o zeszłej nocy, tak jak pytanie o godziny snu
@@ -83,9 +84,9 @@
   // odpowiedź jest, ale nie z przeciwną oceną (patrz `known` w nagłówku)
   const bez = (code, v) => e => anyTag(e) && (e.areas || {})[code] !== v;
   const GDZIE = {
-    sen: 'Liczę to z pytania o sen w podlewaniu.',
-    act: 'Liczę to z „Co dziś było?” w podlewaniu.',
-    area: n => `Liczę dni, w których przy „${n}” w podlewaniu jest „Dobrze”.`,
+    sen: 'Liczymy to z pytania o sen w podlewaniu.',
+    act: 'Liczymy to z „Co dziś było?” w podlewaniu.',
+    area: n => `Liczymy dni, w których przy „${n}” w podlewaniu jest „Dobrze”.`,
   };
 
   const CZYNNIKI = [

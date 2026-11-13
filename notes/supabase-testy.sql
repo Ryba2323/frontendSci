@@ -244,6 +244,12 @@ begin
     raise exception 'version_changed' using detail = 'Test został zaktualizowany. Odśwież pytania i wypełnij go jeszcze raz.';
   end if;
 
+  -- Test z minimalnym wiekiem (Big Five: 16 lat, bo tylko na takich osobach był badany) jest dla młodszych zamknięty
+  -- (decyzja Marcela, 13.11.2026). Wiek liczymy ostrożnie, jak przy zgodzie opiekuna (private.reached_age).
+  if q.validated_from_age is not null and not private.reached_age(uid, q.validated_from_age) then
+    raise exception 'age_required' using detail = format('Ten test jest dla osób od %s lat.', q.validated_from_age);
+  end if;
+
   -- blokada na wierszach zgody: wycofanie zgody czeka, aż zapis się skończy (i wtedy go usuwa), a zapis zaczęty
   -- po wycofaniu już zgody nie zobaczy
   perform 1 from public.user_consents c

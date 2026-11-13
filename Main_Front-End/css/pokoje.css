@@ -94,7 +94,7 @@
 }
 :root[data-pokoje] .pk-writing #vault-text:focus { box-shadow: var(--e1), 0 0 0 3px var(--ring); }
 :root[data-pokoje] .pk-writing #vault-form:focus-within { box-shadow: none; }
-:root[data-pokoje] .pk-writing #vault-alert { flex: none; margin-top: var(--sp-3); }
+:root[data-pokoje] .pk-writing :is(#vault-alert, #vault-harm) { flex: none; margin-top: var(--sp-3); }
 :root[data-pokoje] .pk-writing .vault-bar { flex: none; margin-top: var(--sp-4); padding: 0; }
 :root[data-pokoje] .pk-writing .vault-bar .btn-primary { height: 52px; padding: 0 var(--sp-6); font-size: 1rem; }
 :root[data-pokoje] .pk-writing .vault-bar .quiet-btn { height: var(--tap, 44px); font-size: .95rem; color: var(--text-body); }

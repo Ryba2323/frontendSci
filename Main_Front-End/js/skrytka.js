@@ -8,6 +8,7 @@
  * i pokazuje „Zapytaj Asystenta” (najpierw zgoda, potem myśl leci liściem do Asystenta — js/asystent.js) i „Usuń”.
  * Przy pierwszym otwarciu Skrytka dostaje kilka przykładowych myśli (MAKIETA — żeby nie była pusta).
  * Słowa kryzysowe (js/moderacja.js) nie blokują zapisu — Skrytka jest prywatna — ale od razu pokazujemy 116 111.
+ * Słowa o krzywdzie („boję się wracać do domu”) pokazują kartę „to nigdy nie jest Twoja wina” z 116 111 i 112.
  *
  * PROTOTYP: wpisy są w localStorage (`sci.skrytka`) tej przeglądarki, bez szyfrowania.
  * window.Skrytka: add({ text, from, mood }) — dodaje wpis (np. notatkę z podlewania), list(), focus()
@@ -18,7 +19,7 @@
   const root = document.getElementById('skrytka-root');
   const $ = (s, r = root) => r.querySelector(s);
   const { toast, haptic } = window.AuthCommon;
-  const Mod = window.Moderacja || { check: () => ({ verdict: 'ok', hits: [] }) };
+  const Mod = window.Moderacja || { check: () => ({ verdict: 'ok', hits: [], krzywda: false }), krzywdaCard: () => '' };
   const view = new URLSearchParams(location.search).get('widok');
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || !!view;
 
@@ -96,6 +97,7 @@
       <p class="support-text">Możesz to tu zapisać, ale nie zostawaj z tym sam na sam.</p>
       <a class="support-call" href="tel:116111">${svg(ICON.phone)}Zadzwoń: 116 111 <small>całą dobę</small></a>
     </section>
+    ${Mod.krzywdaCard ? Mod.krzywdaCard({ id: 'vault-harm' }) : ''}
 
     <h2 class="sub-title" id="vault-list-title">Twoje myśli</h2>
     <ol class="vault-list" id="vault-list" aria-labelledby="vault-list-title"></ol>
@@ -145,7 +147,12 @@
     promptAt = (promptAt + 1) % PROMPTS.length;
     text.placeholder = PROMPTS[promptAt];
   }, 6000);
-  text.addEventListener('input', () => { $('#vault-alert').hidden = Mod.check(text.value).verdict !== 'kryzys'; });
+  text.addEventListener('input', () => {
+    const r = Mod.check(text.value);
+    $('#vault-alert').hidden = r.verdict !== 'kryzys';
+    const harm = $('#vault-harm');      // nie ma jej, gdy przeglądarka trzyma starą wersję moderacja.js
+    if (harm) harm.hidden = !r.krzywda || r.verdict === 'kryzys';
+  });
 
   function add({ text: t, from = null, mood = null }) {
     const it = { id: `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, at: Date.now(), text: t, from, mood };
@@ -154,7 +161,7 @@
     render(it.id);
     return it;
   }
-  function clear() { text.value = ''; $('#vault-alert').hidden = true; }
+  function clear() { text.value = ''; $('#vault-alert').hidden = true; const harm = $('#vault-harm'); if (harm) harm.hidden = true; }
 
   form.addEventListener('submit', e => {
     e.preventDefault();
