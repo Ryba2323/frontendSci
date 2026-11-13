@@ -41,6 +41,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 | Check-in, first question only (the design `aplikacja.html` reuses) | `nastroj.html`, `css/checkin.css`, `js/nastroj.js`, `css/mood-slider.css`, `js/mood-slider.js` |
 | Bottom sheets (shared) | `js/sheets.js` (`window.Sheets`) |
 | Themes and tokens | `css/tokens.css`, `js/theme.js` |
+| Promo film for stories ("Puść z wiatrem", 9:16) | `promo-wiatr.html`, `css/promo.css`, `js/promo-wiatr.js`, `fonts/`, `../narzedzia/render-promo.js` — see "Promo film" below |
 
 ### The app (`aplikacja.html`)
 
@@ -60,6 +61,14 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
 - **Tryb nocny**: `Theme.setMode('auto'|'light'|'dark')` in `js/theme.js` sets `<html data-mode>` (saved in `sci.mode`); `css/tokens.css` redefines only the neutral tokens for dark (also follows the system setting in auto). The switch is in the "Kolor roślinki" sheet. The plant scene shows a night sky with stars and the moon in dark mode. Use `--glass`, `--toast-bg` / `--toast-fg` instead of hard-coded white or dark colours.
+
+### Promo film (`promo-wiatr.html`)
+
+- A 15 s vertical film (1080×1920) for Instagram stories, using the working name **Releaf** (relief + leaf; the team still has to confirm the name). Script: a heavy thought is typed ("znowu mi dziś nie wyszło"), the wind turns each letter into a leaf and carries it away (the Skrytka "Puść z wiatrem" feature), the line "Niektórych myśli nie trzeba trzymać." appears, then one leaf comes back, lands on the "l" and "relief" becomes "releaf" with the tagline "Ulga, która rośnie."
+- `js/promo-wiatr.js` (`window.PromoWiatr`) draws everything on one canvas as a **pure function of time**: `render(t)` keeps no state between frames, so the film can be scrubbed and rendered frame by frame. Copy (`COPY`) and timeline (`T`) sit at the top of the file. Colours come from the theme tokens, so `?motyw=<id>` and `?tryb=dark` give other versions. Other URL helpers: `?t=7.5` (frozen at a second), `?widok=statyczny` (last frame), `?widok=czysty` (frame only, no controls).
+- Leaves reuse the leaf shape from `js/home2-scene.js`, pre-rendered as sprites at several blur levels (depth of field). The letter → leaf and letter → letter transitions blur two shapes and threshold the alpha channel. Safari has no `ctx.filter`, so the preview there has no blur; the exported video is not affected.
+- **Export to MP4:** `node narzedzia/render-promo.js [--tryb=dark] [--motyw=<id>] [--fps=30] [--proby=8]` (needs `playwright` with Chromium and `ffmpeg`). Each video frame averages several sub-frames (real motion blur). Output goes to `promo/`, which is git-ignored.
+- The page loads Plus Jakarta Sans from `fonts/` (OFL licence included) so the render is identical offline; the app screens still use Google Fonts.
 
 ### Colours and themes
 

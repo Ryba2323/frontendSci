@@ -1,0 +1,105 @@
+/*
+ * Promo „Puść z wiatrem” — strona podglądu filmu na story (promo-wiatr.html).
+ * Sam film rysuje js/promo-wiatr.js na canvasie 1080×1920; tu jest tylko rama, przyciski i czcionka.
+ *
+ * Czcionka Plus Jakarta Sans leży lokalnie (fonts/), żeby render do wideo był zawsze taki sam
+ * i działał bez internetu. Licencja: fonts/LICENSE-PlusJakartaSans.txt (SIL OFL 1.1).
+ */
+@font-face {
+  font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 500; font-display: block;
+  src: url("../fonts/plus-jakarta-sans-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 500; font-display: block;
+  src: url("../fonts/plus-jakarta-sans-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 600; font-display: block;
+  src: url("../fonts/plus-jakarta-sans-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 600; font-display: block;
+  src: url("../fonts/plus-jakarta-sans-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 800; font-display: block;
+  src: url("../fonts/plus-jakarta-sans-latin-ext-800-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans"; font-style: normal; font-weight: 800; font-display: block;
+  src: url("../fonts/plus-jakarta-sans-latin-800-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg-2);
+  -webkit-font-smoothing: antialiased;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+/* Kadr 9:16 — mieści się w oknie na telefonie, tablecie i komputerze */
+.promo-frame {
+  position: relative;
+  height: min(calc(100dvh - 92px), calc((100vw - 24px) * 16 / 9));
+  aspect-ratio: 9 / 16;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: 0 24px 60px rgba(var(--primary-rgb), .18), 0 0 0 1px var(--line);
+}
+.promo-frame canvas { display: block; width: 100%; height: 100%; }
+
+.promo-bar {
+  display: flex; align-items: center; gap: 12px;
+  width: min(100%, 460px);
+  padding: 8px 14px 8px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+}
+.promo-btn {
+  flex: none;
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  cursor: pointer;
+  transition: background .2s var(--ease-out), transform .2s var(--ease-out);
+}
+.promo-btn:hover { background: var(--primary-hover); }
+.promo-btn:active { transform: scale(.94); }
+.promo-btn:focus-visible, .promo-range:focus-visible { outline: 3px solid var(--ring); outline-offset: 3px; }
+.promo-btn svg { width: 20px; height: 20px; fill: currentColor; }
+.promo-btn [data-ikona="pauza"] { display: none; }
+.promo-btn[aria-pressed="true"] [data-ikona="pauza"] { display: block; }
+.promo-btn[aria-pressed="true"] [data-ikona="graj"] { display: none; }
+
+.promo-range { flex: 1; min-width: 0; accent-color: var(--primary); height: 28px; }
+.promo-time {
+  flex: none; min-width: 5.5ch;
+  font-size: .82rem; font-weight: 600; color: var(--text-muted);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+
+/* ?widok=czysty — sam kadr bez przycisków (render do wideo, zrzuty) */
+[data-widok="czysty"] body { padding: 0; background: var(--bg); }
+[data-widok="czysty"] .promo-bar { display: none; }
+[data-widok="czysty"] .promo-frame { height: min(100dvh, calc(100vw * 16 / 9)); border-radius: 0; box-shadow: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

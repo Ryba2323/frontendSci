@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F4FAFB">
+  <title>Releaf — promo „Puść z wiatrem”</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/promo.css">
+  <script src="js/theme.js"></script>
+  <script defer src="js/promo-wiatr.js"></script>
+</head>
+<body>
+  <!--
+    Film na story (9:16, 1080×1920, 15 s). Rysuje go js/promo-wiatr.js.
+    ?motyw=<id>       inny kolor roślinki        ?tryb=dark   wersja nocna
+    ?widok=czysty     sam kadr (render do wideo) ?widok=statyczny  ostatnia klatka bez animacji
+    ?t=7.5            zatrzymany na wybranej sekundzie
+    Render do MP4: node narzedzia/render-promo.js (w katalogu głównym repo)
+  -->
+  <div class="promo-frame">
+    <canvas id="promo" width="1080" height="1920" role="img"
+      aria-label="Animacja Releaf: na ekranie pisze się myśl „znowu mi dziś nie wyszło”. Litery zamieniają się w listki i odlatują z wiatrem. Pojawia się zdanie „Niektórych myśli nie trzeba trzymać.”, a potem logo Releaf z listkiem i hasłem „Ulga, która rośnie.”"></canvas>
+  </div>
+
+  <div class="promo-bar">
+    <button type="button" class="promo-btn" id="promo-play" aria-pressed="false" aria-label="Odtwórz albo zatrzymaj">
+      <svg data-ikona="graj" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l11-6.5a1 1 0 0 0 0-1.72l-11-6.5A1 1 0 0 0 8 5.5z"/></svg>
+      <svg data-ikona="pauza" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.5" height="14" rx="1.5"/><rect x="13.5" y="5" width="4.5" height="14" rx="1.5"/></svg>
+    </button>
+    <input type="range" class="promo-range" id="promo-range" min="0" max="15" step="0.01" value="0" aria-label="Przewijanie filmu">
+    <span class="promo-time" id="promo-time" aria-hidden="true">0,0 s</span>
+  </div>
+
+  <p class="sr-only">Niektórych myśli nie trzeba trzymać. Releaf — ulga, która rośnie.</p>
+</body>
+</html>

@@ -10,3 +10,6 @@ desktop.ini
 # Lokalna konfiguracja Claude Code (ścieżki specyficzne dla tego komputera)
 .claude/launch.json
 .claude/settings.local.json
+
+# Wyrenderowane filmy promo (odtwarzalne: node narzedzia/render-promo.js)
+promo/
