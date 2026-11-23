@@ -20,6 +20,8 @@
  * ?widok=… — bez animacji (zrzuty, podgląd dla zespołu).
  *
  * API (window.Home2Scene): start({ days, labels, missed }), water(mood?), select(i), isWatered(), debugAdvance(sec)
+ *   skipIntro(), plantAt(), bloomFlash() — wejście po zalogowaniu (js/wejscie.js, wariant „pole”): zbliżenie z pola
+ *   kończy się na tej roślince (plantAt: podstawa w px okna, wysokość łodygi, x czubka), a kwiat na końcu rozbłyska.
  *   water(mood) — mood 1–10 z pytań podlewania ustala wielkość dzisiejszego liścia (bez niego: średni liść).
  *   full(t, fast) — 0–1: scena rośnie do pełnego ekranu (telefon; aplikacja pociąga w dół na górze strony).
  * <div class="stage" data-blisko> (aplikacja.html) — na telefonie roślinka jest większa („bliżej”), lekko w prawo od powitania,
@@ -1116,6 +1118,16 @@
     water,
     select,
     isWatered: () => wateredAt != null,
+    // Wejście po zalogowaniu (js/wejscie.js, wariant „pole”): roślinka jest od razu dorosła (zbliżenie zastępuje wyrastanie)…
+    skipIntro() { st.intro = 1; },
+    // …zbliżenie kończy się dokładnie na niej: podstawa (px okna), wysokość łodygi i x czubka…
+    plantAt() {
+      const r = canvas.getBoundingClientRect();
+      const [fx] = stemPt(stemP(FULL_H), 1);
+      return { x: r.left + baseX, y: r.top + baseY, h: FULL_H * S, tipX: r.left + fx };
+    },
+    // …a na końcu kwiat na roślince rozbłyska
+    bloomFlash() { if (motion) { bloomFlashAt = clock; petalBurst(4); } },
     // Tylko do testów (np. gdy karta przeglądarki jest w tle i nie dostaje klatek): przewija czas sceny
     debugAdvance(sec) {
       for (let t = 0; t < sec; t += 1 / 60) { clock += 1 / 60; update(1 / 60); }

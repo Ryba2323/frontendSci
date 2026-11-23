@@ -35,6 +35,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 | Login | `logowanie.html`, `js/logowanie.js` |
 | Registration (3 stages, one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
 | Shared by login and registration | `css/auth.css`, `js/auth-common.js` (toast, haptics, password field, `account` storage), `js/plant-scene.js` (growing plant canvas, `window.PlantScene`) |
+| Entry transition after login ("Przejdź do aplikacji" → Dom) | `css/wejscie.css`, `js/wejscie.js` (`window.Wejscie`) — see "Entry transition" below |
 | **The app: all tabs on one page (main entry)** | `aplikacja.html`, `css/app.css`, `js/app.js` (tabs/router) — see "The app" below |
 | Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
 | **Home page, version 2: plant on top (current direction)** | `strona-glowna-2.html`, `css/home2.css`, `js/home2.js`, `js/home2-scene.js` |
@@ -60,6 +61,13 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
 - **Tryb nocny**: `Theme.setMode('auto'|'light'|'dark')` in `js/theme.js` sets `<html data-mode>` (saved in `sci.mode`); `css/tokens.css` redefines only the neutral tokens for dark (also follows the system setting in auto). The switch is in the "Kolor roślinki" sheet. The plant scene shows a night sky with stars and the moon in dark mode. Use `--glass`, `--toast-bg` / `--toast-fg` instead of hard-coded white or dark colours.
+
+### Entry transition (`js/wejscie.js`, "field" variant)
+
+- After login, "Przejdź do aplikacji" on the welcome step plays a ~4 s transition into `aplikacja.html`. On the login page, the welcome text fades and the card slides down. The camera "rises": the login plant shrinks into a field of many plants seen from afar, drawn on a canvas in the colours of all six themes. The caption reads "Wśród wielu roślinek…". The login page saves the tap time in the one-time `sessionStorage` key `sci.wejscie`, then navigates.
+- On the app page, `js/wejscie.js` (loaded **without `defer`** in `<head>`, like `theme.js`) sets `<html data-wejscie>`. The overlay markup is the first child of `<body>` and is followed by an inline `Wejscie.mount()`, so the field is already drawn in the first frame. Both pages draw the field with the same code and time it from the tap, so the page change doesn't show.
+- A firefly searches the field and stops on the user's plant. The plant blooms and a tag with its name appears; the caption changes to "…jest ta jedna Twoja.". The camera then zooms in. At the moment of finding, the field drawing of the user's plant is swapped for a soft-masked copy of the real `Home2Scene` canvas (`Home2Scene.skipIntro()`, `plantAt()`, `bloomFlash()`). The zoom ends exactly on the real plant, and the greeting, top bar, card and tab bar come in one after another.
+- A tap on the transition skips it; a refresh doesn't replay it; `prefers-reduced-motion` and `?widok` turn it off. `<html data-wejscie>` stays until the page is left, because removing it would restart the content's normal entry animations.
 
 ### Colours and themes
 

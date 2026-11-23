@@ -1,0 +1,71 @@
+/*
+ * Wejście do aplikacji po zalogowaniu — WARIANT „POLE” (logowanie.html → aplikacja.html). Logika: js/wejscie.js.
+ * Pole wielu roślinek z daleka → świetlik znajduje Twoją → zbliżenie, które kończy się na stronie głównej.
+ * Kolory tylko z tokenów (pole rysuje canvas z kolorów wszystkich motywów).
+ */
+
+.wejscie {
+  position: fixed; inset: 0; z-index: 100;
+  display: none;
+  background: var(--bg);
+}
+html[data-wejscie] .wejscie { display: block; cursor: pointer; }
+/* na logowaniu zasłona jest przezroczysta i pojawia się stopniowo — tło daje sam canvas pola */
+.wejscie.is-leaving { background: transparent; }
+.wj-field { position: absolute; left: 0; top: 0; display: block; }
+
+/* Podpis u góry — ten sam styl co nad roślinką na logowaniu (auth.css .scene-copy) */
+.wj-copy {
+  position: absolute; top: calc(env(safe-area-inset-top) + 14px); left: 16px; right: 16px;
+  text-align: center; pointer-events: none;
+}
+.wj-eyebrow {
+  display: block; margin-bottom: 3px;
+  font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--primary);
+}
+.wj-line { margin: 0; font-size: .86rem; line-height: 1.4; font-weight: 600; color: var(--text-muted); }
+@media (min-width: 900px) {
+  .wj-copy { top: 40px; }
+  .wj-eyebrow { font-size: .72rem; margin-bottom: 8px; }
+  .wj-line { font-size: 1.05rem; font-weight: 500; }
+}
+
+/* Imię roślinki nad jej kwiatem, gdy świetlik ją znajdzie (położenie ustawia JS) */
+.wj-tag {
+  position: absolute; left: 0; top: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 12px 0 10px; border-radius: 999px;
+  background: var(--surface); color: var(--primary-dark);
+  font-size: .78rem; font-weight: 800; letter-spacing: .02em; white-space: nowrap;
+  box-shadow: 0 8px 20px -10px rgba(var(--primary-rgb), .7);
+  opacity: 0;
+}
+.wj-tag::before {
+  content: ""; width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle, var(--plant-core) 0 35%, var(--plant-flower) 40%);
+}
+.wj-tag::after {
+  content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; margin-left: -4px;
+  background: var(--surface); transform: rotate(45deg); border-radius: 2px;
+}
+
+/* Strona aplikacji w trakcie wejścia: interfejs czeka do końca zbliżenia */
+html[data-wejscie] .stage-greet > * { animation-delay: 2.3s; }
+html[data-wejscie] .stage-greet > :nth-child(2) { animation-delay: 2.38s; }
+html[data-wejscie] .app-top > * { animation: fade-in .6s ease 2.45s both; }
+html[data-wejscie] #view-dom { animation: wj-sheet .85s var(--ease-out) 2.45s both; }
+html[data-wejscie] #view-dom > .sec { animation: wj-soft .7s var(--ease-out) both; animation-delay: calc(2.55s + var(--wj-i, 0) * 90ms); }
+html[data-wejscie] .tabbar { animation: wj-bar .6s var(--ease-out) 2.55s both; }
+html[data-wejscie] .plant-zoom { animation-delay: 3s; }
+html[data-wejscie] .scroll-hint { animation-delay: 3s; }
+@keyframes wj-sheet { from { opacity: 0; transform: translateY(56px); } }
+@keyframes wj-soft { from { opacity: 0; transform: translateY(14px); } }
+@keyframes wj-bar { from { transform: translateY(105%); } }
+@media (min-width: 700px) {
+  @keyframes wj-bar { from { transform: translate(-50%, 160%); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-wejscie] .wejscie { display: none; }
+}
