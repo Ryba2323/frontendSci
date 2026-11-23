@@ -1,0 +1,73 @@
+/*
+ * Wejście do aplikacji po zalogowaniu (logowanie.html → aplikacja.html).
+ *
+ * Kwiat z odznaki powitania prowadzi przez przejście:
+ *   logowanie: treść gaśnie, karta zjeżdża w dół, roślinka z logowania blednie, a kwiat zostaje i lekko unosi się na środek;
+ *   (zmiana strony — oba końce wyglądają tak samo: spokojne tło + kwiat na środku)
+ *   aplikacja: kwiat robi „oddech”, zasłona się rozsuwa, roślinka wyrasta, a kwiat przelatuje na jej czubek i w nim znika;
+ *   potem powitanie, górny pasek, kafel z treścią i pasek zakładek.
+ * Logika: js/wejscie.js. Kolory tylko z tokenów (działa w każdym motywie i w trybie nocnym).
+ */
+
+/* Zasłona: tło jak strona aplikacji + miękka poświata wokół kwiatu */
+.wejscie {
+  --wj-y: 43%;
+  position: fixed; inset: 0; z-index: 100;
+  display: none;
+  pointer-events: none;
+}
+html[data-wejscie] .wejscie { display: block; pointer-events: auto; cursor: pointer; }
+.wejscie-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(420px 420px at 50% var(--wj-y), rgba(var(--mint-rgb), .75), transparent 62%),
+    radial-gradient(900px 600px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+}
+
+/* Kwiat (ta sama odznaka co na ekranie powitania) — położenie i skalę ustawia JS */
+.wj-badge {
+  position: absolute; left: 0; top: 0;
+  width: 88px; height: 88px; margin: -44px 0 0 -44px;
+  display: grid; place-items: center;
+  will-change: transform, opacity;
+}
+.wj-disc {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, rgba(var(--mint-rgb), .55) 70%);
+  box-shadow: 0 0 0 8px rgba(var(--mint-rgb), .45), 0 18px 34px -14px rgba(var(--primary-rgb), .6);
+}
+html[data-mode="dark"] .wj-disc {
+  background: radial-gradient(circle at 35% 30%, var(--surface), rgba(var(--mint-rgb), .9) 70%);
+}
+/* pierścień „oddechu” (ten sam co pulsuje na powitaniu) */
+.wj-halo { position: absolute; inset: 0; }
+.wj-halo i {
+  position: absolute; inset: -8px; border-radius: 50%;
+  border: 2px solid var(--plant-leaf-2);
+  opacity: 0;
+}
+/* sam kwiat — na końcu przelatuje na czubek roślinki (transform ustawia JS) */
+.wj-fly { position: relative; display: grid; place-items: center; width: 54px; height: 54px; will-change: transform, opacity; }
+.wj-flower { width: 54px; height: 54px; }
+.wj-flower .petals { fill: var(--plant-flower); }
+.wj-flower .core { fill: var(--plant-core); }
+
+/* Strona aplikacji w trakcie wejścia: elementy czekają, aż zasłona się rozsunie */
+/* (atrybut zostaje do końca wizyty — zdjęcie go odpaliłoby zwykłe animacje treści drugi raz) */
+html[data-wejscie] .stage-greet > * { animation-delay: .6s; }
+html[data-wejscie] .stage-greet > :nth-child(2) { animation-delay: .68s; }
+html[data-wejscie] .app-top > * { animation: fade-in .6s ease .75s both; }
+html[data-wejscie] #view-dom { animation: wj-sheet .85s var(--ease-out) .8s both; }
+html[data-wejscie] #view-dom > .sec { animation: wj-soft .7s var(--ease-out) both; animation-delay: calc(.9s + var(--wj-i, 0) * 90ms); }
+html[data-wejscie] .tabbar { animation: wj-bar .6s var(--ease-out) .9s both; }
+@keyframes wj-sheet { from { opacity: 0; transform: translateY(56px); } }
+@keyframes wj-soft { from { opacity: 0; transform: translateY(14px); } }
+@keyframes wj-bar { from { transform: translateY(105%); } }
+@media (min-width: 700px) {
+  @keyframes wj-bar { from { transform: translate(-50%, 160%); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-wejscie] .wejscie { display: none; }
+}

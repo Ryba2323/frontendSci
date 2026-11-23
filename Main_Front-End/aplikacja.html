@@ -15,8 +15,11 @@
   <link rel="stylesheet" href="css/checkin.css">
   <link rel="stylesheet" href="css/mood-slider.css">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/wejscie.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
+  <!-- bez defer: po zalogowaniu pierwsza klatka to już zasłona przejścia (bez mignięcia strony) -->
+  <script src="js/wejscie.js"></script>
 
   <script src="js/auth-common.js" defer></script>
   <script src="js/sheets.js" defer></script>
@@ -36,6 +39,30 @@
   <script src="js/app.js" defer></script>
 </head>
 <body data-tab="dom">
+
+<!-- Wejście po zalogowaniu (css/wejscie.css, js/wejscie.js): widoczne tylko przy <html data-wejscie> -->
+<div class="wejscie" aria-hidden="true">
+  <div class="wejscie-bg"></div>
+  <div class="wj-badge">
+    <span class="wj-halo"><i></i></span>
+    <span class="wj-disc"></span>
+    <span class="wj-fly">
+    <svg class="wj-flower" viewBox="0 0 64 64">
+      <g transform="translate(32 32)">
+        <g class="petals">
+          <ellipse cy="-12.5" rx="7.5" ry="11.5"/>
+          <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(72)"/>
+          <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(144)"/>
+          <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(216)"/>
+          <ellipse cy="-12.5" rx="7.5" ry="11.5" transform="rotate(288)"/>
+        </g>
+        <circle class="core" r="7.5"/>
+        <circle cx="-2.4" cy="-2.4" r="2.6" fill="#fff" opacity=".6"/>
+      </g>
+    </svg>
+    </span>
+  </div>
+</div>
 
 <!--
   CAŁA APLIKACJA NA JEDNEJ STRONIE: zakładki Dom · Skrytka · Tracker · Testy · Blog (js/app.js, adres #/zakładka).

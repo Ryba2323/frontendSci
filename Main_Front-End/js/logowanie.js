@@ -221,6 +221,14 @@
   }
 
 
+  // Wejście do aplikacji: kwiat z odznaki prowadzi na stronę główną (js/wejscie.js)
+  $('#enter-app').addEventListener('click', e => {
+    if (!window.Wejscie) return;
+    e.preventDefault();
+    haptic(12);
+    window.Wejscie.leave($('#welcome .badge'), e.currentTarget.href);
+  });
+
   $('#switch-account').addEventListener('click', () => {
     emailInput.value = '';
     [emailInput, pwInput].forEach(i => setErr(i, ''));
