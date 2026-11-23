@@ -1,0 +1,179 @@
+/*
+ * Samouczek po rejestracji — w stylu relacji (aplikacja.html). Logika: js/samouczek.js.
+ * Telefon: pełny ekran. Relacje o roślince mają przezroczystą górę — widać prawdziwą roślinkę ze strony głównej.
+ * Pozostałe pokazują małe „żywe” fragmenty aplikacji (te same klasy co w Skrytce, Trackerze, Blogu, SOS).
+ * Kolory tylko z tokenów (css/tokens.css).
+ */
+
+.stories {
+  --st-sheet: 41%;
+  position: fixed; inset: 0; z-index: 40;
+  overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  clip-path: circle(0 at var(--ox, 50%) var(--oy, 0));
+  transition: clip-path .6s var(--ease-in-out);
+}
+.stories:focus { outline: none; }
+.stories.is-open { clip-path: circle(var(--or, 150vmax) at var(--ox, 50%) var(--oy, 0)); }
+.stories.is-closing { transition-duration: .5s; }
+
+/* Tło relacji bez roślinki (w relacjach o roślince gaśnie i widać scenę strony głównej) */
+.st-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(700px 480px at 50% 26%, rgba(var(--mint-rgb), .6), transparent 62%),
+    radial-gradient(800px 520px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  transition: opacity .45s ease;
+}
+.stories.is-plant .st-bg { opacity: 0; }
+
+/* Na czas samouczka chowamy interfejs strony głównej (roślinka zostaje) */
+body.st-open .app-top, body.st-open .content, body.st-open .tabbar { opacity: 0; pointer-events: none; }
+/* powitanie i przycisk powiększenia mają własne animacje przezroczystości — chowamy je przez visibility */
+body.st-open .stage-greet, body.st-open .plant-zoom { visibility: hidden; }
+.app-top, .content { transition: opacity .5s ease; }
+body.st-open { overflow: hidden; }
+
+/* ---------- Pasek postępu i nagłówek ---------- */
+.st-top {
+  position: absolute; z-index: 3; left: 0; right: 0; top: 0;
+  padding: calc(env(safe-area-inset-top) + 10px) 12px 0;
+  transition: opacity .3s ease;
+}
+.st-bars { display: flex; gap: 4px; }
+.st-bars span { flex: 1; height: 3px; border-radius: 3px; background: rgba(var(--primary-rgb), .18); overflow: hidden; }
+.st-bars i { display: block; height: 100%; border-radius: inherit; background: var(--primary); transform-origin: left; transform: scaleX(0); }
+.st-bars .is-done i { transform: scaleX(1); }
+.st-head { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.st-ava {
+  flex: none; width: 38px; height: 38px; padding: 2.5px; border-radius: 50%;
+  background: conic-gradient(var(--plant-leaf-2), var(--plant-flower), var(--primary), var(--plant-leaf-2));
+}
+.st-ava > span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--surface); }
+.st-ava .color-dot { width: 22px; height: 22px; }
+.st-who { flex: 1; min-width: 0; display: grid; line-height: 1.25; }
+.st-who b { font-size: .9rem; font-weight: 800; }
+.st-who small { font-size: .74rem; font-weight: 600; color: var(--text-muted); }
+.st-close {
+  flex: none; width: 38px; height: 38px; display: grid; place-items: center; padding: 0;
+  border: 1.5px solid rgba(var(--primary-rgb), .25); border-radius: 50%;
+  background: var(--surface); color: var(--text-muted); cursor: pointer;
+}
+.st-close svg { width: 18px; height: 18px; }
+.st-close:focus-visible, .st-tap:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
+
+/* ---------- Strefy stuknięć: lewa trzecia = wstecz, reszta = dalej ---------- */
+.st-tap { position: absolute; z-index: 1; top: 0; bottom: 0; padding: 0; border: 0; background: transparent; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.st-prev { left: 0; width: 33%; }
+.st-next { right: 0; width: 67%; }
+
+/* ---------- Ilustracje (środek ekranu, nad arkuszem) ---------- */
+.st-visuals { position: absolute; z-index: 0; left: 0; right: 0; top: calc(env(safe-area-inset-top) + 76px); bottom: var(--st-sheet); pointer-events: none; }
+.st-vis {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 0 22px;
+  opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s;
+}
+.st-vis.is-active { opacity: 1; visibility: visible; transition: opacity .45s ease .1s, visibility 0s; }
+.st-demo { width: 100%; max-width: 360px; display: grid; gap: 12px; }
+
+/* ---------- Arkusz z tekstem (jak kafel strony głównej) ---------- */
+.st-sheet {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; min-height: var(--st-sheet);
+  display: flex; flex-direction: column;
+  padding: 26px 22px calc(18px + env(safe-area-inset-bottom));
+  background: var(--sheet);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -16px 40px -26px rgba(30, 42, 50, .3);
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+.st-text > * { animation: st-in .55s var(--ease-out) both; }
+.st-text > :nth-child(2) { animation-delay: .06s; }
+.st-text > :nth-child(3) { animation-delay: .12s; }
+@keyframes st-in { from { opacity: 0; transform: translateY(10px); } }
+.st-sheet h2 { margin: 6px 0 8px; font-size: 1.55rem; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; }
+.st-sheet .lead { max-width: 34em; }
+.st-cta { display: grid; gap: 4px; margin-top: auto; padding-top: 18px; pointer-events: auto; }
+.st-cta .btn-primary { width: 100%; }
+.st-again { justify-self: center; padding: 10px; border: 0; background: none; font: inherit; font-size: .9rem; font-weight: 700; color: var(--text-muted); cursor: pointer; }
+.st-hint {
+  display: flex; align-items: center; gap: 4px; margin: auto 0 0; padding-top: 16px;
+  font-size: .78rem; font-weight: 700; color: var(--text-soft);
+}
+.st-hint svg { width: 16px; height: 16px; animation: st-nudge 1.8s ease-in-out infinite; }
+@keyframes st-nudge { 50% { transform: translateX(4px); } }
+
+/* Przytrzymanie = pauza (jak w relacjach): interfejs lekko gaśnie */
+.stories.is-held .st-top, .stories.is-held .st-sheet { opacity: .35; }
+
+/* ================================================================
+   Ilustracje poszczególnych relacji
+   ================================================================ */
+/* Podlewanie: przycisk z aplikacji i pierwsze pytanie */
+.st-q { padding: 16px 18px 14px; }
+.st-q-title { margin: 6px 0 0; font-size: 1.1rem; font-weight: 800; letter-spacing: -.01em; }
+.st-q .meter { margin-top: 14px; }
+.st-q .meter-fill { width: 0; transition: none; }
+.st-q-val { display: flex; justify-content: space-between; margin: 12px 0 0; font-size: .8rem; font-weight: 700; color: var(--text-soft); }
+.st-q-val b { color: var(--primary-dark); }
+.st-water .water-btn { margin-top: 0; pointer-events: none; }
+
+/* Skrytka: myśl pisze się sama i odlatuje jak liść */
+.st-vault .vault-compose { animation: none; }
+.st-vault-text { min-height: 92px; padding: 12px 12px 6px; font-size: 1.02rem; line-height: 1.55; color: var(--text); }
+.st-vault-text::after { content: ""; display: inline-block; width: 2px; height: 1.1em; margin-left: 1px; vertical-align: -3px; background: var(--primary); animation: st-caret 1s steps(1) infinite; }
+@keyframes st-caret { 50% { opacity: 0; } }
+.st-vault .quiet-btn.is-pressed { background: rgba(var(--primary-rgb), .1); color: var(--primary-dark); }
+.st-leaf {
+  position: absolute; left: 50%; top: 50%; display: flex; align-items: center; gap: 8px; max-width: 230px;
+  padding: 10px 18px 10px 12px; border-radius: 6px 40px 6px 40px;
+  background: linear-gradient(135deg, var(--plant-leaf-2), var(--plant-leaf-1));
+  box-shadow: 0 14px 30px -14px rgba(var(--primary-rgb), .9);
+  color: #fff; font-size: .85rem; font-weight: 700; line-height: 1.35;
+  opacity: 0; transform: translate(-50%, -50%);
+}
+.st-leaf svg { flex: 0 0 18px; width: 18px; height: 18px; }
+.st-leaf.is-flying { animation: leaf-fly 3s cubic-bezier(.45, 0, .55, 1) forwards; }
+
+/* Tracker */
+.st-track .week-sum { animation: none; box-shadow: 0 10px 24px -20px rgba(30, 42, 50, .35); }
+.st-track .sum-day i { animation: none; visibility: hidden; }
+.st-track.is-run .sum-day i { visibility: visible; animation: bar-up .9s var(--ease-out) both; animation-delay: calc(var(--d) * 90ms + 150ms); }
+
+/* Blog */
+.st-blog { list-style: none; margin: 0; padding: 0; }
+.st-blog .post { animation: none; visibility: hidden; }
+.st-blog.is-run .post { visibility: visible; animation: soft-in .7s var(--ease-out) both; animation-delay: calc(var(--i) * 260ms + 120ms); }
+.st-blog .post-open { cursor: default; }
+
+/* SOS: kwiat oddechu */
+.st-sos-demo { justify-items: center; }
+.st-sos-demo .breath { width: 170px; height: 170px; margin: 0 auto; }
+.st-sos-demo .breath-flower i { left: calc(50% - 23px); top: calc(50% - 72px); width: 46px; height: 72px; }
+.st-sos-demo .breath-flower { --dur: 2.4s; }
+.st-sos-demo .sos-item { width: 100%; pointer-events: none; }
+
+/* Komputer: w relacjach o roślince podpowiedź, że roślinka jest obok */
+.st-look { display: none; }
+
+/* Komputer: relacje w prawej połowie (roślinka zostaje po lewej) */
+@media (min-width: 1024px) {
+  .st-look {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0; padding: 10px 16px; border-radius: 999px;
+    background: var(--surface); color: var(--primary-dark); font-size: .86rem; font-weight: 800;
+    box-shadow: 0 10px 24px -18px rgba(var(--primary-rgb), .8);
+  }
+  .st-look svg { width: 18px; height: 18px; animation: st-point 1.8s ease-in-out infinite; }
+  @keyframes st-point { 50% { transform: translateX(-4px); } }
+  .stories {
+    left: 50vw; right: auto; width: min(440px, 46vw); margin-left: calc((50vw - min(440px, 46vw)) / 2);
+    top: 4vh; bottom: 4vh; border-radius: 28px;
+    box-shadow: 0 30px 70px -30px rgba(30, 42, 50, .45);
+  }
+  .stories.is-plant .st-bg { opacity: .6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stories, .st-vis, .st-bg { transition: none; }
+  .st-text > *, .st-hint svg, .st-vault-text::after { animation: none; }
+}

@@ -36,6 +36,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 | Registration (3 stages, one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
 | Shared by login and registration | `css/auth.css`, `js/auth-common.js` (toast, haptics, password field, `account` storage), `js/plant-scene.js` (growing plant canvas, `window.PlantScene`) |
 | **The app: all tabs on one page (main entry)** | `aplikacja.html`, `css/app.css`, `js/app.js` (tabs/router) — see "The app" below |
+| Tutorial after registration (story-style) | `css/samouczek.css`, `js/samouczek.js` (`window.Samouczek`) — see "Tutorial" below |
 | Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
 | **Home page, version 2: plant on top (current direction)** | `strona-glowna-2.html`, `css/home2.css`, `js/home2.js`, `js/home2-scene.js` |
 | Check-in, first question only (the design `aplikacja.html` reuses) | `nastroj.html`, `css/checkin.css`, `js/nastroj.js`, `css/mood-slider.css`, `js/mood-slider.js` |
@@ -60,6 +61,12 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
 - **Tryb nocny**: `Theme.setMode('auto'|'light'|'dark')` in `js/theme.js` sets `<html data-mode>` (saved in `sci.mode`); `css/tokens.css` redefines only the neutral tokens for dark (also follows the system setting in auto). The switch is in the "Kolor roślinki" sheet. The plant scene shows a night sky with stars and the moon in dark mode. Use `--glass`, `--toast-bg` / `--toast-fg` instead of hard-coded white or dark colours.
+
+### Tutorial after registration (`js/samouczek.js`)
+
+- When registration finishes, `js/rejestracja.js` sets `localStorage` `sci.samouczek = 'nowy'`, and "Przejdź do aplikacji" leads to `aplikacja.html`. On the first visit, story-style slides open about 0.9 s after load. They grow as a circle out of the plant-colour button, the same way the check-in grows out of its button. After closing, the key is set to `'obejrzany'`. `?samouczek` opens the tutorial at any time, for team previews.
+- There are 8 stories: the plant, watering, leaves as days, Skrytka, Tracker, Blog, SOS/breathing and "Zaczynamy?". The plant stories have a transparent top that shows the real `Home2Scene` plant; "leaves as days" uses `Home2Scene.select(i)`. The other stories reuse the app's own components (`.water-btn`, `.vault-compose`, `.week-sum`, `.post`, `.breath`, `.sos-item`) with demo content.
+- Controls work as in stories. A tap on the right goes forward, a tap on the left goes back, holding pauses, and the arrow keys and Esc work. Each story lasts 6.5 s. SOS stays in the header; it closes the tutorial and opens the SOS sheet. With `prefers-reduced-motion` there are no animations and no auto-advance. On desktop the stories sit in the right half, and the plant stories point to the plant on the left.
 
 ### Colours and themes
 

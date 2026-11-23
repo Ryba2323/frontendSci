@@ -430,6 +430,8 @@
       // Tymczasowo, do czasu backendu: profil (bez hasła) zostaje w przeglądarce, żeby logowanie mogło przywitać po imieniu
       const { password, ...profile } = data;
       account.save(profile);
+      // Pierwsze wejście do aplikacji pokaże samouczek (js/samouczek.js)
+      try { localStorage.setItem('sci.samouczek', 'nowy'); } catch (_) { /* tryb prywatny */ }
       fillDone();
     }
     goTo(n + 1);
