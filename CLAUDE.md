@@ -35,6 +35,7 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 | Login | `logowanie.html`, `js/logowanie.js` |
 | Registration (3 stages, one question per screen on phones) | `rejestracja.html`, `js/rejestracja.js` |
 | Shared by login and registration | `css/auth.css`, `js/auth-common.js` (toast, haptics, password field, `account` storage), `js/plant-scene.js` (growing plant canvas, `window.PlantScene`) |
+| Planting after registration ("Przejdź do aplikacji" → Dom) | `css/sadzenie.css`, `js/sadzenie.js` (`window.Sadzenie`) — see "Planting" below |
 | **The app: all tabs on one page (main entry)** | `aplikacja.html`, `css/app.css`, `js/app.js` (tabs/router) — see "The app" below |
 | Home page, version 1: branch in the background | `strona-glowna.html`, `css/home.css`, `js/home.js`, `js/home-scene.js` |
 | **Home page, version 2: plant on top (current direction)** | `strona-glowna-2.html`, `css/home2.css`, `js/home2.js`, `js/home2-scene.js` |
@@ -60,6 +61,13 @@ SCI++ (working name; the real name isn't chosen yet) is a mental-health / wellbe
 - **SOS** also has **Twoje bliskie osoby** (`js/kontakty.js`, `localStorage` `sci.kontakty`): 1–3 trusted contacts, one tap to call, number also shown as text.
 - **Myśl na dziś** (`js/cytaty.js`): a different own-written thought every day, heart to save (`sci.cytaty`), share (system share or copy), and a sheet with saved thoughts.
 - **Tryb nocny**: `Theme.setMode('auto'|'light'|'dark')` in `js/theme.js` sets `<html data-mode>` (saved in `sci.mode`); `css/tokens.css` redefines only the neutral tokens for dark (also follows the system setting in auto). The switch is in the "Kolor roślinki" sheet. The plant scene shows a night sky with stars and the moon in dark mode. Use `--glass`, `--toast-bg` / `--toast-fg` instead of hard-coded white or dark colours.
+
+### Planting after registration (`js/sadzenie.js`)
+
+- After registration, "Przejdź do aplikacji" plays a ~4.5 s planting moment into `aplikacja.html`. On the registration page, the "Witaj" text fades and the card slides down. The bloomed plant is not taken away: it releases a glowing seed from its flower. The seed drifts down while the registration scene fades, under the caption "Teraz zasadźmy ją w Twoim ogrodzie.". The tap time and the seed's start point go into the one-time `sessionStorage` keys `sci.sadzenie` and `sci.sadzenie.z`.
+- On the app page, `js/sadzenie.js` (loaded **without `defer`** in `<head>`) sets `<html data-sadzenie>`. The overlay markup is the first child of `<body>` and is followed by an inline `Sadzenie.mount()`, so the seed's flight continues without a seam. `Home2Scene` keeps the plant in the ground while this attribute is set.
+- The garden appears and the seed lands at `Home2Scene.plantAt()`. It sinks into the soil with a few crumbs, a water drop falls on it with a ripple, and only then `Home2Scene.grow()` starts the plant's usual growth. The caption changes to "Od dziś rośnie tutaj — razem z Tobą.", then the greeting, top bar, card and tab bar come in. At the end, `sadzeniekoniec` fires on `window`.
+- A tap skips it; a refresh doesn't replay it; `prefers-reduced-motion` and `?widok` turn it off. `<html data-sadzenie>` stays until the page is left, because removing it would restart the content's normal entry animations.
 
 ### Colours and themes
 

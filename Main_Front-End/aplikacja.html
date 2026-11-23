@@ -15,8 +15,11 @@
   <link rel="stylesheet" href="css/checkin.css">
   <link rel="stylesheet" href="css/mood-slider.css">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/sadzenie.css">
   <!-- bez defer: motyw musi być ustawiony, zanim strona się narysuje -->
   <script src="js/theme.js"></script>
+  <!-- bez defer: po rejestracji pierwsza klatka to już ogród z lecącym nasionkiem (bez mignięcia strony) -->
+  <script src="js/sadzenie.js"></script>
 
   <script src="js/auth-common.js" defer></script>
   <script src="js/sheets.js" defer></script>
@@ -36,6 +39,18 @@
   <script src="js/app.js" defer></script>
 </head>
 <body data-tab="dom">
+
+<!-- Sadzenie po rejestracji (css/sadzenie.css, js/sadzenie.js): widoczne tylko przy <html data-sadzenie> -->
+<div class="sadzenie" aria-hidden="true">
+  <div class="sd-bg"></div>
+  <div class="sd-copy"><span class="sd-eyebrow"></span><p class="sd-line"></p></div>
+  <span class="sd-ring"></span>
+  <span class="sd-dirt"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+  <div class="sd-seed"><i class="sd-glow"></i><svg class="sd-shape" viewBox="-12 -9 24 18"><ellipse class="sd-body" rx="9" ry="6"/><ellipse cx="-2.6" cy="-1.9" rx="2.6" ry="1.5" fill="#fff" opacity=".45"/></svg></div>
+  <div class="sd-drop"><svg viewBox="0 0 24 24"><path d="M12 3.2c3.4 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.6-6.5 6-10.6z"/></svg></div>
+</div>
+<!-- nasionko rysujemy od razu, żeby pierwsza klatka strony była tą samą klatką co na rejestracji -->
+<script>window.Sadzenie && Sadzenie.mount();</script>
 
 <!--
   CAŁA APLIKACJA NA JEDNEJ STRONIE: zakładki Dom · Skrytka · Tracker · Testy · Blog (js/app.js, adres #/zakładka).

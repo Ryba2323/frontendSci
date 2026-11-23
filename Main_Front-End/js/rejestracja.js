@@ -605,6 +605,13 @@
     data.topics.forEach(tp => add(tp, TOPIC_COLORS[tp]));
   }
 
+  // Przejście do aplikacji: nasionko z rozkwitniętej roślinki zostaje zasadzone w ogrodzie (js/sadzenie.js)
+  $('#enter-app').addEventListener('click', e => {
+    if (!window.Sadzenie) return;
+    e.preventDefault();
+    window.Sadzenie.leave(e.currentTarget.href);
+  });
+
   $('#replay').addEventListener('click', () => {
     forms.forEach(f => { f.reset(); clearErrors(f); });
     syncMeter();

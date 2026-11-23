@@ -1,0 +1,74 @@
+/*
+ * Sadzenie po rejestracji (rejestracja.html → aplikacja.html). Logika: js/sadzenie.js.
+ * Rozkwitnięta roślinka z rejestracji wypuszcza nasionko, które powoli opada do Twojego ogrodu na stronie głównej:
+ * ląduje w ziemi, kropla wody je podlewa i dopiero wtedy wyrasta prawdziwa roślinka.
+ * Kolory tylko z tokenów.
+ */
+
+.sadzenie {
+  position: fixed; inset: 0; z-index: 100;
+  display: none;
+  pointer-events: none;
+}
+html[data-sadzenie] .sadzenie { display: block; pointer-events: auto; cursor: pointer; }
+.sd-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(1000px 640px at 50% 18%, rgba(var(--mint-rgb), .55), transparent 62%),
+    radial-gradient(900px 600px at 95% -10%, rgba(var(--mist-rgb), .6), transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+}
+
+/* Podpis u góry — ten sam styl co nad roślinką w rejestracji (auth.css .scene-copy) */
+.sd-copy {
+  position: absolute; top: calc(env(safe-area-inset-top) + 14px); left: 16px; right: 16px;
+  text-align: center; pointer-events: none;
+}
+.sd-eyebrow {
+  display: block; margin-bottom: 3px;
+  font-size: .66rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--primary);
+}
+.sd-line { margin: 0; font-size: .86rem; line-height: 1.4; font-weight: 600; color: var(--text-muted); }
+@media (min-width: 900px) {
+  .sd-copy { top: 40px; }
+  .sd-eyebrow { font-size: .72rem; margin-bottom: 8px; }
+  .sd-line { font-size: 1.05rem; font-weight: 500; }
+}
+
+/* Nasionko (ten sam kształt i kolor co nasionko w scenie rejestracji), kropla, krąg na wodzie, grudki ziemi.
+   Położenie ustawia JS (transform), tu tylko wygląd. */
+.sd-seed, .sd-drop, .sd-ring, .sd-dirt i { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+.sd-seed { width: 0; height: 0; }
+.sd-glow {
+  position: absolute; left: -42px; top: -42px; width: 84px; height: 84px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--mint-rgb), .95) 0, rgba(var(--mint-rgb), .45) 38%, rgba(var(--mint-rgb), 0) 70%);
+}
+.sd-shape { position: absolute; left: -16px; top: -12px; width: 32px; height: 24px; overflow: visible; }
+.sd-body { fill: var(--primary); }
+.sd-drop { width: 0; height: 0; opacity: 0; }
+.sd-drop svg { position: absolute; left: -9px; top: -22px; width: 18px; height: 24px; fill: var(--accent-light); }
+.sd-ring {
+  width: 40px; height: 12px; margin: -6px 0 0 -20px; border-radius: 50%;
+  border: 2px solid var(--accent-light); opacity: 0;
+}
+.sd-dirt i { width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: var(--plant-stem); opacity: 0; }
+
+/* Strona aplikacji w trakcie sadzenia: interfejs czeka, aż roślinka zacznie rosnąć
+   (atrybut zostaje do końca wizyty — zdjęcie go odpaliłoby zwykłe animacje treści drugi raz) */
+html[data-sadzenie] .stage-greet > * { animation-delay: 2.1s; }
+html[data-sadzenie] .stage-greet > :nth-child(2) { animation-delay: 2.18s; }
+html[data-sadzenie] .app-top > * { animation: fade-in .6s ease 2.4s both; }
+html[data-sadzenie] #view-dom { animation: sd-sheet .85s var(--ease-out) 2.35s both; }
+html[data-sadzenie] #view-dom > .sec { animation: sd-soft .7s var(--ease-out) both; animation-delay: calc(2.45s + var(--sd-i, 0) * 90ms); }
+html[data-sadzenie] .tabbar { animation: sd-bar .6s var(--ease-out) 2.45s both; }
+html[data-sadzenie] .plant-zoom, html[data-sadzenie] .scroll-hint { animation-delay: 3.2s; }
+@keyframes sd-sheet { from { opacity: 0; transform: translateY(56px); } }
+@keyframes sd-soft { from { opacity: 0; transform: translateY(14px); } }
+@keyframes sd-bar { from { transform: translateY(105%); } }
+@media (min-width: 700px) {
+  @keyframes sd-bar { from { transform: translate(-50%, 160%); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-sadzenie] .sadzenie { display: none; }
+}

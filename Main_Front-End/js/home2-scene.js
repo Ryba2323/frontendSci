@@ -22,6 +22,8 @@
  * API (window.Home2Scene): start({ days, labels, missed }), water(mood?), select(i), isWatered(), debugAdvance(sec)
  *   water(mood) — mood 1–10 z pytań podlewania ustala wielkość dzisiejszego liścia (bez niego: średni liść).
  *   full(t, fast) — 0–1: scena rośnie do pełnego ekranu (telefon; aplikacja pociąga w dół na górze strony).
+ *   plantAt(), grow() — sadzenie po rejestracji (js/sadzenie.js): przy <html data-sadzenie> roślinka czeka w ziemi,
+ *   aż nasionko zostanie podlane; plantAt() to podstawa roślinki w px okna.
  * <div class="stage" data-blisko> (aplikacja.html) — na telefonie roślinka jest większa („bliżej”), lekko w prawo od powitania,
  * a canvas ma wysokość całego ekranu, żeby scena mogła urosnąć do pełnego ekranu.
  */
@@ -142,6 +144,8 @@
 
   const st = { intro: 0, shrink: 0, greet: 0, labels: 0, awake: 1, full: 0 };
   let fullTarget = 0, fullRate = 6;
+  // Sadzenie po rejestracji (js/sadzenie.js): roślinka czeka w ziemi, aż nasionko zostanie podlane (grow())
+  let held = document.documentElement.hasAttribute('data-sadzenie');
   let days = [], labels = [], missed = [];
   let fallen = null, fallDone = false, twig0 = null;
   let todayMood = null;                                           // nastrój z dzisiejszego podlewania
@@ -640,7 +644,7 @@
     if (reduceMotion) {
       st.intro = 1; st.shrink = tShrink; st.greet = tGreet; st.labels = weekVis ? 1 : 0; st.awake = awake;
     } else {
-      st.intro = Math.min(1, st.intro + dt / 2);
+      if (!held) st.intro = Math.min(1, st.intro + dt / 2);
       st.shrink = approach(st.shrink, tShrink, 8, dt);
       st.greet = approach(st.greet, tGreet, 8, dt);
       st.labels = approach(st.labels, weekVis ? 1 : 0, 5, dt);
@@ -1116,6 +1120,12 @@
     water,
     select,
     isWatered: () => wateredAt != null,
+    // Sadzenie po rejestracji (js/sadzenie.js): podstawa roślinki w px okna (tu ląduje nasionko) i start wzrostu
+    plantAt() {
+      const r = canvas.getBoundingClientRect();
+      return { x: r.left + baseX, y: r.top + baseY, h: FULL_H * S };
+    },
+    grow() { if (held) { held = false; st.intro = 0; wind = Math.min(1.5, wind + .5 * motion); } },
     // Tylko do testów (np. gdy karta przeglądarki jest w tle i nie dostaje klatek): przewija czas sceny
     debugAdvance(sec) {
       for (let t = 0; t < sec; t += 1 / 60) { clock += 1 / 60; update(1 / 60); }
